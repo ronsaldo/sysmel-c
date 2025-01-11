@@ -25,4 +25,7 @@ typedef struct sysmelb_SourcePosition_s
 sysmelb_SourceCode_t *sysmelb_makeSourceCodeFromFileNamed(const char *fileName);
 sysmelb_SourceCode_t *sysmelb_makeSourceCodeFromString(const char *name, const char *string);
 
+sysmelb_SourcePosition_t sysmelb_sourcePosition_to(sysmelb_SourcePosition_t *start, sysmelb_SourcePosition_t *end);
+sysmelb_SourcePosition_t sysmelb_sourcePosition_until(sysmelb_SourcePosition_t *start, sysmelb_SourcePosition_t *end);
+
 #endif //SYSMELB_SOURCE_CODE_H

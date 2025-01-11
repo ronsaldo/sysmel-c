@@ -32,6 +32,7 @@ typedef struct sysmelb_ParseTreeNode_s sysmelb_ParseTreeNode_t;
 // Errors
 typedef struct sysmelb_ParseTreeErrorNode_s {
     const char *errorMessage;
+    sysmelb_ParseTreeNode_t *innerNode;
 } sysmelb_ParseTreeErrorNode_t;
 
 // Literals

@@ -43,3 +43,31 @@ sysmelb_SourceCode_t *sysmelb_makeSourceCodeFromString(const char *name, const c
     sourceCode->textSize = stringLength;
     return sourceCode;
 }
+
+sysmelb_SourcePosition_t sysmelb_sourcePosition_to(sysmelb_SourcePosition_t *start, sysmelb_SourcePosition_t *end)
+{
+    sysmelb_SourcePosition_t merged = {
+        .sourceCode  = start->sourceCode,
+        .startIndex  = start->startIndex,
+        .startLine   = start->startLine,
+        .startColumn = start->startColumn,
+        .endIndex    = end->endIndex,
+        .endLine     = end->endLine,
+        .endColumn   = end->endColumn
+    };
+    return merged;
+}
+
+sysmelb_SourcePosition_t sysmelb_sourcePosition_until(sysmelb_SourcePosition_t *start, sysmelb_SourcePosition_t *end)
+{
+    sysmelb_SourcePosition_t merged = {
+        .sourceCode  = start->sourceCode,
+        .startIndex  = start->startIndex,
+        .startLine   = start->startLine,
+        .startColumn = start->startColumn,
+        .endIndex    = end->startIndex,
+        .endLine     = end->startLine,
+        .endColumn   = end->startColumn,
+    };
+    return merged;
+}

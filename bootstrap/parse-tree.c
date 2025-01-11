@@ -80,6 +80,8 @@ void sysmelb_dumpParseTree(sysmelb_ParseTreeNode_t *node)
             sysmelb_dumpParseTree(node->cascadedMessage.arguments[i]);
         }
         printf(")");
+        break;
     default:
+        abort();
     }
 }
