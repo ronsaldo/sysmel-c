@@ -1,5 +1,6 @@
 #include "memory.h"
 #include "scanner.h"
+#include "parser.h"
 #include <string.h>
 #include <stdio.h>
 
@@ -10,7 +11,7 @@ void printHelp()
 
 void printVersion()
 {
-    printf("bootstrap <inputFiles>\n");
+    printf("bootstrap V0.1\n");
 }
 
 void scanOnlyText(const char *text)
@@ -22,6 +23,15 @@ void scanOnlyText(const char *text)
     {
         printf(" %s", sysmelb_TokenKindToString(scannedTokens.tokens[i].kind));
     }
+}
+
+void parseOnlyText(const char *text)
+{
+    sysmelb_SourceCode_t *sourceCode = sysmelb_makeSourceCodeFromString("cli", text);
+    sysmelb_TokenDynarray_t scannedTokens = sysmelb_scanSourceCode(sourceCode);
+
+    sysmelb_ParseTreeNode_t *parseTree = parseTokenList(scannedTokens.size, scannedTokens.tokens);
+    sysmelb_dumpParseTree(parseTree);
 }
 
 int main(int argc, const char **argv)
@@ -44,6 +54,10 @@ int main(int argc, const char **argv)
             else if(!strcmp(arg, "-scan-only") && i + 1 < argc)
             {
                 scanOnlyText(argv[++i]);
+            }
+            else if(!strcmp(arg, "-parse-only") && i + 1 < argc)
+            {
+                parseOnlyText(argv[++i]);
             }
         }
 

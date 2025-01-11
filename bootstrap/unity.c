@@ -1,5 +1,7 @@
 #include "main.c"
 #include "memory.c"
+#include "parse-tree.c"
+#include "parser.c"
 #include "scanner.c"
 #include "source-code.c"
 #include "token.c"
