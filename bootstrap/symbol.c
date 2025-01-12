@@ -88,3 +88,8 @@ sysmelb_symbol_t *sysmelb_internSymbol(size_t stringSize, const char *string)
 
     return newSymbol;
 }
+
+sysmelb_symbol_t *sysmelb_internSymbolC(const char *string)
+{
+    return sysmelb_internSymbol(strlen(string), string);
+}

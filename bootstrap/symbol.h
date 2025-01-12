@@ -14,5 +14,6 @@ typedef struct sysmelb_symbol_s {
 
 uint32_t sysmelb_stringHash(size_t stringSize, const char *string);
 sysmelb_symbol_t *sysmelb_internSymbol(size_t stringSize, const char *string);
+sysmelb_symbol_t *sysmelb_internSymbolC(const char *string);
 
 #endif //SYSMELB_SYMBOL_H
