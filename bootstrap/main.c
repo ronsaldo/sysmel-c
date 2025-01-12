@@ -1,8 +1,11 @@
 #include "memory.h"
 #include "scanner.h"
 #include "parser.h"
+#include "module.h"
 #include <string.h>
 #include <stdio.h>
+
+static sysmelb_Module_t *currentModule = NULL;
 
 void printHelp()
 {
@@ -16,7 +19,7 @@ void printVersion()
 
 void scanOnlyText(const char *text)
 {
-    sysmelb_SourceCode_t *sourceCode = sysmelb_makeSourceCodeFromString("cli", text);
+    sysmelb_SourceCode_t *sourceCode = sysmelb_makeSourceCodeFromString("CLI", text);
     sysmelb_TokenDynarray_t scannedTokens = sysmelb_scanSourceCode(sourceCode);
     printf("Scanned %d tokens:", (int)scannedTokens.size);
     for(size_t i = 0; i < scannedTokens.size; ++i)
@@ -27,12 +30,21 @@ void scanOnlyText(const char *text)
 
 void parseOnlyText(const char *text)
 {
-    sysmelb_SourceCode_t *sourceCode = sysmelb_makeSourceCodeFromString("cli", text);
+    sysmelb_SourceCode_t *sourceCode = sysmelb_makeSourceCodeFromString("CLI", text);
     sysmelb_TokenDynarray_t scannedTokens = sysmelb_scanSourceCode(sourceCode);
 
     sysmelb_ParseTreeNode_t *parseTree = parseTokenList(sourceCode, scannedTokens.size, scannedTokens.tokens);
     sysmelb_dumpParseTree(parseTree);
     printf("\n");
+}
+
+void analyzeText(const char *text)
+{
+    sysmelb_SourceCode_t *sourceCode = sysmelb_makeSourceCodeFromString("CLI", text);
+    sysmelb_TokenDynarray_t scannedTokens = sysmelb_scanSourceCode(sourceCode);
+
+    sysmelb_ParseTreeNode_t *parseTree = parseTokenList(sourceCode, scannedTokens.size, scannedTokens.tokens);
+
 }
 
 int main(int argc, const char **argv)
@@ -60,6 +72,17 @@ int main(int argc, const char **argv)
             {
                 parseOnlyText(argv[++i]);
             }
+            else if(!strcmp(arg, "-module-name") && i + 1 < argc)
+            {
+                currentModule = sysmelb_createModuleNamed(sysmelb_internSymbolC(argv[++i]));
+            }
+            else if(!strcmp(arg, "-analyze-only") && i + 1 < argc)
+            {
+                if(!currentModule)
+                    currentModule = sysmelb_createModuleNamed(sysmelb_internSymbolC("CLI"));
+                analyzeText(argv[++i]);
+            }
+            
         }
 
     }

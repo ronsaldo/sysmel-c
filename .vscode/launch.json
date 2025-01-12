@@ -9,7 +9,7 @@
             "type": "cppdbg",
             "request": "launch",
             "program": "${workspaceFolder}/build/bootstrap",
-            "args": ["-parse-only", "1.2 .42. "],
+            "args": ["-analyze-only", "1 + 2"],
             "stopAtEntry": false,
             "cwd": "${workspaceFolder}",
             "environment": [],

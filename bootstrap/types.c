@@ -9,6 +9,7 @@ sysmelb_Type_t *sysmelb_allocateValueType(sysmelb_TypeKind_t kind, sysmelb_symbo
     type->name = name;
     type->valueAlignment = alignment;
     type->valueSize = size;
+    return type;
 }
 
 bool sysmelb_BasicTypesDataInitialized;
@@ -42,7 +43,7 @@ const sysmelb_BasicTypes_t *sysmelb_getBasicTypes(void)
     sysmelb_BasicTypesData.uint64  = sysmelb_allocateValueType(SysmelTypeKindPrimitiveUnsignedInteger, sysmelb_internSymbolC("UInt64"), 8, 8);
 
     sysmelb_BasicTypesData.float32 = sysmelb_allocateValueType(SysmelTypeKindPrimitiveFloat, sysmelb_internSymbolC("Float32"), 4, 4);
-    sysmelb_BasicTypesData.float64 = sysmelb_allocateValueType(SysmelTypeKindPrimitiveFloat, sysmelb_internSymbolC("Float64"), 4, 4);
+    sysmelb_BasicTypesData.float64 = sysmelb_allocateValueType(SysmelTypeKindPrimitiveFloat, sysmelb_internSymbolC("Float64"), 8, 8);
 
     sysmelb_BasicTypesDataInitialized = true;
     return &sysmelb_BasicTypesData;

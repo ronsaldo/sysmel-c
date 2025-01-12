@@ -34,7 +34,7 @@ struct sysmelb_Type_s {
     uint32_t heapSize;
     uint32_t heapAlignment;
     uint32_t fieldCount;
-    sysmelb_Type_t fields[];
+    sysmelb_Type_t *fields;
 };
 
 typedef struct sysmelb_BasicTypes_s {
