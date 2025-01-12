@@ -31,10 +31,10 @@ void sysmelb_dumpParseTree(sysmelb_ParseTreeNode_t *node)
         printf("LiteralFloat(%f)", node->literalFloat.value);
         break;
     case ParseTreeLiteralStringNode:
-        printf("LiteralString(%.*s)", (int)node->literalString.stringSize, node->literalString.string);
+        printf("LiteralString(\"%.*s\")", (int)node->literalString.stringSize, node->literalString.string);
         break;
     case ParseTreeLiteralSymbolNode:
-        printf("LiteralSymbol(%s)", node->literalSymbol.internedSymbol);
+        printf("LiteralSymbol(%.*s)", node->literalSymbol.internedSymbol->size, node->literalSymbol.internedSymbol->string);
         break;
     case ParseTreeFunctionApplication:
         printf("FunctionApplication(");

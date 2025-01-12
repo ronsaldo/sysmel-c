@@ -1,6 +1,7 @@
 #include "parser.h"
 #include "parse-tree.h"
 #include "memory.h"
+#include "symbol.h"
 #include <stdbool.h>
 #include <stdlib.h>
 #include <assert.h>
@@ -17,6 +18,7 @@ void sysmelb_ParseTreeNodeDynArray_incrementCapacity(sysmelb_ParseTreeNodeDynArr
 
     sysmelb_ParseTreeNode_t **newStorage = sysmelb_allocate(newCapacity * sizeof(sysmelb_ParseTreeNode_t*));
     memcpy(newStorage, dynArray->elements, dynArray->size * sizeof(sysmelb_ParseTreeNode_t*));
+    sysmelb_freeAllocation(dynArray->elements);
     dynArray->capacity = newCapacity;
     dynArray->elements = newStorage;
 }
@@ -214,80 +216,87 @@ sysmelb_ParseTreeNode_t* parseLiteralFloat(sysmelb_parserState_t *state)
     return literal;
 }
 
-/*
-std::string parseCEscapedString(const std::string &str)
-{
-    std::string unescaped;
-    unescaped.reserve(str.size());
 
-    for (size_t i = 0; i < str.size(); ++i)
+char* parseCEscapedString(size_t stringSize, const char *string, size_t *outSize)
+{
+    char *result = sysmelb_allocate(stringSize + 1);
+    memset(result, 0, stringSize + 1);
+    char *dest = result;
+
+    for (size_t i = 0; i < stringSize; ++i)
     {
-        auto c = str[i];
+        char c = string[i];
         if (c == '\\')
         {
-            auto c1 = str[++i];
+            char c1 = string[++i];
             switch (c1)
             {
             case 'n':
-                unescaped.push_back('\n');
+                *dest++ = '\n';
                 break;
             case 'r':
-                unescaped.push_back('\r');
+                *dest++ = '\r';
                 break;
             case 't':
-                unescaped.push_back('\t');
+                *dest++ = '\t';
                 break;
             default:
-                unescaped.push_back(c1);
+                *dest++ = c1;
                 break;
             }
         }
         else
         {
-            unescaped.push_back(c);
+            *dest++ = c;
         }
     }
 
-    return unescaped;
+    if(outSize)
+        *outSize = dest - result;
+    return result;
 }
 
 sysmelb_ParseTreeNode_t *parseLiteralCharacter(sysmelb_parserState_t *state)
 {
-    auto token = state.next();
-    assert(token->kind == TokenKind::Character);
-    auto literal = std::make_shared<SyntaxLiteralCharacter>();
-    literal->sourcePosition = token->position;
-    auto tokenValue = token->getValue();
-    literal->value = parseCEscapedString(tokenValue.substr(1, tokenValue.size() - 2))[0];
-    return literal;
+    sysmelb_ScannerToken_t *token = parserState_next(state);
+    assert(token->kind == SysmelTokenCharacter);
+    char *parsedString = parseCEscapedString(token->textSize - 2, token->textPosition + 1, NULL);
+
+    sysmelb_ParseTreeNode_t *node = sysmelb_newParseTreeNode(ParseTreeLiteralCharacterNode, token->sourcePosition);
+    node->literalCharacter.value = *parsedString;
+    return node;
 }
 
 sysmelb_ParseTreeNode_t *parseLiteralString(sysmelb_parserState_t *state)
 {
-    auto token = state.next();
-    assert(token->kind == TokenKind::String);
-    auto literal = std::make_shared<SyntaxLiteralString>();
-    literal->sourcePosition = token->position;
-    auto tokenValue = token->getValue();
-    literal->value = parseCEscapedString(tokenValue.substr(1, tokenValue.size() - 2));
-    return literal;
+    sysmelb_ScannerToken_t *token = parserState_next(state);
+    assert(token->kind == SysmelTokenString);
+    size_t parsedStringSize;
+    char *parsedString = parseCEscapedString(token->textSize - 2, token->textPosition + 1, &parsedStringSize);
+
+    sysmelb_ParseTreeNode_t *node = sysmelb_newParseTreeNode(ParseTreeLiteralStringNode, token->sourcePosition);
+    node->literalString.string = parsedString;
+    node->literalString.stringSize = parsedStringSize;
+    return node;
 }
 
 sysmelb_ParseTreeNode_t *parseLiteralSymbol(sysmelb_parserState_t *state)
 {
-    auto token = state.next();
-    assert(token->kind == TokenKind::Symbol);
-    auto literal = std::make_shared<SyntaxLiteralSymbol>();
-    literal->sourcePosition = token->position;
-    auto tokenValue = token->getValue().substr(1);
-    if (tokenValue[0] == '\"')
-        literal->value = parseCEscapedString(tokenValue.substr(1, tokenValue.size() - 2));
-    else
-        literal->value = tokenValue;
+    sysmelb_ScannerToken_t *token = parserState_next(state);
+    assert(token->kind == SysmelTokenSymbol);
 
+    const char *symbolValue = token->textPosition + 1;
+    size_t symbolValueSize = token->textSize - 1;
+    if (symbolValue[0] == '"') {
+        symbolValue = symbolValue + 1;
+        symbolValueSize = symbolValueSize - 2;
+        symbolValue = parseCEscapedString(symbolValueSize, symbolValue, &symbolValueSize);
+    }
+
+    sysmelb_ParseTreeNode_t *literal = sysmelb_newParseTreeNode(ParseTreeLiteralSymbolNode, token->sourcePosition);
+    literal->literalSymbol.internedSymbol = sysmelb_internSymbol(symbolValueSize, symbolValue);
     return literal;
 }
-*/
 
 sysmelb_ParseTreeNode_t *parser_parseLiteral(sysmelb_parserState_t *state)
 {
@@ -297,12 +306,12 @@ sysmelb_ParseTreeNode_t *parser_parseLiteral(sysmelb_parserState_t *state)
         return parseLiteralInteger(state);
     case SysmelTokenFloat:
         return parseLiteralFloat(state);
-    /*case SysmelTokenCharacter:
+    case SysmelTokenCharacter:
         return parseLiteralCharacter(state);
     case SysmelTokenString:
         return parseLiteralString(state);
     case SysmelTokenSymbol:
-        return parseLiteralSymbol(state);*/
+        return parseLiteralSymbol(state);
     default:
         return parserState_advanceWithExpectedError(state, "Expected a literal");
     }

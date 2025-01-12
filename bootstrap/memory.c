@@ -21,6 +21,16 @@ void *sysmelb_allocate(size_t allocationSize)
     return header + 1;
 }
 
+
+void sysmelb_freeAllocation(void *allocation)
+{
+    if(!allocation)
+        return;
+        
+    sysmelb_AllocationHeader_t *header = (sysmelb_AllocationHeader_t*)allocation - 1;
+    free(header);
+}
+
 void sysmelb_freeAll(void)
 {
     sysmelb_AllocationHeader_t *position = sysmelb_LastMemoryAllocation;

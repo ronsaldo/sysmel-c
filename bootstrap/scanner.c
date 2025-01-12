@@ -548,8 +548,10 @@ void tokenDynarray_increaseCapacity(sysmelb_TokenDynarray_t *dynarray)
     void *newStorage = sysmelb_allocate(newCapacity * sizeof(sysmelb_ScannerToken_t));
     memcpy(newStorage, dynarray->tokens, dynarray->size * sizeof(sysmelb_ScannerToken_t));
 
+    sysmelb_freeAllocation(dynarray->tokens);
     dynarray->capacity = newCapacity;
     dynarray->tokens = newStorage;
+
 }
 
 void tokenDynarray_add(sysmelb_TokenDynarray_t *dynarray, sysmelb_ScannerToken_t token)

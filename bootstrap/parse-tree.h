@@ -4,6 +4,7 @@
 #pragma once
 
 #include "source-code.h"
+#include "symbol.h"
 #include <stddef.h>
 #include <stdint.h>
 
@@ -58,7 +59,7 @@ typedef struct sysmelb_ParseTreeLiteralStringNode_s {
 } sysmelb_ParseTreeLiteralStringNode_t;
 
 typedef struct sysmelb_ParseTreeLiteralSymbolNode_s {
-    const char *internedSymbol;
+    sysmelb_symbol_t *internedSymbol;
 } sysmelb_ParseTreeLiteralSymbolNode_t;
 
 // Function application and message send
