@@ -2,6 +2,7 @@
 #include "parse-tree.h"
 #include "memory.h"
 #include <stdbool.h>
+#include <stdlib.h>
 #include <assert.h>
 #include <string.h>
 
@@ -199,17 +200,21 @@ sysmelb_ParseTreeNode_t* parseLiteralInteger(sysmelb_parserState_t *state)
     return literal;
 }
 
-/*
 sysmelb_ParseTreeNode_t* parseLiteralFloat(sysmelb_parserState_t *state)
 {
-    auto token = state.next();
-    assert(token->kind == TokenKind::Float);
-    auto literal = std::make_shared<SyntaxLiteralFloat>();
-    literal->sourcePosition = token->position;
-    literal->value = atof(token->getValue().c_str());
+    sysmelb_ScannerToken_t *token = parserState_next(state);
+    assert(token->kind == SysmelTokenFloat);
+    char parseBuffer[64];
+    memset(parseBuffer, 0, sizeof(parseBuffer));
+    memcpy(parseBuffer, token->textPosition, token->textSize);
+    double value = atof(parseBuffer);
+
+    sysmelb_ParseTreeNode_t *literal = sysmelb_newParseTreeNode(ParseTreeLiteralFloatNode, token->sourcePosition);
+    literal->literalFloat.value = value;
     return literal;
 }
 
+/*
 std::string parseCEscapedString(const std::string &str)
 {
     std::string unescaped;
@@ -290,9 +295,9 @@ sysmelb_ParseTreeNode_t *parser_parseLiteral(sysmelb_parserState_t *state)
     {
     case SysmelTokenNat:
         return parseLiteralInteger(state);
-    /*case SysmelTokenFloat:
+    case SysmelTokenFloat:
         return parseLiteralFloat(state);
-    case SysmelTokenCharacter:
+    /*case SysmelTokenCharacter:
         return parseLiteralCharacter(state);
     case SysmelTokenString:
         return parseLiteralString(state);
