@@ -1,3 +1,4 @@
+#include "environment.c"
 #include "main.c"
 #include "memory.c"
 #include "parse-tree.c"
@@ -7,3 +8,4 @@
 #include "string.c"
 #include "symbol.c"
 #include "token.c"
+#include "types.c"
