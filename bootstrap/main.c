@@ -30,7 +30,7 @@ void parseOnlyText(const char *text)
     sysmelb_SourceCode_t *sourceCode = sysmelb_makeSourceCodeFromString("cli", text);
     sysmelb_TokenDynarray_t scannedTokens = sysmelb_scanSourceCode(sourceCode);
 
-    sysmelb_ParseTreeNode_t *parseTree = parseTokenList(scannedTokens.size, scannedTokens.tokens);
+    sysmelb_ParseTreeNode_t *parseTree = parseTokenList(sourceCode, scannedTokens.size, scannedTokens.tokens);
     sysmelb_dumpParseTree(parseTree);
 }
 

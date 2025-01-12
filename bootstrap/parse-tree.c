@@ -81,6 +81,16 @@ void sysmelb_dumpParseTree(sysmelb_ParseTreeNode_t *node)
         }
         printf(")");
         break;
+    case ParseTreeSequence:
+        printf("ParseTreeSequence(");
+        for(size_t i = 0; i < node->sequence.elements.size; ++i)
+        {
+            if( i!= 0 )
+                printf(", ");
+            sysmelb_dumpParseTree(node->sequence.elements.elements[i]);
+        }
+        printf(")");
+        break;
     default:
         abort();
     }

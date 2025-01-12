@@ -8,6 +8,7 @@
 #include <stdint.h>
 
 #define SYSMELB_PARSE_TREE_MAX_ARGUMENTS 8
+typedef int64_t sysmelb_IntegerLiteralType_t;
 
 typedef enum sysmelb_ParseTreeNodeKind_e {
     // Error
@@ -25,6 +26,9 @@ typedef enum sysmelb_ParseTreeNodeKind_e {
     ParseTreeMessageSend,
     ParseTreeMessageCascade,
     ParseTreeCascadedMessage,
+
+    // Sequence.
+    ParseTreeSequence,
 } sysmelb_ParseTreeNodeKind_t;
 
 typedef struct sysmelb_ParseTreeNode_s sysmelb_ParseTreeNode_t;
@@ -37,7 +41,7 @@ typedef struct sysmelb_ParseTreeErrorNode_s {
 
 // Literals
 typedef struct sysmelb_ParseTreeLiteralIntegerNode_s {
-    int64_t value;
+    sysmelb_IntegerLiteralType_t value;
 } sysmelb_ParseTreeLiteralIntegerNode_t;
 
 typedef struct sysmelb_ParseTreeLiteralCharacterNode_s {
@@ -83,6 +87,16 @@ typedef struct sysmelb_ParseTreeCascadedMessage_s {
     sysmelb_ParseTreeNode_t *arguments[SYSMELB_PARSE_TREE_MAX_ARGUMENTS];
 } sysmelb_ParseTreeCascadedMessage_t;
 
+typedef struct sysmelb_ParseTreeNodeDynArray_s {
+    size_t capacity;
+    size_t size;
+    sysmelb_ParseTreeNode_t **elements;
+} sysmelb_ParseTreeNodeDynArray_t;
+
+typedef struct sysmelb_ParseTreeSequence_s {
+    sysmelb_ParseTreeNodeDynArray_t elements;
+} sysmelb_ParseTreeSequence_t;
+
 typedef struct sysmelb_ParseTreeNode_s {
     sysmelb_ParseTreeNodeKind_t kind;
     sysmelb_SourcePosition_t sourcePosition;
@@ -103,8 +117,13 @@ typedef struct sysmelb_ParseTreeNode_s {
         sysmelb_ParseTreeMessageSend_t messageSend;
         sysmelb_ParseTreeMessageCascade_t messageCascade;
         sysmelb_ParseTreeCascadedMessage_t cascadedMessage;
+
+        // Sequence
+        sysmelb_ParseTreeSequence_t sequence;
     };
 } sysmelb_ParseTreeNode_t;
+
+void sysmelb_ParseTreeNodeDynArray_add(sysmelb_ParseTreeNodeDynArray_t *dynArray, sysmelb_ParseTreeNode_t *element);
 
 sysmelb_ParseTreeNode_t *sysmelb_newParseTreeNode(sysmelb_ParseTreeNodeKind_t kind, sysmelb_SourcePosition_t sourcePosition);
 void sysmelb_dumpParseTree(sysmelb_ParseTreeNode_t *node);

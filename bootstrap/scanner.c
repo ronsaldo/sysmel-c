@@ -144,6 +144,8 @@ sysmelb_ScannerToken_t scannerState_makeTokenStartingFrom(sysmelb_scannerState_t
     sysmelb_ScannerToken_t token = {
         .kind = kind,
         .sourcePosition = sourcePosition,
+        .textPosition = state->sourceCode->text + initialState->position,
+        .textSize = state->position - initialState->position,
     };
 
     return token;
