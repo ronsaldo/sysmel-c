@@ -8,7 +8,6 @@
 #include <stddef.h>
 #include <stdint.h>
 
-#define SYSMELB_PARSE_TREE_MAX_ARGUMENTS 8
 typedef int64_t sysmelb_IntegerLiteralType_t;
 
 typedef enum sysmelb_ParseTreeNodeKind_e {
@@ -30,6 +29,7 @@ typedef enum sysmelb_ParseTreeNodeKind_e {
     ParseTreeMessageSend,
     ParseTreeMessageCascade,
     ParseTreeCascadedMessage,
+    ParseTreeBinaryOperatorSequence,
 
     // Sequences, array, tuples
     ParseTreeSequence,
@@ -40,6 +40,23 @@ typedef enum sysmelb_ParseTreeNodeKind_e {
     // Dictionary
     ParseTreeAssociation,
     ParseTreeDictionary,
+
+    // Blocks
+    ParseTreeBlockClosure,
+    ParseTreeLexicalBlock,
+
+    // Macro operators
+    ParseTreeQuote,
+    ParseTreeQuasiQuote,
+    ParseTreeQuasiUnquote,
+    ParseTreeSplice,
+
+    // Binding and pattern matching
+    ParseTreeBindPattern,
+    ParseTreeFunctionalDependentPattern,
+
+    // Assignment
+    ParseTreeAssignment,
 } sysmelb_ParseTreeNodeKind_t;
 
 typedef struct sysmelb_ParseTreeNode_s sysmelb_ParseTreeNode_t;
@@ -86,29 +103,28 @@ typedef struct sysmelb_ParseTreeIdentifierReference_s {
 // Function application and message send.
 typedef struct sysmelb_ParseTreeFunctionApplication_s {
     sysmelb_ParseTreeNode_t *functional;
-    size_t argumentCount;
-    sysmelb_ParseTreeNode_t *arguments[SYSMELB_PARSE_TREE_MAX_ARGUMENTS];
+    sysmelb_ParseTreeNodeDynArray_t arguments;
 } sysmelb_ParseTreeFunctionApplication_t;
 
 typedef struct sysmelb_ParseTreeMessageSend_s {
     sysmelb_ParseTreeNode_t *receiver;
     sysmelb_ParseTreeNode_t *selector;
-    size_t argumentCount;
-    sysmelb_ParseTreeNode_t *arguments[SYSMELB_PARSE_TREE_MAX_ARGUMENTS];
+    sysmelb_ParseTreeNodeDynArray_t arguments;
 } sysmelb_ParseTreeMessageSend_t;
 
 typedef struct sysmelb_ParseTreeMessageCascade_s {
     sysmelb_ParseTreeNode_t *receiver;
-    size_t cascadeSize;
-    sysmelb_ParseTreeNode_t *cascadedMessages[SYSMELB_PARSE_TREE_MAX_ARGUMENTS];
+    sysmelb_ParseTreeNodeDynArray_t cascadedMessages;
 } sysmelb_ParseTreeMessageCascade_t;
 
 typedef struct sysmelb_ParseTreeCascadedMessage_s {
     sysmelb_ParseTreeNode_t *selector;
-    size_t argumentCount;
-    sysmelb_ParseTreeNode_t *arguments[SYSMELB_PARSE_TREE_MAX_ARGUMENTS];
+    sysmelb_ParseTreeNodeDynArray_t arguments;
 } sysmelb_ParseTreeCascadedMessage_t;
 
+typedef struct sysmelb_ParseTreeBinaryOperatorSequence_s {
+    sysmelb_ParseTreeNodeDynArray_t elements;
+} sysmelb_ParseTreeBinaryOperatorSequence_t;
 
 // Sequences
 typedef struct sysmelb_ParseTreeSequence_s {
@@ -137,10 +153,50 @@ typedef struct sysmelb_ParseTreeAssociation_s {
     sysmelb_ParseTreeNode_t *value;
 } sysmelb_ParseTreeAssociation_t;
 
+// Blocks
+typedef struct sysmelb_ParseTreeBlockClosure_s {
+    sysmelb_ParseTreeNode_t *functionType;
+    sysmelb_ParseTreeNode_t *body;
+} sysmelb_ParseTreeBlockClosure_t;
+
+typedef struct sysmelb_ParseTreeLexicalBlock_s {
+    sysmelb_ParseTreeNode_t *expression;
+} sysmelb_ParseTreeLexicalBlock_t;
+
 // Macro operators
 typedef struct sysmelb_ParseTreeQuote_s {
     sysmelb_ParseTreeNode_t *expression;
 } sysmelb_ParseTreeQuote_t;
+
+typedef struct sysmelb_ParseTreeQuasiQuote_s {
+    sysmelb_ParseTreeNode_t *expression;
+} sysmelb_ParseTreeQuasiQuote_t;
+
+typedef struct sysmelb_ParseTreeQuasiUnquote_s {
+    sysmelb_ParseTreeNode_t *expression;
+} sysmelb_ParseTreeQuasiUnquote_t;
+
+typedef struct sysmelb_ParseTreeSplice_s {
+    sysmelb_ParseTreeNode_t *expression;
+} sysmelb_ParseTreeSplice_t;
+
+// Binding and pattern matching
+typedef struct sysmelb_ParseTreeBindPattern_s {
+    sysmelb_ParseTreeNode_t *pattern;
+    sysmelb_ParseTreeNode_t *value;
+} sysmelb_ParseTreeBindPattern_t;
+
+typedef struct sysmelb_ParseTreeFunctionalDependentPattern_s {
+    sysmelb_ParseTreeNode_t *argumentPattern;
+    sysmelb_ParseTreeNode_t *resultValue;
+    sysmelb_symbol_t *callingConvention;
+} sysmelb_ParseTreeFunctionalDependentPattern_t;
+
+// Assignment
+typedef struct sysmelb_ParseTreeAssignment_s {
+    sysmelb_ParseTreeNode_t *store;
+    sysmelb_ParseTreeNode_t *value;
+} sysmelb_ParseTreeAssignment_t;
 
 // Tagged node union.
 typedef struct sysmelb_ParseTreeNode_s {
@@ -166,6 +222,7 @@ typedef struct sysmelb_ParseTreeNode_s {
         sysmelb_ParseTreeMessageSend_t messageSend;
         sysmelb_ParseTreeMessageCascade_t messageCascade;
         sysmelb_ParseTreeCascadedMessage_t cascadedMessage;
+        sysmelb_ParseTreeBinaryOperatorSequence_t binaryOperatorSequence;
 
         // Sequence
         sysmelb_ParseTreeSequence_t sequence;
@@ -176,6 +233,23 @@ typedef struct sysmelb_ParseTreeNode_s {
         // Dictionary
         sysmelb_ParseTreeDictionary_t dictionary;
         sysmelb_ParseTreeAssociation_t association;
+
+        // Blocks
+        sysmelb_ParseTreeBlockClosure_t blockClosure;
+        sysmelb_ParseTreeLexicalBlock_t lexicalBlock;
+
+        // Macro operators
+        sysmelb_ParseTreeQuote_t quote;
+        sysmelb_ParseTreeQuasiQuote_t quasiQuote;
+        sysmelb_ParseTreeQuasiUnquote_t quasiUnquote;
+        sysmelb_ParseTreeSplice_t splice;
+
+        // Binding and pattern matching.
+        sysmelb_ParseTreeBindPattern_t bindPattern;
+        sysmelb_ParseTreeFunctionalDependentPattern_t functionalDependentPattern;
+
+        // Assignment
+        sysmelb_ParseTreeAssignment_t assignment;
     };
 } sysmelb_ParseTreeNode_t;
 

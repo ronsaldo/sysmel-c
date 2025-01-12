@@ -24,7 +24,7 @@ void sysmelb_dumpParseTree(sysmelb_ParseTreeNode_t *node)
 
     // Literals
     case ParseTreeLiteralIntegerNode:
-        printf("LiteralInteger(%lld)", node->literalInteger.value);
+        printf("LiteralInteger(%lld)", (long long int)node->literalInteger.value);
         break;
     case ParseTreeLiteralCharacterNode:
         printf("LiteralCharacter(%c)", node->literalCharacter.value);
@@ -48,10 +48,10 @@ void sysmelb_dumpParseTree(sysmelb_ParseTreeNode_t *node)
     case ParseTreeFunctionApplication:
         printf("FunctionApplication(");
         sysmelb_dumpParseTree(node->functionApplication.functional);
-        for(size_t i = 0; i < node->functionApplication.argumentCount; ++i)
+        for(size_t i = 0; i < node->functionApplication.arguments.size; ++i)
         {
             printf(", ");
-            sysmelb_dumpParseTree(node->functionApplication.arguments[i]);
+            sysmelb_dumpParseTree(node->functionApplication.arguments.elements[i]);
         }
         printf(")");
         break;
@@ -61,20 +61,20 @@ void sysmelb_dumpParseTree(sysmelb_ParseTreeNode_t *node)
         printf(", ");
         sysmelb_dumpParseTree(node->messageSend.selector);
 
-        for(size_t i = 0; i < node->messageSend.argumentCount; ++i)
+        for(size_t i = 0; i < node->messageSend.arguments.size; ++i)
         {
             printf(", ");
-            sysmelb_dumpParseTree(node->messageSend.arguments[i]);
+            sysmelb_dumpParseTree(node->messageSend.arguments.elements[i]);
         }
         printf(")");    
         break;
     case ParseTreeMessageCascade:
         printf("MessageCascade(");
         sysmelb_dumpParseTree(node->messageCascade.receiver);
-        for(size_t i = 0; i < node->messageCascade.cascadeSize; ++i)
+        for(size_t i = 0; i < node->messageCascade.cascadedMessages.size; ++i)
         {
             printf(", ");
-            sysmelb_dumpParseTree(node->messageCascade.cascadedMessages[i]);
+            sysmelb_dumpParseTree(node->messageCascade.cascadedMessages.elements[i]);
         }
         printf(")");    
         break;
@@ -83,10 +83,10 @@ void sysmelb_dumpParseTree(sysmelb_ParseTreeNode_t *node)
         sysmelb_dumpParseTree(node->cascadedMessage.selector);
         printf(", ");
 
-        for(size_t i = 0; i < node->cascadedMessage.argumentCount; ++i)
+        for(size_t i = 0; i < node->cascadedMessage.arguments.size; ++i)
         {
             printf(", ");
-            sysmelb_dumpParseTree(node->cascadedMessage.arguments[i]);
+            sysmelb_dumpParseTree(node->cascadedMessage.arguments.elements[i]);
         }
         printf(")");
         break;
@@ -152,6 +152,36 @@ void sysmelb_dumpParseTree(sysmelb_ParseTreeNode_t *node)
         }
         printf(")");
         break;
+
+    // Blocks
+    case ParseTreeLexicalBlock:
+        printf("ParseTreeLexicalBlock(");
+        sysmelb_dumpParseTree(node->lexicalBlock.expression);
+        printf(")");
+        break;
+
+    // Macro operators
+    case ParseTreeQuote:
+        printf("ParseTreeQuote(");
+        sysmelb_dumpParseTree(node->quote.expression);
+        printf(")");
+        break;
+    case ParseTreeQuasiQuote:
+        printf("ParseTreeQuasiQuote(");
+        sysmelb_dumpParseTree(node->quasiQuote.expression);
+        printf(")");
+        break;
+    case ParseTreeQuasiUnquote:
+        printf("ParseTreeQuasiQuote(");
+        sysmelb_dumpParseTree(node->quasiUnquote.expression);
+        printf(")");
+        break;
+    case ParseTreeSplice:
+        printf("ParseTreeQuasiQuote(");
+        sysmelb_dumpParseTree(node->splice.expression);
+        printf(")");
+        break;
+
     default:
         abort();
     }

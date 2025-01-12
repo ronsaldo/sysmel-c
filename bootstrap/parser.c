@@ -1,6 +1,7 @@
 #include "parser.h"
 #include "parse-tree.h"
 #include "memory.h"
+#include "string.h"
 #include "symbol.h"
 #include <stdbool.h>
 #include <stdlib.h>
@@ -11,6 +12,10 @@ typedef struct sysmelb_parserState_s sysmelb_parserState_t;
 sysmelb_SourcePosition_t parserState_currentSourcePosition(sysmelb_parserState_t *state);
 sysmelb_ParseTreeNodeDynArray_t parser_parseExpressionListUntilEndOrDelimiter(sysmelb_parserState_t *state, sysmelb_TokenKind_t delimiter);
 sysmelb_ParseTreeNode_t *parser_parseSequenceUntilEndOrDelimiter(sysmelb_parserState_t *state, sysmelb_TokenKind_t delimiter);
+sysmelb_ParseTreeNode_t *parser_parseUnaryPrefixExpression(sysmelb_parserState_t *state);
+sysmelb_ParseTreeNode_t *parser_parseTerm(sysmelb_parserState_t *state);
+sysmelb_ParseTreeNode_t *parser_parseDictionary(sysmelb_parserState_t *state);
+sysmelb_ParseTreeNode_t *parser_parseBlock(sysmelb_parserState_t *state);
 
 void sysmelb_ParseTreeNodeDynArray_incrementCapacity(sysmelb_ParseTreeNodeDynArray_t *dynArray)
 {
@@ -438,537 +443,536 @@ bool parser_isUnaryPostfixTokenKind(sysmelb_TokenKind_t kind)
     }
 }
 
-/*
-    ValuePtr parseUnaryPostfixExpression(sysmelb_parserState_t *state)
-    {
-        auto startPosition = state.position;
-        auto receiver = parseTerm(state);
+sysmelb_ParseTreeNode_t *parser_parseUnaryPostfixExpression(sysmelb_parserState_t *state)
+{
+    size_t startPosition = state->position;
+    sysmelb_ParseTreeNode_t *receiver = parser_parseTerm(state);
 
-        while (isUnaryPostfixTokenKind(parserState_peekKind(state, 0)))
+    while (parser_isUnaryPostfixTokenKind(parserState_peekKind(state, 0)))
+    {
+        sysmelb_ScannerToken_t *token = parserState_peek(state, 0);
+        switch(token->kind)
         {
-            auto token = state.peek();
-            switch(token->kind)
+        case SysmelTokenIdentifier:
             {
-            case TokenKind::Identifier:
-                {
-                    parserState_advance(state);
-                    auto selector = std::make_shared<SyntaxLiteralSymbol> ();
-                    selector->sourcePosition = token->position;
-                    selector->value = token->getValue();
+                parserState_advance(state);
+                sysmelb_symbol_t *selectorSymbol = sysmelb_internSymbol(token->textSize, token->textPosition);
+                sysmelb_ParseTreeNode_t *selector = sysmelb_newParseTreeNode(ParseTreeLiteralSymbolNode, token->sourcePosition);
+                selector->literalSymbol.internedSymbol = selectorSymbol;
 
-                    auto message = std::make_shared<SyntaxMessageSend> ();
-                    message->sourcePosition = state.sourcePositionFrom(startPosition);
-                    message->receiver = receiver;
-                    message->selector = selector;
-                    
-                    receiver = message;
-                }
-                break;
-            case TokenKind::LeftParent:
-                {
-                    parserState_advance(state);
-                    auto arguments = parseExpressionListUntilEndOrDelimiter(state, TokenKind::RightParent);
-                    if(parserState_peekKind(state, 0) == TokenKind::RightParent)
-                        parserState_advance(state);
-                    else
-                        arguments.push_back(state.makeErrorAtCurrentSourcePosition("Expected a right parenthesis"));
-                    
-                    auto application = std::make_shared<SyntaxApplication> ();
-                    application->sourcePosition = state.sourcePositionFrom(startPosition);
-                    application->functional = receiver;
-                    application->arguments = arguments;
-                    application->kind = token->kind;
-                    receiver = application;
-                }
-                break;
-            case TokenKind::LeftBracket:
-            case TokenKind::ByteArrayStart:
-                {
-                    parserState_advance(state);
-                    auto arguments = parseExpressionListUntilEndOrDelimiter(state, TokenKind::RightBracket);
-                    if(parserState_peekKind(state, 0) == TokenKind::RightBracket)
-                        parserState_advance(state);
-                    else
-                        arguments.push_back(state.makeErrorAtCurrentSourcePosition("Expected a right bracket"));
-                    
-                    auto application = std::make_shared<SyntaxApplication> ();
-                    application->sourcePosition = state.sourcePositionFrom(startPosition);
-                    application->functional = receiver;
-                    application->arguments = arguments;
-                    application->kind = token->kind;
-                    receiver = application;
-                }
-                break;
-            case TokenKind::LeftCurlyBracket:
-                {
-                    auto argument = parseBlock(state);
-                    auto application = std::make_shared<SyntaxApplication> ();
-                    application->sourcePosition = state.sourcePositionFrom(startPosition);
-                    application->functional = receiver;
-                    application->arguments.push_back(argument);
-                    application->kind = token->kind;
-                    receiver = application;
-                }
-                break;
-            case TokenKind::DictionaryStart:
-                {
-                    auto argument = parseDictionary(state);
-                    auto application = std::make_shared<SyntaxApplication> ();
-                    application->sourcePosition = state.sourcePositionFrom(startPosition);
-                    application->functional = receiver;
-                    application->arguments.push_back(argument);
-                    application->kind = token->kind;
-                    receiver = application;
-                }
-                break;
-            default:
-                return receiver;
+                sysmelb_ParseTreeNode_t *message = sysmelb_newParseTreeNode(ParseTreeMessageSend, parserState_sourcePositionFrom(state, startPosition));
+                message->messageSend.receiver = receiver;
+                message->messageSend.selector = selector;
+                
+                receiver = message;
             }
-        }
-        return receiver;
-    }
+            break;
+        case SysmelTokenLeftParent:
+            {
+                parserState_advance(state);
+                sysmelb_ParseTreeNodeDynArray_t arguments = parser_parseExpressionListUntilEndOrDelimiter(state, SysmelTokenRightParent);
+                if(parserState_peekKind(state, 0) == SysmelTokenRightParent)
+                    parserState_advance(state);
+                else
+                    sysmelb_ParseTreeNodeDynArray_add(&arguments, parserState_makeErrorAtCurrentSourcePosition(state, "Expected a right parenthesis"));
+                
+                sysmelb_ParseTreeNode_t *application = sysmelb_newParseTreeNode(ParseTreeFunctionApplication, parserState_sourcePositionFrom(state, startPosition));
+                application->functionApplication.functional = receiver;
+                application->functionApplication.arguments = arguments;
+                
+                receiver = application;
+            }
+            break;
+        case SysmelTokenLeftBracket:
+        case SysmelTokenByteArrayStart:
+            {
+                parserState_advance(state);
+                sysmelb_ParseTreeNodeDynArray_t arguments = parser_parseExpressionListUntilEndOrDelimiter(state, SysmelTokenRightBracket);
+                if(parserState_peekKind(state, 0) == SysmelTokenRightParent)
+                    parserState_advance(state);
+                else
+                    sysmelb_ParseTreeNodeDynArray_add(&arguments, parserState_makeErrorAtCurrentSourcePosition(state, "Expected a right parenthesis"));
+                
+                sysmelb_ParseTreeNode_t *application = sysmelb_newParseTreeNode(ParseTreeFunctionApplication, parserState_sourcePositionFrom(state, startPosition));
+                application->functionApplication.functional = receiver;
+                application->functionApplication.arguments = arguments;
+                receiver = application;
+            }
+            break;
+        case SysmelTokenLeftCurlyBracket:
+            {
+                sysmelb_ParseTreeNode_t *argument = parser_parseBlock(state);
 
-    ValuePtr parseQuote(sysmelb_parserState_t *state)
-    {
-        auto startPosition = state.position;
-        assert(parserState_peekKind(state, 0) == TokenKind::Quote);
-        parserState_advance(state);
-        auto term = parseUnaryPrefixExpression(state);
-        auto quoteNode = std::make_shared<SyntaxQuote>();
-        quoteNode->sourcePosition = state.sourcePositionFrom(startPosition);
-        quoteNode->value = term;
-        return quoteNode;
-    }
+                sysmelb_ParseTreeNode_t *application = sysmelb_newParseTreeNode(ParseTreeFunctionApplication, parserState_sourcePositionFrom(state, startPosition));
+                application->functionApplication.functional = receiver;
+                sysmelb_ParseTreeNodeDynArray_add(&application->functionApplication.arguments, argument);
 
-    ValuePtr parseQuasiQuote(sysmelb_parserState_t *state)
-    {
-        auto startPosition = state.position;
-        assert(parserState_peekKind(state, 0) == TokenKind::QuasiQuote);
-        parserState_advance(state);
-        auto term = parseUnaryPrefixExpression(state);
-        auto quoteNode = std::make_shared<SyntaxQuasiQuote>();
-        quoteNode->sourcePosition = state.sourcePositionFrom(startPosition);
-        quoteNode->value = term;
-        return quoteNode;
-    }
+                receiver = application;
+            }
+            break;
+        case SysmelTokenDictionaryStart:
+            {
+                sysmelb_ParseTreeNode_t *argument = parser_parseDictionary(state);
 
-    ValuePtr parseQuasiUnquote(sysmelb_parserState_t *state)
-    {
-        auto startPosition = state.position;
-        assert(parserState_peekKind(state, 0) == TokenKind::QuasiUnquote);
-        parserState_advance(state);
-        auto term = parseUnaryPrefixExpression(state);
-        auto quoteNode = std::make_shared<SyntaxQuasiUnquote>();
-        quoteNode->sourcePosition = state.sourcePositionFrom(startPosition);
-        quoteNode->value = term;
-        return quoteNode;
-    }
+                sysmelb_ParseTreeNode_t *application = sysmelb_newParseTreeNode(ParseTreeFunctionApplication, parserState_sourcePositionFrom(state, startPosition));
+                application->functionApplication.functional = receiver;
+                sysmelb_ParseTreeNodeDynArray_add(&application->functionApplication.arguments, argument);
 
-    ValuePtr parseSplice(sysmelb_parserState_t *state)
-    {
-        auto startPosition = state.position;
-        assert(parserState_peekKind(state, 0) == TokenKind::Splice);
-        parserState_advance(state);
-        auto term = parseUnaryPrefixExpression(state);
-        auto spliceNode = std::make_shared<SyntaxSplice>();
-        spliceNode->sourcePosition = state.sourcePositionFrom(startPosition);
-        spliceNode->value = term;
-        return spliceNode;
-    }
-
-    ValuePtr parseUnaryPrefixExpression(sysmelb_parserState_t *state)
-    {
-        switch (parserState_peekKind(state, 0))
-        {
-        case TokenKind::Quote:
-            return parseQuote(state);
-        case TokenKind::QuasiQuote:
-            return parseQuasiQuote(state);
-        case TokenKind::QuasiUnquote:
-            return parseQuasiUnquote(state);
-        case TokenKind::Splice:
-            return parseSplice(state);
+                receiver = application;
+            }
+            break;
         default:
-            return parseUnaryPostfixExpression(state);
-        }
-    }
-
-    ValuePtr parseBinaryExpressionSequence(sysmelb_parserState_t *state)
-    {
-        auto startPosition = state.position;
-        auto operand = parseUnaryPrefixExpression(state);
-        if (!isBinaryExpressionOperator(parserState_peekKind(state, 0)))
-            return operand;
-
-        std::vector<ValuePtr> elements;
-        elements.push_back(operand);
-        while (isBinaryExpressionOperator(parserState_peekKind(state, 0)))
-        {
-            auto operatorToken = state.next();
-            auto operatorNode = std::make_shared<SyntaxLiteralSymbol>();
-            operatorNode->sourcePosition = operatorToken->position;
-            operatorNode->value = operatorToken->getValue();
-            elements.push_back(operatorNode);
-
-            auto operand = parseUnaryPrefixExpression(state);
-            elements.push_back(operand);
-        }
-
-        auto binaryExpression = std::make_shared<SyntaxBinaryExpressionSequence>();
-        binaryExpression->sourcePosition = state.sourcePositionFrom(startPosition);
-        binaryExpression->elements.swap(elements);
-        return binaryExpression;
-    }
-
-    ValuePtr parseAssociationExpression(sysmelb_parserState_t *state)
-    {
-        auto startPosition = state.position;
-        auto key = parseBinaryExpressionSequence(state);
-
-        if (parserState_peekKind(state, 0) != TokenKind::Colon)
-            return key;
-
-        parserState_advance(state);
-        auto value = parseAssociationExpression(state);
-        auto assoc = std::make_shared<SyntaxAssociation>();
-        assoc->sourcePosition = state.sourcePositionFrom(startPosition);
-        assoc->key = key;
-        assoc->value = value;
-        return assoc;
-    }
-
-    ValuePtr parseKeywordApplication(sysmelb_parserState_t *state)
-    {
-        assert(parserState_peekKind(state, 0) == TokenKind::Keyword);
-        auto startPosition = state.position;
-
-        std::string symbolValue;
-        std::vector<ValuePtr> arguments;
-
-        while (parserState_peekKind(state, 0) == TokenKind::Keyword)
-        {
-            auto keywordToken = state.next();
-            symbolValue.append(keywordToken->getValue());
-
-            auto argument = parseAssociationExpression(state);
-            arguments.push_back(argument);
-        }
-
-        auto identifier = std::make_shared<SyntaxLiteralSymbol>();
-        identifier->sourcePosition = state.sourcePositionFrom(startPosition);
-        identifier->value = symbolValue;
-
-        auto messageSend = std::make_shared<SyntaxMessageSend>();
-        messageSend->sourcePosition = state.sourcePositionFrom(startPosition);
-        messageSend->selector = identifier;
-        messageSend->arguments = arguments;
-        return messageSend;
-    }
-
-    ValuePtr parseKeywordMessageSend(sysmelb_parserState_t *state)
-    {
-        auto startPosition = state.position;
-        auto receiver = parseAssociationExpression(state);
-        if(parserState_peekKind(state, 0) != TokenKind::Keyword)
             return receiver;
-        
-        std::string selectorValue;
-        std::vector<ValuePtr> arguments;
-
-        while(parserState_peekKind(state, 0) == TokenKind::Keyword)
-        {
-            auto keywordToken = state.next();
-            selectorValue.append(keywordToken->getValue());
-
-            auto argument = parseAssociationExpression(state);
-            arguments.push_back(argument);
-        }
-
-        auto selectorSymbol = std::make_shared<SyntaxLiteralSymbol> ();
-        selectorSymbol->sourcePosition = state.sourcePositionFrom(startPosition);
-        selectorSymbol->value = selectorValue;
-
-        auto messageSend = std::make_shared<SyntaxMessageSend> ();
-        messageSend->sourcePosition = state.sourcePositionFrom(startPosition);
-        messageSend->receiver = receiver;
-        messageSend->selector = selectorSymbol;
-        messageSend->arguments.swap(arguments);
-        return messageSend;
-    }
-
-    ValuePtr parseCascadedMessage(sysmelb_parserState_t *state)
-    {
-        auto startPosition = state.position;
-        auto token = state.peek();
-        if(parserState_peekKind(state, 0) == TokenKind::Identifier)
-        {
-            parserState_advance(state);
-            
-            auto selector = std::make_shared<SyntaxLiteralSymbol> ();
-            selector->sourcePosition = token->getSourcePosition();
-            selector->value = token->getValue();
-
-            auto cascadedMessage = std::make_shared<SyntaxMessageCascadeMessage> ();
-            cascadedMessage->sourcePosition = state.sourcePositionFrom(startPosition);
-            cascadedMessage->selector = selector;
-            return cascadedMessage;
-        }
-        else if(parserState_peekKind(state, 0) == TokenKind::Keyword)
-        {
-            std::string selectorValue;
-            std::vector<ValuePtr> arguments;
-
-            while(parserState_peekKind(state, 0) == TokenKind::Keyword)
-            {
-                auto keywordToken = state.next();
-                selectorValue.append(keywordToken->getValue());
-
-                auto argument = parseBinaryExpressionSequence(state);
-                arguments.push_back(argument);
-            }
-
-            auto selector = std::make_shared<SyntaxLiteralSymbol> ();
-            selector->sourcePosition = state.sourcePositionFrom(startPosition);
-            selector->value = selectorValue;
-
-            auto cascadedMessage = std::make_shared<SyntaxMessageCascadeMessage> ();
-            cascadedMessage->sourcePosition = state.sourcePositionFrom(startPosition);
-            cascadedMessage->selector = selector;
-            cascadedMessage->arguments.swap(arguments);
-            return cascadedMessage;
-        }
-        else if(isBinaryExpressionOperator(parserState_peekKind(state, 0)))
-        {
-            parserState_advance(state);
-            auto selector = std::make_shared<SyntaxLiteralSymbol> ();
-            selector->sourcePosition = state.sourcePositionFrom(startPosition);
-            selector->value = token->getValue();
-
-            auto argument = parseUnaryPostfixExpression(state);
-
-            auto cascadedMessage = std::make_shared<SyntaxMessageCascadeMessage> ();
-            cascadedMessage->sourcePosition = state.sourcePositionFrom(startPosition);
-            cascadedMessage->selector = selector;
-            cascadedMessage->arguments.push_back(argument);
-            return cascadedMessage;
-        }
-        else
-        {
-            return state.makeErrorAtCurrentSourcePosition("Expected a cascaded message.");
         }
     }
+    return receiver;
+}
 
-    ValuePtr parseMessageCascade(sysmelb_parserState_t *state)
+sysmelb_ParseTreeNode_t *parser_parseQuote(sysmelb_parserState_t *state)
+{
+    size_t startPosition = state->position;
+    assert(parserState_peekKind(state, 0) == SysmelTokenQuote);
+    parserState_advance(state);
+    sysmelb_ParseTreeNode_t *term = parser_parseUnaryPrefixExpression(state);
+
+    sysmelb_ParseTreeNode_t *node = sysmelb_newParseTreeNode(ParseTreeQuote, parserState_sourcePositionFrom(state, startPosition));
+    node->quote.expression = term;
+    return node;
+}
+
+sysmelb_ParseTreeNode_t *parser_parseQuasiQuote(sysmelb_parserState_t *state)
+{
+    size_t startPosition = state->position;
+    assert(parserState_peekKind(state, 0) == SysmelTokenQuasiQuote);
+    parserState_advance(state);
+    sysmelb_ParseTreeNode_t *term = parser_parseUnaryPrefixExpression(state);
+
+    sysmelb_ParseTreeNode_t *node = sysmelb_newParseTreeNode(ParseTreeQuasiQuote, parserState_sourcePositionFrom(state, startPosition));
+    node->quasiQuote.expression = term;
+    return node;
+}
+
+sysmelb_ParseTreeNode_t *parser_parseQuasiUnquote(sysmelb_parserState_t *state)
+{
+    size_t startPosition = state->position;
+    assert(parserState_peekKind(state, 0) == SysmelTokenQuasiUnquote);
+    parserState_advance(state);
+    sysmelb_ParseTreeNode_t *term = parser_parseUnaryPrefixExpression(state);
+
+    sysmelb_ParseTreeNode_t *node = sysmelb_newParseTreeNode(ParseTreeQuasiUnquote, parserState_sourcePositionFrom(state, startPosition));
+    node->quasiUnquote.expression = term;
+    return node;
+}
+
+sysmelb_ParseTreeNode_t *parser_parseSplice(sysmelb_parserState_t *state)
+{
+    size_t startPosition = state->position;
+    assert(parserState_peekKind(state, 0) == SysmelTokenSplice);
+    parserState_advance(state);
+    sysmelb_ParseTreeNode_t *term = parser_parseUnaryPrefixExpression(state);
+
+    sysmelb_ParseTreeNode_t *node = sysmelb_newParseTreeNode(ParseTreeSplice, parserState_sourcePositionFrom(state, startPosition));
+    node->splice.expression = term;
+    return node;
+}
+
+sysmelb_ParseTreeNode_t *parser_parseUnaryPrefixExpression(sysmelb_parserState_t *state)
+{
+    switch (parserState_peekKind(state, 0))
     {
-        auto startPosition = state.position;
-        auto firstMessage = parseKeywordMessageSend(state);
-        if (parserState_peekKind(state, 0) != TokenKind::Semicolon)
-            return firstMessage;
-        
-        auto messageCascade = firstMessage->asMessageCascade();
-        while (parserState_peekKind(state, 0) == TokenKind::Semicolon)
-        {
-            parserState_advance(state);
-            auto cascadedMessage = parseCascadedMessage(state);
-            messageCascade->messages.push_back(cascadedMessage);
-        }
+    case SysmelTokenQuote:
+        return parser_parseQuote(state);
+    case SysmelTokenQuasiQuote:
+        return parser_parseQuasiQuote(state);
+    case SysmelTokenQuasiUnquote:
+        return parser_parseQuasiUnquote(state);
+    case SysmelTokenSplice:
+        return parser_parseSplice(state);
+    default:
+        return parser_parseUnaryPostfixExpression(state);
+    }
+}
 
-        messageCascade->sourcePosition = state.sourcePositionFrom(startPosition);
-        return messageCascade;
+sysmelb_ParseTreeNode_t *parser_parseBinaryExpressionSequence(sysmelb_parserState_t *state)
+{
+    size_t startPosition = state->position;
+    sysmelb_ParseTreeNode_t *operand = parser_parseUnaryPrefixExpression(state);
+    if (!parser_isBinaryExpressionOperator(parserState_peekKind(state, 0)))
+        return operand;
+
+    sysmelb_ParseTreeNodeDynArray_t elements = {0};
+    sysmelb_ParseTreeNodeDynArray_add(&elements, operand);
+    
+    while (parser_isBinaryExpressionOperator(parserState_peekKind(state, 0)))
+    {
+        sysmelb_ScannerToken_t *operatorToken = parserState_next(state);
+        sysmelb_symbol_t *operatorSymbol = sysmelb_internSymbol(operatorToken->textSize, operatorToken->textPosition);
+        sysmelb_ParseTreeNode_t *operator = sysmelb_newParseTreeNode(ParseTreeLiteralSymbolNode, operatorToken->sourcePosition);
+        operator->literalSymbol.internedSymbol = operatorSymbol;
+        sysmelb_ParseTreeNodeDynArray_add(&elements, operator);
+
+        operand = parser_parseUnaryPrefixExpression(state);
+        sysmelb_ParseTreeNodeDynArray_add(&elements, operand);
     }
 
-    ValuePtr parseLowPrecedenceExpression(sysmelb_parserState_t *state)
+    sysmelb_ParseTreeNode_t *node = sysmelb_newParseTreeNode(ParseTreeBinaryOperatorSequence, parserState_sourcePositionFrom(state, startPosition));
+    node->binaryOperatorSequence.elements = elements;
+    return node;
+}
+
+sysmelb_ParseTreeNode_t *parser_parseAssociationExpression(sysmelb_parserState_t *state)
+{
+    size_t startPosition = state->position;
+    sysmelb_ParseTreeNode_t *key = parser_parseBinaryExpressionSequence(state);
+
+    if (parserState_peekKind(state, 0) != SysmelTokenColon)
+        return key;
+
+    parserState_advance(state);
+    sysmelb_ParseTreeNode_t * value = parser_parseAssociationExpression(state);
+
+    sysmelb_ParseTreeNode_t *node = sysmelb_newParseTreeNode(ParseTreeAssociation, parserState_sourcePositionFrom(state, startPosition));
+    node->association.key = key;
+    node->association.value = value;
+    return node;
+}
+
+sysmelb_ParseTreeNode_t *parser_parseKeywordApplication(sysmelb_parserState_t *state)
+{
+    assert(parserState_peekKind(state, 0) == SysmelTokenKeyword);
+    size_t startPosition = state->position;
+
+    sysmelb_dynstring_t selectorStream = {0};
+    sysmelb_ParseTreeNodeDynArray_t arguments = {0};
+
+    while(parserState_peekKind(state, 0) == SysmelTokenKeyword)
     {
-        if (parserState_peekKind(state, 0) == TokenKind::Keyword)
-            return parseKeywordApplication(state);
-        return parseMessageCascade(state);
+        sysmelb_ScannerToken_t *keywordToken = parserState_next(state);
+        sysmelb_dynstring_append(&selectorStream, keywordToken->textSize, keywordToken->textPosition);
+
+        sysmelb_ParseTreeNode_t *argument = parser_parseBinaryExpressionSequence(state);
+        sysmelb_ParseTreeNodeDynArray_add(&arguments, argument);
     }
 
-    ValuePtr parseAssignmentExpression(sysmelb_parserState_t *state)
+    sysmelb_symbol_t *identifierSymbol = sysmelb_internSymbol(selectorStream.size, selectorStream.data);
+
+    sysmelb_ParseTreeNode_t *identifierReference = sysmelb_newParseTreeNode(ParseTreeIdentifierReference, parserState_sourcePositionFrom(state, startPosition));
+    identifierReference->identifierReference.identifier = identifierSymbol;
+
+    sysmelb_ParseTreeNode_t *application = sysmelb_newParseTreeNode(ParseTreeFunctionApplication, parserState_sourcePositionFrom(state, startPosition)); 
+    application->functionApplication.functional = identifierReference;
+    application->functionApplication.arguments = arguments;
+    return application;
+}
+
+sysmelb_ParseTreeNode_t *parser_parseKeywordMessageSend(sysmelb_parserState_t *state)
+{
+    size_t startPosition = state->position;
+    sysmelb_ParseTreeNode_t *receiver = parser_parseAssociationExpression(state);
+    if(parserState_peekKind(state, 0) != SysmelTokenKeyword)
+        return receiver;
+    
+    sysmelb_dynstring_t selectorStream = {0};
+    sysmelb_ParseTreeNodeDynArray_t arguments = {0};
+
+    while(parserState_peekKind(state, 0) == SysmelTokenKeyword)
     {
-        auto startPosition = state.position;
-        auto assignedStore = parseLowPrecedenceExpression(state);
-        if (parserState_peekKind(state, 0) == TokenKind::Assignment)
-        {
-            parserState_advance(state);
-            auto assignedValue = parseAssignmentExpression(state);
-            auto assignment = std::make_shared<SyntaxAssignment>();
-            assignment->sourcePosition = state.sourcePositionFrom(startPosition);
-            assignment->store = assignedStore;
-            assignment->value = assignedValue;
-            return assignment;
-        }
-        else
-        {
-            return assignedStore;
-        }
+        sysmelb_ScannerToken_t *keywordToken = parserState_next(state);
+        sysmelb_dynstring_append(&selectorStream, keywordToken->textSize, keywordToken->textPosition);
+
+        sysmelb_ParseTreeNode_t *argument = parser_parseBinaryExpressionSequence(state);
+        sysmelb_ParseTreeNodeDynArray_add(&arguments, argument);
     }
 
-    ValuePtr parseCommaExpression(sysmelb_parserState_t *state)
+    sysmelb_symbol_t *selectorSymbol = sysmelb_internSymbol(selectorStream.size, selectorStream.data);
+    
+    sysmelb_ParseTreeNode_t *selector = sysmelb_newParseTreeNode(ParseTreeLiteralSymbolNode, parserState_sourcePositionFrom(state, startPosition));
+    selector->literalSymbol.internedSymbol = selectorSymbol;
+
+    sysmelb_ParseTreeNode_t *node = sysmelb_newParseTreeNode(ParseTreeMessageSend, parserState_sourcePositionFrom(state, startPosition));
+    node->messageSend.receiver = receiver;
+    node->messageSend.selector = selector;
+    node->messageSend.arguments = arguments;
+    return node;
+}
+
+sysmelb_ParseTreeNode_t *parser_parseCascadedMessage(sysmelb_parserState_t *state)
+{
+    size_t startPosition = state->position;
+    sysmelb_ScannerToken_t *token = parserState_peek(state, 0);
+    if(parserState_peekKind(state, 0) == SysmelTokenIdentifier)
     {
-        auto startingPosition = state.position;
-        auto element = parseAssignmentExpression(state);
-
-        if (parserState_peekKind(state, 0) != TokenKind::Comma)
-            return element;
-
-        std::vector<ValuePtr> elements;
-        elements.push_back(element);
-
-        while (parserState_peekKind(state, 0) == TokenKind::Comma)
-        {
-            parserState_advance(state);
-            element = parseAssignmentExpression(state);
-            elements.push_back(element);
-        }
-
-        auto tuple = std::make_shared<SyntaxTuple>();
-        tuple->sourcePosition = state.sourcePositionFrom(startingPosition);
-        tuple->elements = elements;
-        return tuple;
-    }
-
-    ValuePtr parseFunctionalType(sysmelb_parserState_t *state)
-    {
-        auto startPosition = state.position;
-        auto argumentPatternOrExpression = parseCommaExpression(state);
-
-        if (parserState_peekKind(state, 0) == TokenKind::ColonColon)
-        {
-            parserState_advance(state);
-            auto resultTypeExpression = parseFunctionalType(state);
-            auto functionalType = std::make_shared<SyntaxFunctionalDependentType>();
-            functionalType->sourcePosition = state.sourcePositionFrom(startPosition);
-            functionalType->argumentPattern = argumentPatternOrExpression;
-            functionalType->resultType = resultTypeExpression;
-            return functionalType;
-        }
-
-        return argumentPatternOrExpression;
-    }
-
-    ValuePtr parseBlock(sysmelb_parserState_t *state)
-    {
-        // {
-        auto startPosition = state.position;
-        assert(parserState_peekKind(state, 0) == TokenKind::LeftCurlyBracket);
         parserState_advance(state);
+        
+        sysmelb_ParseTreeNode_t *selector = sysmelb_newParseTreeNode(ParseTreeLiteralSymbolNode, token->sourcePosition);
+        selector->literalSymbol.internedSymbol = sysmelb_internSymbol(token->textSize, token->textPosition);
 
-        ValuePtr functionalType;
-        if (parserState_peekKind(state, 0) == TokenKind::Bar)
-        {
-            parserState_advance(state);
-            if (parserState_peekKind(state, 0) == TokenKind::Bar)
-            {
-                auto functionalTypeNode = std::make_shared<SyntaxFunctionalDependentType>();
-                functionalTypeNode->sourcePosition = state.currentSourcePosition();
-                functionalType = functionalTypeNode;
-            }
-            else
-            {
-                functionalType = parseFunctionalType(state);
-                state.expectAddingErrorToNode(TokenKind::Bar, functionalType);
-            }
-        }
-        // Body
-        auto body = parseSequenceUntilEndOrDelimiter(state, TokenKind::RightCurlyBracket);
-        body = state.expectAddingErrorToNode(TokenKind::RightCurlyBracket, body);
-
-        if (functionalType)
-        {
-            auto block = std::make_shared<SyntaxBlock>();
-            block->sourcePosition = state.sourcePositionFrom(startPosition);
-            block->functionType = functionalType;
-            block->body = body;
-            return block;
-        }
-        else
-        {
-            auto lexicalBlock = std::make_shared<SyntaxLexicalBlock>();
-            lexicalBlock->sourcePosition = state.sourcePositionFrom(startPosition);
-            lexicalBlock->body = body;
-            return lexicalBlock;
-        }
+        sysmelb_ParseTreeNode_t *cascadedMessage = sysmelb_newParseTreeNode(ParseTreeCascadedMessage, parserState_sourcePositionFrom(state, startPosition));
+        cascadedMessage->cascadedMessage.selector = selector;
+        return cascadedMessage;
     }
-
-    ValuePtr parseDictionaryAssociation(sysmelb_parserState_t *state)
+    else if(parserState_peekKind(state, 0) == SysmelTokenKeyword)
     {
-        auto startPosition = state.position;
-        ValuePtr key;
-        ValuePtr value;
-        if(parserState_peekKind(state, 0) == TokenKind::Keyword)
-        {
-            auto keyToken = state.next();
-            auto keyTokenValue = keyToken->getValue();
-            auto keySymbol = std::make_shared<SyntaxLiteralSymbol> ();
-            keySymbol->sourcePosition = keyToken->position;
-            keySymbol->value = keyTokenValue.substr(0, keyTokenValue.size() - 1);
-            key = keySymbol;
+        sysmelb_dynstring_t selectorStream = {0};
+        sysmelb_ParseTreeNodeDynArray_t arguments = {0};
 
-            if(parserState_peekKind(state, 0) != TokenKind::Dot && parserState_peekKind(state, 0) != TokenKind::RightCurlyBracket)
-                value = parseAssociationExpression(state);
-        }
-        else
+        while(parserState_peekKind(state, 0) == SysmelTokenKeyword)
         {
-            key = parseBinaryExpressionSequence(state);
-            if(parserState_peekKind(state, 0) == TokenKind::Colon)
-            {
-                parserState_advance(state);
-                value = parseAssociationExpression(state);
-            }
+            sysmelb_ScannerToken_t *keywordToken = parserState_next(state);
+            sysmelb_dynstring_append(&selectorStream, keywordToken->textSize, keywordToken->textPosition);
+
+            sysmelb_ParseTreeNode_t *argument = parser_parseBinaryExpressionSequence(state);
+            sysmelb_ParseTreeNodeDynArray_add(&arguments, argument);
         }
 
-        auto dictAssociation = std::make_shared<SyntaxAssociation> ();
-        dictAssociation->sourcePosition = state.sourcePositionFrom(startPosition);
-        dictAssociation->key = key;
-        dictAssociation->value = value;
-        return dictAssociation;
+        sysmelb_symbol_t *selectorSymbol = sysmelb_internSymbol(selectorStream.size, selectorStream.data);
+        
+        sysmelb_ParseTreeNode_t *selector = sysmelb_newParseTreeNode(ParseTreeLiteralSymbolNode, parserState_sourcePositionFrom(state, startPosition));
+        selector->literalSymbol.internedSymbol = selectorSymbol;
+
+        sysmelb_ParseTreeNode_t *cascadedMessage = sysmelb_newParseTreeNode(ParseTreeCascadedMessage, parserState_sourcePositionFrom(state, startPosition));
+        cascadedMessage->cascadedMessage.selector = selector;
+        cascadedMessage->cascadedMessage.arguments = arguments;
+        return cascadedMessage;
     }
-
-    ValuePtr parseDictionary(sysmelb_parserState_t *state)
+    else if(parser_isBinaryExpressionOperator(parserState_peekKind(state, 0)))
     {
-        // {
-        auto startPosition = state.position;
-        assert(parserState_peekKind(state, 0) == TokenKind::DictionaryStart);
         parserState_advance(state);
+        sysmelb_symbol_t *selectorSymbol = sysmelb_internSymbol(token->textSize, token->textPosition);
 
-        // Chop the initial dots
-        while (parserState_peekKind(state, 0) == TokenKind::Dot)
-            parserState_advance(state);
+        sysmelb_ParseTreeNode_t *selector = sysmelb_newParseTreeNode(ParseTreeLiteralSymbolNode, token->sourcePosition);
+        selector->literalSymbol.internedSymbol = selectorSymbol;
 
-        // Parse the next expression
-        bool expectsExpression = true;
-        std::vector<ValuePtr> elements;
-        while (!parserState_atEnd(state) and parserState_peekKind(state, 0) != TokenKind::RightCurlyBracket)
+        sysmelb_ParseTreeNode_t *argument = parser_parseUnaryPostfixExpression(state);
+
+        sysmelb_ParseTreeNode_t *cascadedMessage = sysmelb_newParseTreeNode(ParseTreeCascadedMessage, parserState_sourcePositionFrom(state, startPosition));
+        cascadedMessage->cascadedMessage.selector = selector;
+        sysmelb_ParseTreeNodeDynArray_add(&cascadedMessage->cascadedMessage.arguments, argument);
+        return cascadedMessage;
+    }
+    else
+    {
+        return parserState_makeErrorAtCurrentSourcePosition(state, "Expected a cascaded message.");
+    }
+}
+
+sysmelb_ParseTreeNode_t *parser_parseMessageCascade(sysmelb_parserState_t *state)
+{
+    size_t startPosition = state->position;
+    sysmelb_ParseTreeNode_t *firstMessageOrReceiver = parser_parseKeywordMessageSend(state);
+    if (parserState_peekKind(state, 0) != SysmelTokenSemicolon)
+        return firstMessageOrReceiver;
+    
+    sysmelb_ParseTreeNode_t *receiver = firstMessageOrReceiver;
+    sysmelb_ParseTreeNodeDynArray_t cascadedMessages = {0};
+    if(firstMessageOrReceiver->kind == ParseTreeMessageSend)
+    {
+        receiver = firstMessageOrReceiver->messageSend.receiver;
+        
+        sysmelb_ParseTreeNode_t *firstCascadedMessage = sysmelb_newParseTreeNode(ParseTreeCascadedMessage, firstMessageOrReceiver->sourcePosition);
+        firstCascadedMessage->cascadedMessage.selector = firstMessageOrReceiver->messageSend.selector;
+        firstCascadedMessage->cascadedMessage.arguments = firstMessageOrReceiver->messageSend.arguments;
+        sysmelb_ParseTreeNodeDynArray_add(&cascadedMessages, firstCascadedMessage);
+    }
+
+    while (parserState_peekKind(state, 0) == SysmelTokenSemicolon)
+    {
+        parserState_advance(state);
+        sysmelb_ParseTreeNode_t *cascadedMessage = parser_parseCascadedMessage(state);
+        sysmelb_ParseTreeNodeDynArray_add(&cascadedMessages, cascadedMessage);
+    }
+
+    sysmelb_ParseTreeNode_t *messageCascade = sysmelb_newParseTreeNode(ParseTreeMessageCascade, parserState_sourcePositionFrom(state, startPosition));
+    messageCascade->messageCascade.receiver = receiver;
+    messageCascade->messageCascade.cascadedMessages = cascadedMessages;
+    return messageCascade;
+}
+
+sysmelb_ParseTreeNode_t *parser_parseLowPrecedenceExpression(sysmelb_parserState_t *state)
+{
+    if (parserState_peekKind(state, 0) == SysmelTokenKeyword)
+        return parser_parseKeywordApplication(state);
+    return parser_parseMessageCascade(state);
+}
+
+sysmelb_ParseTreeNode_t *parser_parseAssignmentExpression(sysmelb_parserState_t *state)
+{
+    size_t startPosition = state->position;
+    sysmelb_ParseTreeNode_t *assignedStore = parser_parseLowPrecedenceExpression(state);
+    if (parserState_peekKind(state, 0) == SysmelTokenAssignment)
+    {
+        parserState_advance(state);
+        sysmelb_ParseTreeNode_t *assignedValue = parser_parseAssignmentExpression(state);
+
+        sysmelb_ParseTreeNode_t *assignment = sysmelb_newParseTreeNode(ParseTreeAssignment, parserState_sourcePositionFrom(state, startPosition));
+        assignment->assignment.store = assignedStore;
+        assignment->assignment.value = assignedValue;
+        return assignment;
+    }
+    else
+    {
+        return assignedStore;
+    }
+}
+
+sysmelb_ParseTreeNode_t *parser_parseCommaExpression(sysmelb_parserState_t *state)
+{
+    size_t startingPosition = state->position;
+    sysmelb_ParseTreeNode_t *element = parser_parseAssignmentExpression(state);
+
+    if (parserState_peekKind(state, 0) != SysmelTokenComma)
+        return element;
+
+    sysmelb_ParseTreeNodeDynArray_t elements = {0};
+    sysmelb_ParseTreeNodeDynArray_add(&elements, element);
+
+    while (parserState_peekKind(state, 0) == SysmelTokenComma)
+    {
+        parserState_advance(state);
+        element = parser_parseAssignmentExpression(state);
+        sysmelb_ParseTreeNodeDynArray_add(&elements, element);
+    }
+
+    sysmelb_ParseTreeNode_t *tuple = sysmelb_newParseTreeNode(ParseTreeTuple, parserState_sourcePositionFrom(state, startingPosition));
+    tuple->tuple.elements = elements;
+    return tuple;
+}
+
+sysmelb_ParseTreeNode_t *parser_parseFunctionalType(sysmelb_parserState_t *state)
+{
+    size_t startPosition = state->position;
+    sysmelb_ParseTreeNode_t *argumentPatternOrExpression = parser_parseCommaExpression(state);
+
+    if (parserState_peekKind(state, 0) == SysmelTokenColonColon)
+    {
+        parserState_advance(state);
+        sysmelb_ParseTreeNode_t *resultTypeExpression = parser_parseFunctionalType(state);
+        
+        sysmelb_ParseTreeNode_t *functionalType = sysmelb_newParseTreeNode(ParseTreeFunctionalDependentPattern, parserState_sourcePositionFrom(state, startPosition));
+        functionalType->functionalDependentPattern.argumentPattern = argumentPatternOrExpression;
+        functionalType->functionalDependentPattern.resultValue = resultTypeExpression;
+        return functionalType;
+    }
+
+    return argumentPatternOrExpression;
+}
+
+sysmelb_ParseTreeNode_t *parser_parseBlock(sysmelb_parserState_t *state)
+{
+    // {
+    size_t startPosition = state->position;
+    assert(parserState_peekKind(state, 0) == SysmelTokenLeftCurlyBracket);
+    parserState_advance(state);
+
+    sysmelb_ParseTreeNode_t *functionalType = NULL;
+    if (parserState_peekKind(state, 0) == SysmelTokenBar)
+    {
+        parserState_advance(state);
+        if (parserState_peekKind(state, 0) == SysmelTokenBar)
         {
-            if (!expectsExpression)
-                elements.push_back(state.makeErrorAtCurrentSourcePosition("Expected dot before association."));
-
-            auto expression = parseDictionaryAssociation(state);
-            elements.push_back(expression);
-
-            expectsExpression = false;
-            // Chop the next dot sequence
-            while (parserState_peekKind(state, 0) == TokenKind::Dot)
-            {
-                expectsExpression = true;
-                parserState_advance(state);
-            }
+            functionalType = sysmelb_newParseTreeNode(ParseTreeFunctionalDependentPattern, parserState_currentSourcePosition(state));
         }
-
-        // }
-        if(parserState_peekKind(state, 0) == TokenKind::RightCurlyBracket)
-            parserState_advance(state);
         else
-            elements.push_back(state.makeErrorAtCurrentSourcePosition("Expected a right curly bracket."));
-
-        auto dictionary = std::make_shared<SyntaxDictionary> ();
-        dictionary->sourcePosition = state.sourcePositionFrom(startPosition);
-        dictionary->elements.swap(elements);
-        return dictionary;
+        {
+            functionalType = parser_parseFunctionalType(state);
+            parserState_expectAddingErrorToNode(state, SysmelTokenBar, functionalType);
+        }
     }
     
+    // Body
+    sysmelb_ParseTreeNode_t *body = parser_parseSequenceUntilEndOrDelimiter(state, SysmelTokenRightCurlyBracket);
+    parserState_expectAddingErrorToNode(state, SysmelTokenRightCurlyBracket, body);
 
+    if (functionalType)
+    {
+        sysmelb_ParseTreeNode_t *blockClosure = sysmelb_newParseTreeNode(ParseTreeBlockClosure, parserState_sourcePositionFrom(state, startPosition));
+        blockClosure->blockClosure.functionType = functionalType;
+        blockClosure->blockClosure.body = body;
+        return blockClosure;
+    }
+    else
+    {
+        sysmelb_ParseTreeNode_t *lexicalBlock = sysmelb_newParseTreeNode(ParseTreeLexicalBlock, parserState_sourcePositionFrom(state, startPosition));
+        lexicalBlock->lexicalBlock.expression = body;
+        return lexicalBlock;
+    }
+}
+
+sysmelb_ParseTreeNode_t *parser_parseDictionaryAssociation(sysmelb_parserState_t *state)
+{
+    size_t startPosition = state->position;
+    sysmelb_ParseTreeNode_t *key = NULL;
+    sysmelb_ParseTreeNode_t *value = NULL;
+    if(parserState_peekKind(state, 0) == SysmelTokenKeyword)
+    {
+        sysmelb_ScannerToken_t *keyToken = parserState_next(state);
+        sysmelb_symbol_t *keySymbol = sysmelb_internSymbol(keyToken->textSize - 1, keyToken->textPosition);
+        key = sysmelb_newParseTreeNode(ParseTreeLiteralSymbolNode, keyToken->sourcePosition);
+        key->literalSymbol.internedSymbol = keySymbol;
+
+        if(parserState_peekKind(state, 0) != SysmelTokenDot && parserState_peekKind(state, 0) != SysmelTokenRightCurlyBracket)
+            value = parser_parseAssociationExpression(state);
+    }
+    else
+    {
+        key = parser_parseBinaryExpressionSequence(state);
+        if(parserState_peekKind(state, 0) == SysmelTokenColon)
+        {
+            parserState_advance(state);
+            value = parser_parseAssociationExpression(state);
+        }
+    }
+
+    sysmelb_ParseTreeNode_t *dictAssociation = sysmelb_newParseTreeNode(ParseTreeAssociation, parserState_sourcePositionFrom(state, startPosition));
+    dictAssociation->association.key = key;
+    dictAssociation->association.value = value;
+    return dictAssociation;
+}
+
+sysmelb_ParseTreeNode_t *parser_parseDictionary(sysmelb_parserState_t *state)
+{
+    // {
+    size_t startPosition = state->position;
+    assert(parserState_peekKind(state, 0) == SysmelTokenDictionaryStart);
+    parserState_advance(state);
+
+    // Chop the initial dots
+    while (parserState_peekKind(state, 0) == SysmelTokenDot)
+        parserState_advance(state);
+
+    // Parse the next expression
+    bool expectsExpression = true;
+    sysmelb_ParseTreeNodeDynArray_t elements = {0};
+    
+    while (!parserState_atEnd(state) && parserState_peekKind(state, 0) != SysmelTokenRightCurlyBracket)
+    {
+        if (!expectsExpression)
+            sysmelb_ParseTreeNodeDynArray_add(&elements, parserState_makeErrorAtCurrentSourcePosition(state, "Expected dot before association."));
+
+        sysmelb_ParseTreeNode_t *expression = parser_parseDictionaryAssociation(state);
+        sysmelb_ParseTreeNodeDynArray_add(&elements, expression);
+
+        expectsExpression = false;
+        // Chop the next dot sequence
+        while (parserState_peekKind(state, 0) == SysmelTokenDot)
+        {
+            expectsExpression = true;
+            parserState_advance(state);
+        }
+    }
+
+    // }
+    if(parserState_peekKind(state, 0) == SysmelTokenRightCurlyBracket)
+        parserState_advance(state);
+    else
+        sysmelb_ParseTreeNodeDynArray_add(&elements, parserState_makeErrorAtCurrentSourcePosition(state, "Expected a right curly bracket."));
+
+    sysmelb_ParseTreeNode_t *dictionary = sysmelb_newParseTreeNode(ParseTreeDictionary, parserState_sourcePositionFrom(state, startPosition));
+    dictionary->dictionary.elements = elements;
+    return dictionary;
+}
+
+/*
     void parseOptionalBindableNameType(sysmelb_parserState_t *state, bool &outIsImplicit, ValuePtr &outTypeExpression)
     {
         if(parserState_peekKind(state, 0) == TokenKind::LeftBracket)
@@ -996,7 +1000,7 @@ bool parser_isUnaryPostfixTokenKind(sysmelb_TokenKind_t kind)
     {
         if(parserState_peekKind(state, 0) == TokenKind::Identifier)
         {
-            auto token = state.next();
+            auto token = parserState_next(state);
             auto nameSymbol = std::make_shared<SyntaxLiteralSymbol> ();
             nameSymbol->sourcePosition = token->position;
             nameSymbol->value = token->getValue();
@@ -1079,69 +1083,60 @@ sysmelb_ParseTreeNode_t *parser_parseTerm(sysmelb_parserState_t *state)
         return parser_parseIdentifier(state);
     case SysmelTokenLeftParent:
         return parser_parseParenthesis(state);
-    /*case TokenKind::LeftCurlyBracket:
-        return parseBlock(state);*/
+    case SysmelTokenLeftCurlyBracket:
+        return parser_parseBlock(state);
     case SysmelTokenLeftBracket:
         return parser_parseArray(state);
     case SysmelTokenByteArrayStart:
         return parser_parseByteArray(state);
-    /*case TokenKind::DictionaryStart:
-        return parseDictionary(state);
-    case TokenKind::Colon:
+    case SysmelTokenDictionaryStart:
+        return parser_parseDictionary(state);
+    /*case TokenKind::Colon:
         return parseBindableName(state);*/
     default:
         return parser_parseLiteral(state);
     }
 }
 
-/*
-    ValuePtr parseFunctionalTypeWithOptionalArgument(sysmelb_parserState_t *state)
+sysmelb_ParseTreeNode_t *parser_parseFunctionalTypeWithOptionalArgument(sysmelb_parserState_t *state)
+{
+    size_t startPosition = state->position;
+    if (parserState_peekKind(state, 0) == SysmelTokenColonColon)
     {
-        auto startPosition = state.position;
-        if (parserState_peekKind(state, 0) == TokenKind::ColonColon)
-        {
-            parserState_advance(state);
-            auto resultTypeExpression = parseFunctionalType(state);
-            auto functionalNode = std::make_shared<SyntaxFunctionalDependentType>();
-            functionalNode->sourcePosition = state.sourcePositionFrom(startPosition);
-            functionalNode->resultType = resultTypeExpression;
-            return functionalNode;
-        }
-        else
-        {
-            return parseFunctionalType(state);
-        }
+        parserState_advance(state);
+        sysmelb_ParseTreeNode_t *resultTypeExpression = parser_parseFunctionalType(state);
+        sysmelb_ParseTreeNode_t *functionalNode = sysmelb_newParseTreeNode(ParseTreeFunctionalDependentPattern, parserState_sourcePositionFrom(state, startPosition));
+        functionalNode->functionalDependentPattern.resultValue = resultTypeExpression;
+        return functionalNode;
     }
+    else
+    {
+        return parser_parseFunctionalType(state);
+    }
+}
 
-    ValuePtr parseBindExpression(sysmelb_parserState_t *state)
+sysmelb_ParseTreeNode_t *parser_parseBindExpression(sysmelb_parserState_t *state)
+{
+    size_t startPosition = state->position;
+    sysmelb_ParseTreeNode_t *patternExpressionOrValue = parser_parseFunctionalTypeWithOptionalArgument(state);
+    if (parserState_peekKind(state, 0) == SysmelTokenBindOperator)
     {
-        auto startPosition = state.position;
-        auto patternExpressionOrValue = parseFunctionalTypeWithOptionalArgument(state);
-        if (parserState_peekKind(state, 0) == TokenKind::BindOperator)
-        {
-            parserState_advance(state);
-            auto boundValue = parseBindExpression(state);
-            auto bindPattern = std::make_shared<SyntaxBindPattern>();
-            bindPattern->sourcePosition = state.sourcePositionFrom(startPosition);
-            bindPattern->pattern = patternExpressionOrValue;
-            bindPattern->value = boundValue;
-            return bindPattern;
-        }
-        else
-        {
-            return patternExpressionOrValue;
-        }
+        parserState_advance(state);
+        sysmelb_ParseTreeNode_t *boundValue = parser_parseBindExpression(state);
+        sysmelb_ParseTreeNode_t *bindPattern = sysmelb_newParseTreeNode(ParseTreeBindPattern, parserState_sourcePositionFrom(state, startPosition));
+        bindPattern->bindPattern.pattern = patternExpressionOrValue;
+        bindPattern->bindPattern.value = boundValue;
+        return bindPattern;
     }
-
-    ValuePtr parseExpression(sysmelb_parserState_t *state)
+    else
     {
-        return parseBindExpression(state);
+        return patternExpressionOrValue;
     }
-*/
+}
 
 sysmelb_ParseTreeNode_t *parser_parseExpression(sysmelb_parserState_t *state)
 {
-    return parser_parseTerm(state);
+    return parser_parseBindExpression(state);
 }
 
 sysmelb_ParseTreeNodeDynArray_t parser_parseExpressionListUntilEndOrDelimiter(sysmelb_parserState_t *state, sysmelb_TokenKind_t delimiter)

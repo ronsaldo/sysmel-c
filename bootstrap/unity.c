@@ -4,5 +4,6 @@
 #include "parser.c"
 #include "scanner.c"
 #include "source-code.c"
+#include "string.c"
 #include "symbol.c"
 #include "token.c"
