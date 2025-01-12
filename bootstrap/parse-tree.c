@@ -202,6 +202,29 @@ void sysmelb_dumpParseTree(sysmelb_ParseTreeNode_t *node)
         printf(")");
         break;
 
+    // Binding and pattern matching
+    case ParseTreeBindPattern:
+        printf("ParseTreeBindPattern(");
+        printf(")");
+        break;
+    case ParseTreeFunctionalDependentPattern:
+        printf("ParseTreeFunctionalDependentPattern(");
+        printf(")");
+        break;
+    case ParseTreeBindableName:
+        printf("ParseTreeBindableName(");
+        printf(")");
+        break;
+
+    // Assignment
+    case ParseTreeAssignment:
+        printf("ParseTreeAssignment(");
+        sysmelb_dumpParseTree(node->assignment.store);
+        printf(" := ");
+        sysmelb_dumpParseTree(node->assignment.value);
+        printf(")");
+        break;
+
     default:
         abort();
     }

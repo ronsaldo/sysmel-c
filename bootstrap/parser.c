@@ -16,6 +16,7 @@ sysmelb_ParseTreeNode_t *parser_parseUnaryPrefixExpression(sysmelb_parserState_t
 sysmelb_ParseTreeNode_t *parser_parseTerm(sysmelb_parserState_t *state);
 sysmelb_ParseTreeNode_t *parser_parseDictionary(sysmelb_parserState_t *state);
 sysmelb_ParseTreeNode_t *parser_parseBlock(sysmelb_parserState_t *state);
+sysmelb_ParseTreeNode_t *parser_parseExpression(sysmelb_parserState_t *state);
 
 void sysmelb_ParseTreeNodeDynArray_incrementCapacity(sysmelb_ParseTreeNodeDynArray_t *dynArray)
 {
@@ -972,108 +973,105 @@ sysmelb_ParseTreeNode_t *parser_parseDictionary(sysmelb_parserState_t *state)
     return dictionary;
 }
 
-/*
-    void parseOptionalBindableNameType(sysmelb_parserState_t *state, bool &outIsImplicit, ValuePtr &outTypeExpression)
+void parser_parseOptionalBindableNameType(sysmelb_parserState_t *state, bool *outIsImplicit, sysmelb_ParseTreeNode_t **outTypeExpression)
+{
+    if(parserState_peekKind(state, 0) == SysmelTokenLeftBracket)
     {
-        if(parserState_peekKind(state, 0) == TokenKind::LeftBracket)
-        {
-            parserState_advance(state);
-            outTypeExpression = parseExpression(state);
-            outTypeExpression = state.expectAddingErrorToNode(TokenKind::RightBracket, outTypeExpression);
-            outIsImplicit = true;
-        }
-        else if(parserState_peekKind(state, 0) == TokenKind::LeftParent)
-        {
-            parserState_advance(state);
-            outTypeExpression = parseExpression(state);
-            outTypeExpression = state.expectAddingErrorToNode(TokenKind::RightParent, outTypeExpression);
-            outIsImplicit = false;
-        }
-        else
-        {
-            outIsImplicit = false;
-            outTypeExpression.reset();
-        }
-    }
-
-    ValuePtr parseNameExpression(sysmelb_parserState_t *state)
-    {
-        if(parserState_peekKind(state, 0) == TokenKind::Identifier)
-        {
-            auto token = parserState_next(state);
-            auto nameSymbol = std::make_shared<SyntaxLiteralSymbol> ();
-            nameSymbol->sourcePosition = token->position;
-            nameSymbol->value = token->getValue();
-            return nameSymbol;
-        }
-        else
-        {
-            return state.makeErrorAtCurrentSourcePosition("Expected a bindable name.");
-        }
-    }
-
-    ValuePtr parseBindableName(sysmelb_parserState_t *state)
-    {
-        auto startPosition = state.position;
-        assert(parserState_peekKind(state, 0) == TokenKind::Colon);
         parserState_advance(state);
+        *outTypeExpression = parser_parseExpression(state);
+        *outTypeExpression = parserState_expectAddingErrorToNode(state, SysmelTokenRightBracket, *outTypeExpression);
+        *outIsImplicit = true;
+    }
+    else if(parserState_peekKind(state, 0) == SysmelTokenLeftParent)
+    {
+        parserState_advance(state);
+        *outTypeExpression = parser_parseExpression(state);
+        *outTypeExpression = parserState_expectAddingErrorToNode(state, SysmelTokenRightParent, *outTypeExpression);
+        *outIsImplicit = false;
+    }
+    else
+    {
+        *outIsImplicit = false;
+        *outTypeExpression = NULL;
+    }
+}
 
-        bool isExistential = false;
-        bool isMutable = false;
+sysmelb_ParseTreeNode_t *parser_parseNameExpression(sysmelb_parserState_t *state)
+{
+    if(parserState_peekKind(state, 0) == SysmelTokenIdentifier)
+    {
+        sysmelb_ScannerToken_t *token = parserState_next(state);
+        sysmelb_symbol_t *tokenSymbol = sysmelb_internSymbol(token->textSize, token->textPosition);
 
-        if (parserState_peekKind(state, 0) == TokenKind::Bang)
+        sysmelb_ParseTreeNode_t *nameNode = sysmelb_newParseTreeNode(ParseTreeLiteralSymbolNode, token->sourcePosition);
+        nameNode->literalSymbol.internedSymbol = tokenSymbol;
+        return nameNode;
+    }
+    else
+    {
+        return parserState_makeErrorAtCurrentSourcePosition(state, "Expected a bindable name.");
+    }
+}
+
+sysmelb_ParseTreeNode_t *parser_parseBindableName(sysmelb_parserState_t *state)
+{
+    size_t startPosition = state->position;
+    assert(parserState_peekKind(state, 0) == SysmelTokenColon);
+    parserState_advance(state);
+
+    bool isExistential = false;
+    bool isMutable = false;
+
+    if (parserState_peekKind(state, 0) == SysmelTokenBang)
+    {
+        isMutable = true;
+        parserState_advance(state);
+    }
+    if (parserState_peekKind(state, 0) == SysmelTokenQuestion)
+    {
+        isExistential = isExistential || (parserState_peekKind(state, 0) == SysmelTokenQuestion);
+        parserState_advance(state);
+    }
+
+    bool isImplicit = false;
+    sysmelb_ParseTreeNode_t *typeExpression = NULL;
+    parser_parseOptionalBindableNameType(state, &isImplicit, &typeExpression);
+    bool hasPostTypeExpression = false;
+
+    bool isVariadic = false;
+    sysmelb_ParseTreeNode_t *nameExpression = NULL;
+    if (parserState_peekKind(state, 0) == SysmelTokenEllipsis)
+    {
+        parserState_advance(state);
+        isVariadic = true;
+        nameExpression = NULL;
+    }
+    else
+    {
+        nameExpression = parser_parseNameExpression(state);
+        if(!typeExpression)
         {
-            isMutable = true;
-            parserState_advance(state);
-        }
-        if (parserState_peekKind(state, 0) == TokenKind::Question)
-        {
-            isExistential = isExistential || (parserState_peekKind(state, 0) == TokenKind::Question);
-            parserState_advance(state);
+            parser_parseOptionalBindableNameType(state, &isImplicit, &typeExpression);
+            hasPostTypeExpression = typeExpression != NULL;    
         }
 
-        bool isImplicit = false;
-        ValuePtr typeExpression;
-        parseOptionalBindableNameType(state, isImplicit, typeExpression);
-        bool hasPostTypeExpression = false;
-
-        bool isVariadic = false;
-        ValuePtr nameExpression;
-        if (parserState_peekKind(state, 0) == TokenKind::Ellipsis)
+        if(parserState_peekKind(state, 0) == SysmelTokenEllipsis)
         {
             parserState_advance(state);
             isVariadic = true;
-            nameExpression.reset();
         }
-        else
-        {
-            nameExpression = parseNameExpression(state);
-            if(!typeExpression)
-            {
-                parseOptionalBindableNameType(state, isImplicit, typeExpression);
-                hasPostTypeExpression = typeExpression.get() != nullptr;    
-            }
-
-            if(parserState_peekKind(state, 0) == TokenKind::Ellipsis)
-            {
-                parserState_advance(state);
-                isVariadic = true;
-            }
-        }
-
-        auto bindableName = std::make_shared<SyntaxBindableName> ();
-        bindableName->sourcePosition = state.sourcePositionFrom(startPosition);
-        bindableName->typeExpression = typeExpression;
-        bindableName->nameExpression = nameExpression;
-
-        bindableName->isImplicit    = isImplicit;
-        bindableName->isExistential = isExistential;
-        bindableName->isVariadic    = isVariadic;
-        bindableName->isMutable     = isMutable;
-        bindableName->hasPostTypeExpression = hasPostTypeExpression;
-        return bindableName;
     }
-*/
+
+    sysmelb_ParseTreeNode_t *bindableName = sysmelb_newParseTreeNode(ParseTreeBindableName, parserState_sourcePositionFrom(state, startPosition));
+    bindableName->bindableName.typeExpression = typeExpression;
+    bindableName->bindableName.nameExpression = nameExpression;
+    bindableName->bindableName.isImplicit    = isImplicit;
+    bindableName->bindableName.isExistential = isExistential;
+    bindableName->bindableName.isVariadic    = isVariadic;
+    bindableName->bindableName.isMutable     = isMutable;
+    bindableName->bindableName.hasPostTypeExpression = hasPostTypeExpression;
+    return bindableName;
+}
 
 sysmelb_ParseTreeNode_t *parser_parseTerm(sysmelb_parserState_t *state)
 {
@@ -1091,8 +1089,8 @@ sysmelb_ParseTreeNode_t *parser_parseTerm(sysmelb_parserState_t *state)
         return parser_parseByteArray(state);
     case SysmelTokenDictionaryStart:
         return parser_parseDictionary(state);
-    /*case TokenKind::Colon:
-        return parseBindableName(state);*/
+    case SysmelTokenColon:
+        return parser_parseBindableName(state);
     default:
         return parser_parseLiteral(state);
     }

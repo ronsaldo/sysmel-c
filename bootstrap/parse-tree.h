@@ -6,6 +6,7 @@
 #include "source-code.h"
 #include "symbol.h"
 #include <stddef.h>
+#include <stdbool.h>
 #include <stdint.h>
 
 typedef int64_t sysmelb_IntegerLiteralType_t;
@@ -54,6 +55,7 @@ typedef enum sysmelb_ParseTreeNodeKind_e {
     // Binding and pattern matching
     ParseTreeBindPattern,
     ParseTreeFunctionalDependentPattern,
+    ParseTreeBindableName,
 
     // Assignment
     ParseTreeAssignment,
@@ -192,6 +194,17 @@ typedef struct sysmelb_ParseTreeFunctionalDependentPattern_s {
     sysmelb_symbol_t *callingConvention;
 } sysmelb_ParseTreeFunctionalDependentPattern_t;
 
+typedef struct sysmelb_ParseTreeBindableName_s {
+    sysmelb_ParseTreeNode_t *typeExpression;
+    sysmelb_ParseTreeNode_t *nameExpression;
+    bool isImplicit;
+    bool isExistential;
+    bool isVariadic;
+    bool isMutable;
+    bool hasPostTypeExpression;
+    bool isPublic;
+} sysmelb_ParseTreeBindableName_t;
+
 // Assignment
 typedef struct sysmelb_ParseTreeAssignment_s {
     sysmelb_ParseTreeNode_t *store;
@@ -247,6 +260,7 @@ typedef struct sysmelb_ParseTreeNode_s {
         // Binding and pattern matching.
         sysmelb_ParseTreeBindPattern_t bindPattern;
         sysmelb_ParseTreeFunctionalDependentPattern_t functionalDependentPattern;
+        sysmelb_ParseTreeBindableName_t bindableName;
 
         // Assignment
         sysmelb_ParseTreeAssignment_t assignment;
