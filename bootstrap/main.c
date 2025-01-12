@@ -32,6 +32,7 @@ void parseOnlyText(const char *text)
 
     sysmelb_ParseTreeNode_t *parseTree = parseTokenList(sourceCode, scannedTokens.size, scannedTokens.tokens);
     sysmelb_dumpParseTree(parseTree);
+    printf("\n");
 }
 
 int main(int argc, const char **argv)

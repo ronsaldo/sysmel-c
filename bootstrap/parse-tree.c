@@ -90,6 +90,19 @@ void sysmelb_dumpParseTree(sysmelb_ParseTreeNode_t *node)
         }
         printf(")");
         break;
+    case ParseTreeBinaryOperatorSequence:
+        printf("BinopSequence(");
+        for(size_t i = 0; i < node->binaryOperatorSequence.elements.size; ++i)
+        {
+            if (i != 0)
+                printf(", ");
+            sysmelb_dumpParseTree(node->binaryOperatorSequence.elements.elements[i]);
+        }
+        printf(")");
+        break;
+
+
+    // Sequences, array, tuple
     case ParseTreeSequence:
         printf("ParseTreeSequence(");
         for(size_t i = 0; i < node->sequence.elements.size; ++i)
@@ -154,6 +167,13 @@ void sysmelb_dumpParseTree(sysmelb_ParseTreeNode_t *node)
         break;
 
     // Blocks
+    case ParseTreeBlockClosure:
+        printf("ParseTreeBlockClosure(");
+        sysmelb_dumpParseTree(node->blockClosure.functionType);
+        printf(", ");
+        sysmelb_dumpParseTree(node->blockClosure.body);
+        printf(")");
+        break;
     case ParseTreeLexicalBlock:
         printf("ParseTreeLexicalBlock(");
         sysmelb_dumpParseTree(node->lexicalBlock.expression);
