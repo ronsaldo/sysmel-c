@@ -4,6 +4,7 @@
 #pragma once
 
 #include "hashtable.h"
+#include "value.h"
 
 typedef struct sysmelb_Environment_s sysmelb_Environment_t;
 typedef struct sysmelb_Module_s sysmelb_Module_t;
@@ -34,18 +35,20 @@ struct sysmelb_Environment_s {
 typedef enum sysmelb_SymbolBindingKind_e
 {
     SysmelSymbolValueBinding,
-    SysmelSymbolTypeBinding,
 } sysmelb_SymbolBindingKind_t;
 
 typedef struct sysmelb_SymbolBinding_s
 {
     sysmelb_SymbolBindingKind_t kind;
+    
     union {
-        sysmelb_Type_t *type;
+        sysmelb_Value_t value;
     };
 } sysmelb_SymbolBinding_t;
 
 sysmelb_SymbolBinding_t *sysmelb_createSymbolTypeBinding(sysmelb_Type_t *type);
+
+sysmelb_SymbolBinding_t *sysmelb_environmentLookRecursively(sysmelb_Environment_t *environment, sysmelb_symbol_t *symbol);
 
 sysmelb_Environment_t *sysmelb_getEmptyEnvironment();
 sysmelb_Environment_t *sysmelb_getOrCreateIntrinsicsEnvironment();

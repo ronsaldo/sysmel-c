@@ -12,3 +12,4 @@
 #include "symbol.c"
 #include "token.c"
 #include "types.c"
+#include "value.c"

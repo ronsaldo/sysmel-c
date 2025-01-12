@@ -4,6 +4,7 @@
 #pragma once
 
 #include "symbol.h"
+#include "hashtable.h"
 #include <stddef.h>
 #include <stdint.h>
 
@@ -34,6 +35,7 @@ struct sysmelb_Type_s {
     uint32_t heapSize;
     uint32_t heapAlignment;
     uint32_t fieldCount;
+    sysmelb_SymbolHashtable_t methodDict;
     sysmelb_Type_t *fields;
 };
 

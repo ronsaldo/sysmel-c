@@ -1,5 +1,6 @@
 #include "environment.h"
 #include "memory.h"
+#include "namespace.h"
 #include "types.h"
 #include <stddef.h>
 #include <stdbool.h>
@@ -18,9 +19,36 @@ sysmelb_SymbolBinding_t *sysmelb_createSymbolTypeBinding(sysmelb_Type_t *type)
 {
     sysmelb_SymbolBinding_t *binding = sysmelb_allocate(sizeof(sysmelb_SymbolBinding_t));
     memset(binding, 0, sizeof(sysmelb_SymbolBinding_t));
-    binding->kind = SysmelSymbolTypeBinding;
-    binding->type = type;
+    binding->kind = SysmelSymbolValueBinding;
+    binding->value.kind = SysmelValueKindTypeReference;
+    binding->value.typeReference = type;
     return binding;
+}
+
+sysmelb_SymbolBinding_t *sysmelb_environmentLookRecursively(sysmelb_Environment_t *environment, sysmelb_symbol_t *symbol)
+{
+    if(!environment)
+        return NULL;
+
+    const sysmelb_SymbolHashtablePair_t *lookupResult = sysmelb_SymbolHashtable_lookupSymbol(&environment->localSymbolTable, symbol);
+    if(lookupResult && lookupResult->key)
+        return (sysmelb_SymbolBinding_t*)lookupResult->value;
+
+    switch(environment->kind)
+    {
+    case SysmelEnvKindNamespace:
+        {
+            sysmelb_Namespace_t *namespace = environment->ownerNamespace;
+            lookupResult = sysmelb_SymbolHashtable_lookupSymbol(&namespace->exportedObjects, symbol);
+            if(lookupResult && lookupResult->key)
+                return (sysmelb_SymbolBinding_t*)lookupResult->value;
+        }
+        break;
+    default:
+        break;
+    }
+
+    return sysmelb_environmentLookRecursively(environment->parent, symbol);
 }
 
 sysmelb_Environment_t *sysmelb_getEmptyEnvironment()
