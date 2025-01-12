@@ -21,6 +21,8 @@ void sysmelb_dumpParseTree(sysmelb_ParseTreeNode_t *node)
     case ParseTreeErrorNode:
         printf("Error node: %s\n", node->errorNode.errorMessage);
         break;
+
+    // Literals
     case ParseTreeLiteralIntegerNode:
         printf("LiteralInteger(%lld)", node->literalInteger.value);
         break;
@@ -36,6 +38,13 @@ void sysmelb_dumpParseTree(sysmelb_ParseTreeNode_t *node)
     case ParseTreeLiteralSymbolNode:
         printf("LiteralSymbol(%.*s)", node->literalSymbol.internedSymbol->size, node->literalSymbol.internedSymbol->string);
         break;
+
+    // Identifier
+    case ParseTreeIdentifierReference:
+        printf("IdentififerRef(%.*s)", node->identifierReference.identifier->size, node->identifierReference.identifier->string);
+        break;
+
+    // Applications and messages.
     case ParseTreeFunctionApplication:
         printf("FunctionApplication(");
         sysmelb_dumpParseTree(node->functionApplication.functional);
@@ -88,6 +97,58 @@ void sysmelb_dumpParseTree(sysmelb_ParseTreeNode_t *node)
             if( i!= 0 )
                 printf(", ");
             sysmelb_dumpParseTree(node->sequence.elements.elements[i]);
+        }
+        printf(")");
+        break;
+    case ParseTreeTuple:
+        printf("ParseTreeTuple(");
+        for(size_t i = 0; i < node->tuple.elements.size; ++i)
+        {
+            if( i!= 0 )
+                printf(", ");
+            sysmelb_dumpParseTree(node->tuple.elements.elements[i]);
+        }
+        printf(")");
+        break;
+    case ParseTreeArray:
+        printf("ParseTreeArray(");
+        for(size_t i = 0; i < node->array.elements.size; ++i)
+        {
+            if( i!= 0 )
+                printf(", ");
+            sysmelb_dumpParseTree(node->array.elements.elements[i]);
+        }
+        printf(")");
+        break;
+    case ParseTreeByteArray:
+        printf("ParseTreeByteArray(");
+        for(size_t i = 0; i < node->byteArray.elements.size; ++i)
+        {
+            if( i!= 0 )
+                printf(", ");
+            sysmelb_dumpParseTree(node->byteArray.elements.elements[i]);
+        }
+        printf(")");
+        break;
+
+    // Dictionary
+    case ParseTreeDictionary:
+        printf("ParseTreeDictionary(");
+        for(size_t i = 0; i < node->dictionary.elements.size; ++i)
+        {
+            if( i!= 0 )
+                printf(", ");
+            sysmelb_dumpParseTree(node->dictionary.elements.elements[i]);
+        }
+        printf(")");
+        break;
+    case ParseTreeAssociation:
+        printf("ParseTreeAssociation(");
+        sysmelb_dumpParseTree(node->association.key);
+        if(node->association.value)
+        {
+            printf(", ");
+            sysmelb_dumpParseTree(node->association.value);
         }
         printf(")");
         break;

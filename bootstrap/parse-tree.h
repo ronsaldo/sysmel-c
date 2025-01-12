@@ -22,17 +22,33 @@ typedef enum sysmelb_ParseTreeNodeKind_e {
     ParseTreeLiteralStringNode,
     ParseTreeLiteralSymbolNode,
 
+    // Identifiers
+    ParseTreeIdentifierReference,
+
     // Functions and message send
     ParseTreeFunctionApplication,
     ParseTreeMessageSend,
     ParseTreeMessageCascade,
     ParseTreeCascadedMessage,
 
-    // Sequence.
+    // Sequences, array, tuples
     ParseTreeSequence,
+    ParseTreeTuple,
+    ParseTreeArray,
+    ParseTreeByteArray,
+
+    // Dictionary
+    ParseTreeAssociation,
+    ParseTreeDictionary,
 } sysmelb_ParseTreeNodeKind_t;
 
 typedef struct sysmelb_ParseTreeNode_s sysmelb_ParseTreeNode_t;
+
+typedef struct sysmelb_ParseTreeNodeDynArray_s {
+    size_t capacity;
+    size_t size;
+    sysmelb_ParseTreeNode_t **elements;
+} sysmelb_ParseTreeNodeDynArray_t;
 
 // Errors
 typedef struct sysmelb_ParseTreeErrorNode_s {
@@ -62,7 +78,12 @@ typedef struct sysmelb_ParseTreeLiteralSymbolNode_s {
     sysmelb_symbol_t *internedSymbol;
 } sysmelb_ParseTreeLiteralSymbolNode_t;
 
-// Function application and message send
+// Identifier reference.
+typedef struct sysmelb_ParseTreeIdentifierReference_s {
+    sysmelb_symbol_t *identifier;
+} sysmelb_ParseTreeIdentifierReference_t;
+
+// Function application and message send.
 typedef struct sysmelb_ParseTreeFunctionApplication_s {
     sysmelb_ParseTreeNode_t *functional;
     size_t argumentCount;
@@ -88,16 +109,35 @@ typedef struct sysmelb_ParseTreeCascadedMessage_s {
     sysmelb_ParseTreeNode_t *arguments[SYSMELB_PARSE_TREE_MAX_ARGUMENTS];
 } sysmelb_ParseTreeCascadedMessage_t;
 
-typedef struct sysmelb_ParseTreeNodeDynArray_s {
-    size_t capacity;
-    size_t size;
-    sysmelb_ParseTreeNode_t **elements;
-} sysmelb_ParseTreeNodeDynArray_t;
 
+// Sequences
 typedef struct sysmelb_ParseTreeSequence_s {
     sysmelb_ParseTreeNodeDynArray_t elements;
 } sysmelb_ParseTreeSequence_t;
 
+typedef struct sysmelb_ParseTreeTuple_s {
+    sysmelb_ParseTreeNodeDynArray_t elements;
+} sysmelb_ParseTreeTuple_t;
+
+typedef struct sysmelb_ParseTreeArray_s {
+    sysmelb_ParseTreeNodeDynArray_t elements;
+} sysmelb_ParseTreeArray_t;
+
+typedef struct sysmelb_ParseTreeByteArray_s {
+    sysmelb_ParseTreeNodeDynArray_t elements;
+} sysmelb_ParseTreeByteArray_t;
+
+// Dictionary.
+typedef struct sysmelb_ParseTreeDictionary_s {
+    sysmelb_ParseTreeNodeDynArray_t elements;
+} sysmelb_ParseTreeDictionary_t;
+
+typedef struct sysmelb_ParseTreeAssociation_s {
+    sysmelb_ParseTreeNode_t *key;
+    sysmelb_ParseTreeNode_t *value;
+} sysmelb_ParseTreeAssociation_t;
+
+// Tagged node union.
 typedef struct sysmelb_ParseTreeNode_s {
     sysmelb_ParseTreeNodeKind_t kind;
     sysmelb_SourcePosition_t sourcePosition;
@@ -113,6 +153,9 @@ typedef struct sysmelb_ParseTreeNode_s {
         sysmelb_ParseTreeLiteralStringNode_t literalString;
         sysmelb_ParseTreeLiteralSymbolNode_t literalSymbol;
 
+        // Identifiers
+        sysmelb_ParseTreeIdentifierReference_t identifierReference;
+
         // Functions and message send
         sysmelb_ParseTreeFunctionApplication_t functionApplication;
         sysmelb_ParseTreeMessageSend_t messageSend;
@@ -121,6 +164,13 @@ typedef struct sysmelb_ParseTreeNode_s {
 
         // Sequence
         sysmelb_ParseTreeSequence_t sequence;
+        sysmelb_ParseTreeTuple_t tuple;
+        sysmelb_ParseTreeArray_t array;
+        sysmelb_ParseTreeByteArray_t byteArray;
+
+        // Dictionary
+        sysmelb_ParseTreeDictionary_t dictionary;
+        sysmelb_ParseTreeAssociation_t association;
     };
 } sysmelb_ParseTreeNode_t;
 
