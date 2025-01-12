@@ -9,6 +9,8 @@
 
 typedef struct sysmelb_parserState_s sysmelb_parserState_t;
 sysmelb_SourcePosition_t parserState_currentSourcePosition(sysmelb_parserState_t *state);
+sysmelb_ParseTreeNodeDynArray_t parser_parseExpressionListUntilEndOrDelimiter(sysmelb_parserState_t *state, sysmelb_TokenKind_t delimiter);
+sysmelb_ParseTreeNode_t *parser_parseSequenceUntilEndOrDelimiter(sysmelb_parserState_t *state, sysmelb_TokenKind_t delimiter);
 
 void sysmelb_ParseTreeNodeDynArray_incrementCapacity(sysmelb_ParseTreeNodeDynArray_t *dynArray)
 {
@@ -256,8 +258,6 @@ char* parseCEscapedString(size_t stringSize, const char *string, size_t *outSize
     return result;
 }
 
-sysmelb_ParseTreeNode_t *parser_parseSequenceUntilEndOrDelimiter(sysmelb_parserState_t *state, sysmelb_TokenKind_t delimiter);
-
 sysmelb_ParseTreeNode_t *parseLiteralCharacter(sysmelb_parserState_t *state)
 {
     sysmelb_ScannerToken_t *token = parserState_next(state);
@@ -373,73 +373,72 @@ sysmelb_ParseTreeNode_t *parser_parseParenthesis(sysmelb_parserState_t *state)
     expression = parserState_expectAddingErrorToNode(state, SysmelTokenRightParent, expression);
     return expression;
 }
+
+sysmelb_ParseTreeNode_t *parser_parseArray(sysmelb_parserState_t *state)
+{
+    size_t startPosition = state->position;
+    assert(parserState_peekKind(state, 0) == SysmelTokenLeftBracket);
+    parserState_advance(state);
+
+    sysmelb_ParseTreeNodeDynArray_t expressions = parser_parseExpressionListUntilEndOrDelimiter(state, SysmelTokenRightBracket);
+
+    if(parserState_peekKind(state, 0) == SysmelTokenRightBracket)
+    {
+        parserState_advance(state);
+    }
+    else
+    {
+        // TODO: add an error
+        abort();
+    }
+    
+    // Array
+    sysmelb_ParseTreeNode_t *array = sysmelb_newParseTreeNode(ParseTreeArray, parserState_sourcePositionFrom(state, startPosition));
+    array->array.elements = expressions;
+    return array;
+}
+
+sysmelb_ParseTreeNode_t *parser_parseByteArray(sysmelb_parserState_t *state)
+{
+    size_t startPosition = state->position;
+    assert(parserState_peekKind(state, 0) == SysmelTokenByteArrayStart);
+    parserState_advance(state);
+
+    sysmelb_ParseTreeNodeDynArray_t expressions = parser_parseExpressionListUntilEndOrDelimiter(state, SysmelTokenRightBracket);
+
+    if(parserState_peekKind(state, 0) == SysmelTokenRightBracket)
+    {
+        parserState_advance(state);
+    }
+    else
+    {
+        // TODO: an error
+        abort();
+    }
+    
+    // Byte
+    sysmelb_ParseTreeNode_t *node = sysmelb_newParseTreeNode(ParseTreeByteArray, parserState_sourcePositionFrom(state, startPosition));
+    node->byteArray.elements = expressions;
+    return node;
+}
+
+bool parser_isUnaryPostfixTokenKind(sysmelb_TokenKind_t kind)
+{
+    switch(kind)
+    {
+    case SysmelTokenIdentifier:
+    case SysmelTokenLeftParent:
+    case SysmelTokenLeftBracket:
+    case SysmelTokenLeftCurlyBracket:
+    case SysmelTokenByteArrayStart:
+    case SysmelTokenDictionaryStart:
+        return true;
+    default:
+        return false;
+    }
+}
+
 /*
-    ValuePtr parseArray(sysmelb_parserState_t *state)
-    {
-        auto startPosition = state.position;
-        assert(parserState_peekKind(state, 0) == TokenKind::LeftBracket);
-        parserState_advance(state);
-
-        auto expressions = parseExpressionListUntilEndOrDelimiter(state, TokenKind::RightBracket);
-
-        if(parserState_peekKind(state, 0) == TokenKind::RightBracket)
-        {
-            parserState_advance(state);
-        }
-        else
-        {
-            // TODO: add an error
-            abort();
-        }
-        
-        // Array
-        auto array = std::make_shared<SyntaxArray> ();
-        array->sourcePosition = state.sourcePositionFrom(startPosition);
-        array->expressions.swap(expressions);
-        return array;
-    }
-
-    ValuePtr parseByteArray(sysmelb_parserState_t *state)
-    {
-        auto startPosition = state.position;
-        assert(parserState_peekKind(state, 0) == TokenKind::ByteArrayStart);
-        parserState_advance(state);
-
-        auto expressions = parseExpressionListUntilEndOrDelimiter(state, TokenKind::RightBracket);
-
-        if(parserState_peekKind(state, 0) == TokenKind::RightBracket)
-        {
-            parserState_advance(state);
-        }
-        else
-        {
-            // TODO: an error
-            abort();
-        }
-        
-        // Byte
-        auto byteArray = std::make_shared<SyntaxByteArray> ();
-        byteArray->sourcePosition = state.sourcePositionFrom(startPosition);
-        byteArray->byteExpressions.swap(expressions);
-        return byteArray;
-    }
-
-    bool isUnaryPostfixTokenKind(TokenKind kind)
-    {
-        switch(kind)
-        {
-        case TokenKind::Identifier:
-        case TokenKind::LeftParent:
-        case TokenKind::LeftBracket:
-        case TokenKind::LeftCurlyBracket:
-        case TokenKind::ByteArrayStart:
-        case TokenKind::DictionaryStart:
-            return true;
-        default:
-            return false;
-        }
-    }
-
     ValuePtr parseUnaryPostfixExpression(sysmelb_parserState_t *state)
     {
         auto startPosition = state.position;
@@ -1081,12 +1080,12 @@ sysmelb_ParseTreeNode_t *parser_parseTerm(sysmelb_parserState_t *state)
     case SysmelTokenLeftParent:
         return parser_parseParenthesis(state);
     /*case TokenKind::LeftCurlyBracket:
-        return parseBlock(state);
-    case TokenKind::LeftBracket:
-        return parseArray(state);
-    case TokenKind::ByteArrayStart:
-        return parseByteArray(state);
-    case TokenKind::DictionaryStart:
+        return parseBlock(state);*/
+    case SysmelTokenLeftBracket:
+        return parser_parseArray(state);
+    case SysmelTokenByteArrayStart:
+        return parser_parseByteArray(state);
+    /*case TokenKind::DictionaryStart:
         return parseDictionary(state);
     case TokenKind::Colon:
         return parseBindableName(state);*/

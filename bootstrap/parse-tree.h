@@ -137,6 +137,11 @@ typedef struct sysmelb_ParseTreeAssociation_s {
     sysmelb_ParseTreeNode_t *value;
 } sysmelb_ParseTreeAssociation_t;
 
+// Macro operators
+typedef struct sysmelb_ParseTreeQuote_s {
+    sysmelb_ParseTreeNode_t *expression;
+} sysmelb_ParseTreeQuote_t;
+
 // Tagged node union.
 typedef struct sysmelb_ParseTreeNode_s {
     sysmelb_ParseTreeNodeKind_t kind;
