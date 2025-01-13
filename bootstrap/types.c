@@ -159,6 +159,86 @@ static sysmelb_Value_t sysmelb_primitive_integerModule(size_t argumentCount, sys
     return result;
 }
 
+static sysmelb_Value_t sysmelb_primitive_integerEquals(size_t argumentCount, sysmelb_Value_t *arguments)
+{
+    assert(argumentCount == 2);
+    sysmelb_Value_t leftValue = arguments[0];
+    sysmelb_Value_t rightValue = arguments[1];
+    sysmelb_Value_t result = {
+        .kind = SysmelValueKindBoolean,
+        .boolean = leftValue.integer == rightValue.integer
+    };
+    return result;
+}
+
+static sysmelb_Value_t sysmelb_primitive_integerNotEquals(size_t argumentCount, sysmelb_Value_t *arguments)
+{
+    assert(argumentCount == 2);
+    sysmelb_Value_t leftValue = arguments[0];
+    sysmelb_Value_t rightValue = arguments[1];
+    sysmelb_Value_t result = {
+        .kind = SysmelValueKindBoolean,
+        .boolean = leftValue.integer != rightValue.integer
+    };
+    return result;
+}
+
+static sysmelb_Value_t sysmelb_primitive_integerLessThan(size_t argumentCount, sysmelb_Value_t *arguments)
+{
+    assert(argumentCount == 2);
+    sysmelb_Value_t leftValue = arguments[0];
+    sysmelb_Value_t rightValue = arguments[1];
+    sysmelb_Value_t result = {
+        .kind = SysmelValueKindBoolean,
+        .boolean = (leftValue.kind == SysmelValueKindUnsignedInteger)
+                    ? leftValue.unsignedInteger < rightValue.unsignedInteger
+                    : leftValue.integer < rightValue.integer
+    };
+    return result;
+}
+
+static sysmelb_Value_t sysmelb_primitive_integerLessOrEquals(size_t argumentCount, sysmelb_Value_t *arguments)
+{
+    assert(argumentCount == 2);
+    sysmelb_Value_t leftValue = arguments[0];
+    sysmelb_Value_t rightValue = arguments[1];
+    sysmelb_Value_t result = {
+        .kind = SysmelValueKindBoolean,
+        .boolean = (leftValue.kind == SysmelValueKindUnsignedInteger)
+                    ? leftValue.unsignedInteger <= rightValue.unsignedInteger
+                    : leftValue.integer <= rightValue.integer
+    };
+    return result;
+}
+
+static sysmelb_Value_t sysmelb_primitive_integerGreaterThan(size_t argumentCount, sysmelb_Value_t *arguments)
+{
+    assert(argumentCount == 2);
+    sysmelb_Value_t leftValue = arguments[0];
+    sysmelb_Value_t rightValue = arguments[1];
+    sysmelb_Value_t result = {
+        .kind = SysmelValueKindBoolean,
+        .boolean = (leftValue.kind == SysmelValueKindUnsignedInteger)
+                    ? leftValue.unsignedInteger > rightValue.unsignedInteger
+                    : leftValue.integer > rightValue.integer
+    };
+    return result;
+}
+
+static sysmelb_Value_t sysmelb_primitive_integerGreaterOrEquals(size_t argumentCount, sysmelb_Value_t *arguments)
+{
+    assert(argumentCount == 2);
+    sysmelb_Value_t leftValue = arguments[0];
+    sysmelb_Value_t rightValue = arguments[1];
+    sysmelb_Value_t result = {
+        .kind = SysmelValueKindBoolean,
+        .boolean = (leftValue.kind == SysmelValueKindUnsignedInteger)
+                    ? leftValue.unsignedInteger >= rightValue.unsignedInteger
+                    : leftValue.integer >= rightValue.integer
+    };
+    return result;
+}
+
 static void sysmelb_createBasicIntegersPrimitives(void)
 {
     sysmelb_Type_t *integerTypes[] = {
@@ -179,6 +259,12 @@ static void sysmelb_createBasicIntegersPrimitives(void)
         sysmelb_type_addPrimitiveMethod(type, sysmelb_internSymbolC("*"), sysmelb_primitive_times);
         sysmelb_type_addPrimitiveMethod(type, sysmelb_internSymbolC("//"), sysmelb_primitive_integerDivision);
         sysmelb_type_addPrimitiveMethod(type, sysmelb_internSymbolC("%"), sysmelb_primitive_integerModule);
+        sysmelb_type_addPrimitiveMethod(type, sysmelb_internSymbolC("="), sysmelb_primitive_integerEquals);
+        sysmelb_type_addPrimitiveMethod(type, sysmelb_internSymbolC("~="), sysmelb_primitive_integerNotEquals);
+        sysmelb_type_addPrimitiveMethod(type, sysmelb_internSymbolC("<"), sysmelb_primitive_integerLessThan);
+        sysmelb_type_addPrimitiveMethod(type, sysmelb_internSymbolC("<="), sysmelb_primitive_integerLessOrEquals);
+        sysmelb_type_addPrimitiveMethod(type, sysmelb_internSymbolC(">"), sysmelb_primitive_integerGreaterThan);
+        sysmelb_type_addPrimitiveMethod(type, sysmelb_internSymbolC(">="), sysmelb_primitive_integerGreaterOrEquals);
     }
 }
 
