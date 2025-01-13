@@ -104,6 +104,35 @@ static sysmelb_Value_t sysmelb_ifThenPrimitiveMacro(sysmelb_MacroContext_t *macr
     return result;
 }
 
+static sysmelb_Value_t sysmelb_WhileDoContinueWithPrimitiveMacro(sysmelb_MacroContext_t *macroContext, size_t argumentCount, sysmelb_Value_t *arguments)
+{
+    assert(argumentCount == 3);
+    sysmelb_ParseTreeNode_t *node = sysmelb_newParseTreeNode(ParseTreeWhileLoop, macroContext->sourcePosition);
+    node->whileLoop.condition = arguments[0].parseTreeReference;
+    node->whileLoop.body = arguments[1].parseTreeReference;
+    node->whileLoop.continueExpression = arguments[2].parseTreeReference;
+
+    sysmelb_Value_t result = {
+        .kind = SysmelValueKindParseTreeReference,
+        .parseTreeReference = node
+    };
+    return result;
+}
+
+static sysmelb_Value_t sysmelb_WhileDoPrimitiveMacro(sysmelb_MacroContext_t *macroContext, size_t argumentCount, sysmelb_Value_t *arguments)
+{
+    assert(argumentCount == 2);
+    sysmelb_ParseTreeNode_t *node = sysmelb_newParseTreeNode(ParseTreeWhileLoop, macroContext->sourcePosition);
+    node->whileLoop.condition = arguments[0].parseTreeReference;
+    node->whileLoop.body = arguments[1].parseTreeReference;
+
+    sysmelb_Value_t result = {
+        .kind = SysmelValueKindParseTreeReference,
+        .parseTreeReference = node
+    };
+    return result;
+}
+
 sysmelb_Environment_t *sysmelb_getOrCreateIntrinsicsEnvironment()
 {
     if(sysmelb_IntrinsicsEnvironmentCreated)
@@ -172,7 +201,7 @@ sysmelb_Environment_t *sysmelb_getOrCreateIntrinsicsEnvironment()
         function->name = sysmelb_internSymbolC("if:then:else:");
         function->primitiveMacroFunction = sysmelb_ifThenElsePrimitiveMacro;
 
-        sysmelb_Environment_setLocalSymbolBinding(&sysmelb_IntrinsicsEnvironment, sysmelb_internSymbolC("if:then:else:"), sysmelb_createSymbolFunctionBinding(function));
+        sysmelb_Environment_setLocalSymbolBinding(&sysmelb_IntrinsicsEnvironment, function->name, sysmelb_createSymbolFunctionBinding(function));
     }
 
     // If then control flow macro
@@ -182,7 +211,26 @@ sysmelb_Environment_t *sysmelb_getOrCreateIntrinsicsEnvironment()
         function->name = sysmelb_internSymbolC("if:then:");
         function->primitiveMacroFunction = sysmelb_ifThenPrimitiveMacro;
 
-        sysmelb_Environment_setLocalSymbolBinding(&sysmelb_IntrinsicsEnvironment, sysmelb_internSymbolC("if:then:"), sysmelb_createSymbolFunctionBinding(function));
+        sysmelb_Environment_setLocalSymbolBinding(&sysmelb_IntrinsicsEnvironment, function->name, sysmelb_createSymbolFunctionBinding(function));
+    }
+
+    // While control flow macro
+    {
+        sysmelb_function_t *function = sysmelb_allocate(sizeof(sysmelb_function_t));
+        function->kind = SysmelFunctionKindPrimitiveMacro;
+        function->name = sysmelb_internSymbolC("while:do:continueWith:");
+        function->primitiveMacroFunction = sysmelb_WhileDoContinueWithPrimitiveMacro;
+
+        sysmelb_Environment_setLocalSymbolBinding(&sysmelb_IntrinsicsEnvironment, function->name, sysmelb_createSymbolFunctionBinding(function));
+    }
+
+    {
+        sysmelb_function_t *function = sysmelb_allocate(sizeof(sysmelb_function_t));
+        function->kind = SysmelFunctionKindPrimitiveMacro;
+        function->name = sysmelb_internSymbolC("while:do:");
+        function->primitiveMacroFunction = sysmelb_WhileDoPrimitiveMacro;
+
+        sysmelb_Environment_setLocalSymbolBinding(&sysmelb_IntrinsicsEnvironment, function->name, sysmelb_createSymbolFunctionBinding(function));
     }
 
     sysmelb_IntrinsicsEnvironmentCreated = true;

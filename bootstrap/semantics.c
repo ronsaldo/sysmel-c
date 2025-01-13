@@ -228,6 +228,30 @@ sysmelb_Value_t sysmelb_analyzeAndEvaluateScript(sysmelb_Environment_t *environm
             };
             return voidResult;
         }
+    case ParseTreeWhileLoop:
+    {
+        sysmelb_Value_t condition = sysmelb_analyzeAndEvaluateScript(environment, ast->whileLoop.condition);
+        if(condition.kind != SysmelValueKindBoolean)
+            sysmelb_errorPrintf(ast->sourcePosition, "While loop condition must be a boolean.");
+
+        while(condition.boolean)
+        {
+            if(ast->whileLoop.body)
+                sysmelb_analyzeAndEvaluateScript(environment, ast->whileLoop.body);
+
+            if(ast->whileLoop.continueExpression)
+                sysmelb_analyzeAndEvaluateScript(environment, ast->whileLoop.continueExpression);
+
+            condition = sysmelb_analyzeAndEvaluateScript(environment, ast->whileLoop.condition);
+            if(condition.kind != SysmelValueKindBoolean)
+                sysmelb_errorPrintf(ast->sourcePosition, "While loop condition must be a boolean.");
+        }
+
+        sysmelb_Value_t voidValue = {
+            .kind = SysmelValueKindVoid
+        };
+        return voidValue;
+    }
     default:
         abort();
     }
