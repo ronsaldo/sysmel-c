@@ -23,6 +23,7 @@ typedef enum sysmelb_ValueKind_e {
     SysmelValueKindTupleReference,
     SysmelValueKindAssociationReference,
     SysmelValueKindDictionaryReference,
+    SysmelValueKindValueBoxReference,
 } sysmelb_ValueKind_t;
 
 typedef struct sysmelb_Value_s sysmelb_Value_t;
@@ -39,6 +40,8 @@ typedef struct sysmelb_TupleHeader_s sysmelb_TupleHeader_t;
 
 typedef struct sysmelb_Association_s sysmelb_Association_t;
 typedef struct sysmelb_Dictionary_s sysmelb_Dictionary_t;
+
+typedef struct sysmelb_ValueBox_s sysmelb_ValueBox_t;
 
 struct sysmelb_Value_s
 {
@@ -59,6 +62,8 @@ struct sysmelb_Value_s
         sysmelb_TupleHeader_t *tupleReference;
         sysmelb_Association_t *associationReference;
         sysmelb_Dictionary_t *dictionaryReference;
+
+        sysmelb_ValueBox_t *valueBoxReference;
 
         struct
         {
@@ -96,6 +101,11 @@ struct sysmelb_Dictionary_s
 {
     size_t size;
     sysmelb_Association_t *elements[];
+};
+
+struct sysmelb_ValueBox_s
+{
+    sysmelb_Value_t currentValue;
 };
 
 void sysmelb_printValue(sysmelb_Value_t value);

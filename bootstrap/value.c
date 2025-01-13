@@ -93,6 +93,11 @@ void sysmelb_printValue(sysmelb_Value_t value)
     case SysmelValueKindFloatingPoint:
         printf("%f%s", value.floatingPoint, printingSuffix);
         break;
+    case SysmelValueKindValueBoxReference:
+        printf("Box[");
+        sysmelb_printValue(value.valueBoxReference->currentValue);
+        printf("]");
+        break;
     default: abort();
     }
 

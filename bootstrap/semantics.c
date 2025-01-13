@@ -289,6 +289,90 @@ sysmelb_Value_t sysmelb_analyzeAndEvaluateScript(sysmelb_Environment_t *environm
             };
             return result;
         }
+
+    // Lexical block
+    case ParseTreeLexicalBlock:
+    {
+        sysmelb_Environment_t *blockEnvironment = sysmelb_createLexicalEnvironment(environment);
+        return sysmelb_analyzeAndEvaluateScript(blockEnvironment, ast->lexicalBlock.expression);
+    }
+
+    case ParseTreeBindableName:
+    {
+        if(ast->bindableName.isMutable)
+        {
+            sysmelb_Value_t nameValue = sysmelb_analyzeAndEvaluateScript(environment, ast->bindableName.nameExpression);
+            if(nameValue.kind != SysmelValueKindSymbolReference)
+                sysmelb_errorPrintf(ast->bindableName.nameExpression->sourcePosition, "Expected a name");
+
+            sysmelb_ValueBox_t *box = sysmelb_allocate(sizeof(sysmelb_ValueBox_t));
+            sysmelb_Value_t value = {
+                .kind = SysmelValueKindValueBoxReference,
+                .type = sysmelb_getBasicTypes()->valueReference,
+                .valueBoxReference = box,
+            };
+
+            sysmelb_Environment_setLocalSymbolBinding(environment, nameValue.symbolReference, sysmelb_createSymbolValueBinding(value));
+            return value;
+        }
+
+        sysmelb_errorPrintf(ast->sourcePosition, "Immutable bindable names must be part of an assignment.");
+        abort();
+    }
+
+    case ParseTreeAssignment:
+    {
+        sysmelb_ParseTreeNode_t *store = ast->assignment.store;
+        sysmelb_ParseTreeNode_t *value = ast->assignment.value;
+        if(store->kind == ParseTreeBindableName)
+        {
+            sysmelb_Value_t nameValue = sysmelb_analyzeAndEvaluateScript(environment, store->bindableName.nameExpression);
+            if(nameValue.kind != SysmelValueKindSymbolReference)
+                sysmelb_errorPrintf(store->bindableName.nameExpression->sourcePosition, "Expected a name");
+            
+            sysmelb_Value_t initialValue = sysmelb_analyzeAndEvaluateScript(environment, value);
+            if(store->bindableName.isMutable)
+            {
+                sysmelb_ValueBox_t *box = sysmelb_allocate(sizeof(sysmelb_ValueBox_t));
+                box->currentValue = initialValue;
+
+                sysmelb_Value_t boxValue = {
+                    .kind = SysmelValueKindValueBoxReference,
+                    .type = sysmelb_getBasicTypes()->valueReference,
+                    .valueBoxReference = box,
+                };
+                sysmelb_Environment_setLocalSymbolBinding(environment, nameValue.symbolReference, sysmelb_createSymbolValueBinding(boxValue));
+                return boxValue;
+            }
+            else
+            {
+                sysmelb_Environment_setLocalSymbolBinding(environment, nameValue.symbolReference, sysmelb_createSymbolValueBinding(initialValue));
+                return initialValue;
+            }
+        }
+        else if (store->kind == ParseTreeIdentifierReference)
+        {
+            sysmelb_Value_t storeValue = sysmelb_analyzeAndEvaluateScript(environment, store);
+            if(storeValue.kind == SysmelValueKindValueBoxReference)
+            {
+                sysmelb_Value_t newValue = sysmelb_analyzeAndEvaluateScript(environment, value);
+                storeValue.valueBoxReference->currentValue = newValue;
+                return storeValue;
+            }
+        }
+
+        // Transform the assignment into a message send.
+        sysmelb_ParseTreeNode_t *selector = sysmelb_newParseTreeNode(ParseTreeLiteralSymbolNode, ast->sourcePosition);
+        selector->literalSymbol.internedSymbol = sysmelb_internSymbolC(":=");
+
+        sysmelb_ParseTreeNode_t *message = sysmelb_newParseTreeNode(ParseTreeMessageSend, ast->sourcePosition);
+        message->messageSend.receiver = store;
+        message->messageSend.selector = selector;
+        sysmelb_ParseTreeNodeDynArray_add(&message->messageSend.arguments, value);
+        
+        return sysmelb_analyzeAndEvaluateScript(environment, message);
+    }
+
     // Control flow.
     case ParseTreeIfSelection:
         {

@@ -64,6 +64,7 @@ static void sysmelb_createBasicTypes(void)
     sysmelb_BasicTypesData.association    = sysmelb_allocateValueType(SysmelTypeKindAssociation, sysmelb_internSymbolC("Association"), pointerSize, pointerAlignment);
     sysmelb_BasicTypesData.dictionary     = sysmelb_allocateValueType(SysmelTypeKindDictionary, sysmelb_internSymbolC("Dictionary"), pointerSize, pointerAlignment);
     sysmelb_BasicTypesData.parseTreeNode  = sysmelb_allocateValueType(SysmelTypeKindParseTreeNode, sysmelb_internSymbolC("ParseTreeNode"), pointerSize, pointerAlignment);
+    sysmelb_BasicTypesData.valueReference = sysmelb_allocateValueType(SysmelTypeKindValueReference, sysmelb_internSymbolC("ValueReference"), pointerSize, pointerAlignment);
 
     sysmelb_BasicTypesData.char8    = sysmelb_allocateValueType(SysmelTypeKindPrimitiveCharacter, sysmelb_internSymbolC("Int8"), 1, 1);
     sysmelb_BasicTypesData.char16   = sysmelb_allocateValueType(SysmelTypeKindPrimitiveCharacter, sysmelb_internSymbolC("Int16"), 2, 2);

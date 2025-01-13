@@ -28,6 +28,7 @@ typedef enum sysmelb_TypeKind_e {
     SysmelTypeKindFloat,
     SysmelTypeKindUniverse,
     SysmelTypeKindParseTreeNode,
+    SysmelTypeKindValueReference,
     SysmelTypeKindPrimitiveCharacter,
     SysmelTypeKindPrimitiveSignedInteger,
     SysmelTypeKindPrimitiveUnsignedInteger,
@@ -64,6 +65,7 @@ typedef struct sysmelb_BasicTypes_s {
     sysmelb_Type_t *association;
     sysmelb_Type_t *dictionary;
     sysmelb_Type_t *parseTreeNode;
+    sysmelb_Type_t *valueReference;
 
     sysmelb_Type_t *char8;
     sysmelb_Type_t *char16;
