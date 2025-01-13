@@ -2,6 +2,10 @@
 #include <stdio.h>
 void sysmelb_printValue(sysmelb_Value_t value)
 {
+    const char *printingSuffix = "";
+    if(value.type && value.type->printingSuffix)
+        printingSuffix = value.type->printingSuffix;
+
     switch(value.kind)
     {
     case SysmelValueKindNull:
@@ -26,17 +30,19 @@ void sysmelb_printValue(sysmelb_Value_t value)
         printf("\"%.*s\"", (int)value.stringSize, value.string);
         break;
     case SysmelValueKindCharacter:
-        printf("%c", (int)value.unsignedInteger);
+        printf("%c%s", (int)value.unsignedInteger, printingSuffix);
         break;
     case SysmelValueKindInteger:
-        printf("%lld", (long long int)value.integer);
+        printf("%lld%s", (long long int)value.integer, printingSuffix);
         break;
     case SysmelValueKindUnsignedInteger:
-        printf("%llu", (long long unsigned int)value.integer);
+        printf("%llu%s", (long long unsigned int)value.integer, printingSuffix);
         break;
     case SysmelValueKindFloatingPoint:
-        printf("%f", value.floatingPoint);
+        printf("%f%s", value.floatingPoint, printingSuffix);
         break;
     default: abort();
     }
+
+
 }

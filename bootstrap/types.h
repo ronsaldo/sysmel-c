@@ -32,6 +32,7 @@ typedef enum sysmelb_TypeKind_e {
 struct sysmelb_Type_s {
     sysmelb_TypeKind_t kind;
     sysmelb_symbol_t *name;
+    const char *printingSuffix;
     uint32_t valueSize;
     uint32_t valueAlignment;
     uint32_t heapSize;
