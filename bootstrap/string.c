@@ -14,9 +14,12 @@ void sysmelb_dynstring_ensureCapacityFor(sysmelb_dynstring_t *dynstring, size_t 
         if(newCapacity < requiredCapacity)
             newCapacity = requiredCapacity;
 
-        char *newStorage = sysmelb_allocate(requiredCapacity);
-        memcpy(newStorage, dynstring->data, dynstring->size + 1);
-        sysmelb_freeAllocation(dynstring->data);
+        char *newStorage = sysmelb_allocate(newCapacity);
+        if(dynstring->data)
+        {
+            memcpy(newStorage, dynstring->data, dynstring->size + 1);
+            sysmelb_freeAllocation(dynstring->data);
+        }
 
         dynstring->data = newStorage;
         dynstring->capacity = newCapacity;

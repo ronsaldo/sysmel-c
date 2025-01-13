@@ -59,6 +59,10 @@ typedef enum sysmelb_ParseTreeNodeKind_e {
 
     // Assignment
     ParseTreeAssignment,
+
+    // Control flow. Exposed via macros
+    ParseTreeIfSelection,
+    ParseTreeWhileLoop,
 } sysmelb_ParseTreeNodeKind_t;
 
 typedef struct sysmelb_ParseTreeNode_s sysmelb_ParseTreeNode_t;
@@ -211,6 +215,19 @@ typedef struct sysmelb_ParseTreeAssignment_s {
     sysmelb_ParseTreeNode_t *value;
 } sysmelb_ParseTreeAssignment_t;
 
+// Control flow. Exposed via macros
+typedef struct sysmelb_ParseTreeIfSelection_s {
+    sysmelb_ParseTreeNode_t *condition;
+    sysmelb_ParseTreeNode_t *trueExpression;
+    sysmelb_ParseTreeNode_t *falseExpression;
+} sysmelb_ParseTreeIfSelection_t;
+
+typedef struct sysmelb_ParseTreeWhileLoop_s {
+    sysmelb_ParseTreeNode_t *condition;
+    sysmelb_ParseTreeNode_t *body;
+    sysmelb_ParseTreeNode_t *continueExpression;
+} sysmelb_ParseTreeWhileLoop_t;
+
 // Tagged node union.
 typedef struct sysmelb_ParseTreeNode_s {
     sysmelb_ParseTreeNodeKind_t kind;
@@ -264,6 +281,10 @@ typedef struct sysmelb_ParseTreeNode_s {
 
         // Assignment
         sysmelb_ParseTreeAssignment_t assignment;
+
+        // Control flow
+        sysmelb_ParseTreeIfSelection_t ifSelection;
+        sysmelb_ParseTreeWhileLoop_t whileLoop;
     };
 } sysmelb_ParseTreeNode_t;
 

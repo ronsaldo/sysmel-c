@@ -5,7 +5,6 @@
 sysmelb_ParseTreeNode_t *sysmelb_newParseTreeNode(sysmelb_ParseTreeNodeKind_t kind, sysmelb_SourcePosition_t sourcePosition)
 {
     sysmelb_ParseTreeNode_t *node = sysmelb_allocate(sizeof(sysmelb_ParseTreeNode_t));
-    memset(node, 0, sizeof(sysmelb_ParseTreeNode_t));
     node->kind = kind;
     node->sourcePosition = sourcePosition;
     return node;
@@ -222,6 +221,26 @@ void sysmelb_dumpParseTree(sysmelb_ParseTreeNode_t *node)
         sysmelb_dumpParseTree(node->assignment.store);
         printf(" := ");
         sysmelb_dumpParseTree(node->assignment.value);
+        printf(")");
+        break;
+
+    // Control flow
+    case ParseTreeIfSelection:
+        printf("ParseTreeIfSelection(");
+        sysmelb_dumpParseTree(node->ifSelection.condition);
+        printf(" ifTrue: ");
+        sysmelb_dumpParseTree(node->ifSelection.trueExpression);
+        printf(" ifFalse: ");
+        sysmelb_dumpParseTree(node->ifSelection.falseExpression);
+        printf(")");
+        break;
+    case ParseTreeWhileLoop:
+        printf("ParseTreeWhileLoop(");
+        sysmelb_dumpParseTree(node->whileLoop.condition);
+        printf(" do: ");
+        sysmelb_dumpParseTree(node->whileLoop.body);
+        printf(" continueWith: ");
+        sysmelb_dumpParseTree(node->whileLoop.continueExpression);
         printf(")");
         break;
 

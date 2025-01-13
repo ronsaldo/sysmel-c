@@ -10,6 +10,7 @@ typedef struct sysmelb_Environment_s sysmelb_Environment_t;
 typedef struct sysmelb_Module_s sysmelb_Module_t;
 typedef struct sysmelb_Namespace_s sysmelb_Namespace_t;
 typedef struct sysmelb_Type_s sysmelb_Type_t;
+typedef struct sysmelb_function_s sysmelb_function_t;
 
 typedef enum sysmelb_EnvironmentKind_e {
     SysmelEnvKindEmpty,
@@ -46,7 +47,9 @@ typedef struct sysmelb_SymbolBinding_s
     };
 } sysmelb_SymbolBinding_t;
 
+sysmelb_SymbolBinding_t *sysmelb_createSymbolValueBinding(sysmelb_Value_t value);
 sysmelb_SymbolBinding_t *sysmelb_createSymbolTypeBinding(sysmelb_Type_t *type);
+sysmelb_SymbolBinding_t *sysmelb_createSymbolFunctionBinding(sysmelb_function_t *function);
 
 sysmelb_SymbolBinding_t *sysmelb_environmentLookRecursively(sysmelb_Environment_t *environment, sysmelb_symbol_t *symbol);
 

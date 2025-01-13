@@ -1,7 +1,10 @@
 #include "environment.h"
+#include "function.h"
 #include "memory.h"
+#include "parse-tree.h"
 #include "namespace.h"
 #include "types.h"
+#include "value.h"
 #include <stddef.h>
 #include <stdbool.h>
 #include <assert.h>
@@ -15,14 +18,31 @@ static sysmelb_Environment_t sysmelb_EmptyEnvironment = {
 static bool sysmelb_IntrinsicsEnvironmentCreated;
 static sysmelb_Environment_t sysmelb_IntrinsicsEnvironment;
 
+sysmelb_SymbolBinding_t *sysmelb_createSymbolValueBinding(sysmelb_Value_t value)
+{
+    sysmelb_SymbolBinding_t *binding = sysmelb_allocate(sizeof(sysmelb_SymbolBinding_t));
+    binding->kind = SysmelSymbolValueBinding;
+    binding->value = value;
+    return binding;
+}
+
 sysmelb_SymbolBinding_t *sysmelb_createSymbolTypeBinding(sysmelb_Type_t *type)
 {
     sysmelb_SymbolBinding_t *binding = sysmelb_allocate(sizeof(sysmelb_SymbolBinding_t));
-    memset(binding, 0, sizeof(sysmelb_SymbolBinding_t));
     binding->kind = SysmelSymbolValueBinding;
     binding->value.kind = SysmelValueKindTypeReference;
     binding->value.type = sysmelb_getBasicTypes()->universe;
     binding->value.typeReference = type;
+    return binding;
+}
+
+sysmelb_SymbolBinding_t *sysmelb_createSymbolFunctionBinding(sysmelb_function_t *function)
+{
+    sysmelb_SymbolBinding_t *binding = sysmelb_allocate(sizeof(sysmelb_SymbolBinding_t));
+    binding->kind = SysmelSymbolValueBinding;
+    binding->value.kind = SysmelValueKindFunctionReference;
+    binding->value.type = sysmelb_getBasicTypes()->gradual;
+    binding->value.functionReference = function;
     return binding;
 }
 
@@ -57,6 +77,33 @@ sysmelb_Environment_t *sysmelb_getEmptyEnvironment()
     return &sysmelb_EmptyEnvironment;
 }
 
+static sysmelb_Value_t sysmelb_ifThenElsePrimitiveMacro(sysmelb_MacroContext_t *macroContext, size_t argumentCount, sysmelb_Value_t *arguments)
+{
+    assert(argumentCount == 3);
+    sysmelb_ParseTreeNode_t *node = sysmelb_newParseTreeNode(ParseTreeIfSelection, macroContext->sourcePosition);
+    node->ifSelection.condition = arguments[0].parseTreeReference;
+    node->ifSelection.trueExpression = arguments[1].parseTreeReference;
+    node->ifSelection.falseExpression = arguments[2].parseTreeReference;
+    sysmelb_Value_t result = {
+        .kind = SysmelValueKindParseTreeReference,
+        .parseTreeReference = node
+    };
+    return result;
+}
+
+static sysmelb_Value_t sysmelb_ifThenPrimitiveMacro(sysmelb_MacroContext_t *macroContext, size_t argumentCount, sysmelb_Value_t *arguments)
+{
+    assert(argumentCount == 2);
+    sysmelb_ParseTreeNode_t *node = sysmelb_newParseTreeNode(ParseTreeIfSelection, macroContext->sourcePosition);
+    node->ifSelection.condition = arguments[0].parseTreeReference;
+    node->ifSelection.trueExpression = arguments[1].parseTreeReference;
+    sysmelb_Value_t result = {
+        .kind = SysmelValueKindParseTreeReference,
+        .parseTreeReference = node
+    };
+    return result;
+}
+
 sysmelb_Environment_t *sysmelb_getOrCreateIntrinsicsEnvironment()
 {
     if(sysmelb_IntrinsicsEnvironmentCreated)
@@ -80,6 +127,64 @@ sysmelb_Environment_t *sysmelb_getOrCreateIntrinsicsEnvironment()
         }
     }
 
+    // null
+    {
+        sysmelb_Value_t nullValue = {
+            .kind = SysmelValueKindNull,
+        };
+
+        sysmelb_Environment_setLocalSymbolBinding(&sysmelb_IntrinsicsEnvironment, sysmelb_internSymbolC("null"), sysmelb_createSymbolValueBinding(nullValue));        
+    }
+
+    // void
+    {
+        sysmelb_Value_t voidValue = {
+            .kind = SysmelValueKindVoid,
+        };
+
+        sysmelb_Environment_setLocalSymbolBinding(&sysmelb_IntrinsicsEnvironment, sysmelb_internSymbolC("void"), sysmelb_createSymbolValueBinding(voidValue));        
+    }
+
+    // Boolean false
+    {
+        sysmelb_Value_t booleanFalse = {
+            .kind = SysmelValueKindBoolean,
+            .boolean = false,
+        };
+
+        sysmelb_Environment_setLocalSymbolBinding(&sysmelb_IntrinsicsEnvironment, sysmelb_internSymbolC("false"), sysmelb_createSymbolValueBinding(booleanFalse));        
+    }
+
+    // Boolean true
+    {
+        sysmelb_Value_t booleanTrue = {
+            .kind = SysmelValueKindBoolean,
+            .boolean = true,
+        };
+
+        sysmelb_Environment_setLocalSymbolBinding(&sysmelb_IntrinsicsEnvironment, sysmelb_internSymbolC("true"), sysmelb_createSymbolValueBinding(booleanTrue));
+    }
+
+    // If then else control flow macro
+    {
+        sysmelb_function_t *function = sysmelb_allocate(sizeof(sysmelb_function_t));
+        function->kind = SysmelFunctionKindPrimitiveMacro;
+        function->name = sysmelb_internSymbolC("if:then:else:");
+        function->primitiveMacroFunction = sysmelb_ifThenElsePrimitiveMacro;
+
+        sysmelb_Environment_setLocalSymbolBinding(&sysmelb_IntrinsicsEnvironment, sysmelb_internSymbolC("if:then:else:"), sysmelb_createSymbolFunctionBinding(function));
+    }
+
+    // If then control flow macro
+    {
+        sysmelb_function_t *function = sysmelb_allocate(sizeof(sysmelb_function_t));
+        function->kind = SysmelFunctionKindPrimitiveMacro;
+        function->name = sysmelb_internSymbolC("if:then:");
+        function->primitiveMacroFunction = sysmelb_ifThenPrimitiveMacro;
+
+        sysmelb_Environment_setLocalSymbolBinding(&sysmelb_IntrinsicsEnvironment, sysmelb_internSymbolC("if:then:"), sysmelb_createSymbolFunctionBinding(function));
+    }
+
     sysmelb_IntrinsicsEnvironmentCreated = true;
     return &sysmelb_IntrinsicsEnvironment;
 }
@@ -92,7 +197,6 @@ void sysmelb_Environment_setLocalSymbolBinding(sysmelb_Environment_t *environmen
 sysmelb_Environment_t *sysmelb_createModuleEnvironment(sysmelb_Module_t *module, sysmelb_Environment_t *parent)
 {
     sysmelb_Environment_t *environment = sysmelb_allocate(sizeof(sysmelb_Environment_t));
-    memset(environment, 0, sizeof(sysmelb_Environment_t));
     environment->kind = SysmelEnvKindModule;
     environment->parent = parent;
     environment->ownerModule = module;
@@ -102,7 +206,6 @@ sysmelb_Environment_t *sysmelb_createModuleEnvironment(sysmelb_Module_t *module,
 sysmelb_Environment_t *sysmelb_createNamespaceEnvironment(sysmelb_Namespace_t *namespace, sysmelb_Environment_t *parent)
 {
     sysmelb_Environment_t *environment = sysmelb_allocate(sizeof(sysmelb_Environment_t));
-    memset(environment, 0, sizeof(sysmelb_Environment_t));
     environment->kind = SysmelEnvKindNamespace;
     environment->parent = parent;
     environment->ownerNamespace = namespace;
@@ -112,7 +215,6 @@ sysmelb_Environment_t *sysmelb_createNamespaceEnvironment(sysmelb_Namespace_t *n
 sysmelb_Environment_t *sysmelb_createLexicalEnvironment(sysmelb_Environment_t *parent)
 {
     sysmelb_Environment_t *environment = sysmelb_allocate(sizeof(sysmelb_Environment_t));
-    memset(environment, 0, sizeof(sysmelb_Environment_t));
     environment->kind = SysmelEnvKindLexical;
     environment->parent = parent;
     return environment;

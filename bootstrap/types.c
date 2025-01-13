@@ -1,10 +1,10 @@
 #include "types.h"
+#include "value.h"
 #include <stdbool.h>
 
 void sysmelb_type_addPrimitiveMethod(sysmelb_Type_t *type, sysmelb_symbol_t *selector, sysmelb_PrimitiveFunction_t primitive)
 {
     sysmelb_function_t *function = sysmelb_allocate(sizeof(sysmelb_function_t));
-    memset(function, 0, sizeof(sysmelb_function_t));
     function->kind = SysmelFunctionKindPrimitive;
     function->name = selector;
     function->primitiveFunction = primitive;
@@ -15,7 +15,6 @@ void sysmelb_type_addPrimitiveMethod(sysmelb_Type_t *type, sysmelb_symbol_t *sel
 void sysmelb_type_addPrimitiveMacroMethod(sysmelb_Type_t *type, sysmelb_symbol_t *selector, sysmelb_PrimitiveMacroFunction_t primitive)
 {
     sysmelb_function_t *function = sysmelb_allocate(sizeof(sysmelb_function_t));
-    memset(function, 0, sizeof(sysmelb_function_t));
     function->kind = SysmelFunctionKindPrimitiveMacro;
     function->name = selector;
     function->primitiveMacroFunction = primitive;
@@ -34,7 +33,6 @@ sysmelb_function_t *sysmelb_type_lookupSelector(sysmelb_Type_t *type, sysmelb_sy
 sysmelb_Type_t *sysmelb_allocateValueType(sysmelb_TypeKind_t kind, sysmelb_symbol_t *name, uint32_t size, uint32_t alignment)
 {
     sysmelb_Type_t *type = sysmelb_allocate(sizeof(sysmelb_Type_t));
-    memset(type, 0, sizeof(sysmelb_Type_t));
     type->kind = kind;
     type->name = name;
     type->valueAlignment = alignment;

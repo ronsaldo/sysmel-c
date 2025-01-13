@@ -66,7 +66,6 @@ sysmelb_symbol_t *sysmelb_internSymbol(size_t stringSize, const char *string)
         sysmelb_internedSymbolSet.capacity = 1024;
         sysmelb_internedSymbolSet.targetCapacity = sysmelb_internedSymbolSet.capacity * 80 / 100;
         sysmelb_internedSymbolSet.internedSymbols = sysmelb_allocate(sysmelb_internedSymbolSet.capacity * sizeof(sysmelb_symbol_t *));
-        memset(sysmelb_internedSymbolSet.internedSymbols, 0, sysmelb_internedSymbolSet.capacity * sizeof(sysmelb_symbol_t *));
     }
 
     int32_t slotIndex = sysmelb_symbolScanForString(stringSize, string);
@@ -77,7 +76,6 @@ sysmelb_symbol_t *sysmelb_internSymbol(size_t stringSize, const char *string)
 
     size_t symbolAllocationSize = sizeof(sysmelb_symbol_t) + stringSize + 1;
     sysmelb_symbol_t *newSymbol = sysmelb_allocate(symbolAllocationSize);
-    memset(newSymbol, 0, symbolAllocationSize);
 
     newSymbol->hash = sysmelb_stringHash(stringSize, string);
     newSymbol->size = stringSize;

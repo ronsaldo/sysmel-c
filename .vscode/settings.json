@@ -69,6 +69,7 @@
         "__memory": "c",
         "namespace.h": "c",
         "stdbool.h": "c",
-        "types.h": "c"
+        "types.h": "c",
+        "value.h": "c"
     }
 }

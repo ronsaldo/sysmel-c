@@ -5,7 +5,13 @@ void sysmelb_printValue(sysmelb_Value_t value)
     switch(value.kind)
     {
     case SysmelValueKindNull:
-        printf("Null");
+        printf("null");
+        break;
+    case SysmelValueKindVoid:
+        printf("void");
+        break;
+    case SysmelValueKindBoolean:
+        printf(value.boolean ? "true" : "false");
         break;
     case SysmelValueKindTypeReference:
         if (value.typeReference->name)

@@ -5,7 +5,6 @@
 sysmelb_Module_t *sysmelb_createModuleNamed(sysmelb_symbol_t *name)
 {
     sysmelb_Module_t *module = sysmelb_allocate(sizeof(sysmelb_Module_t));
-    memset(module, 0, sizeof(sysmelb_Module_t));
 
     module->name = name;
     module->moduleEnvironment = sysmelb_createModuleEnvironment(module, sysmelb_getOrCreateIntrinsicsEnvironment());

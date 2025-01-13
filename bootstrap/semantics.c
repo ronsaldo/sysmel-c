@@ -63,7 +63,7 @@ sysmelb_Value_t sysmelb_analyzeAndEvaluateScript(sysmelb_Environment_t *environm
             sysmelb_SymbolBinding_t *binding = sysmelb_environmentLookRecursively(environment, ast->identifierReference.identifier);
             if(!binding)
             {
-                fprintf(stderr, "Failed to find binding for symbol #%.*s", (int)ast->identifierReference.identifier->size, ast->identifierReference.identifier->string);
+                fprintf(stderr, "Failed to find binding for symbol #%.*s\n", (int)ast->identifierReference.identifier->size, ast->identifierReference.identifier->string);
                 abort();
             }
             switch(binding->kind)
@@ -77,7 +77,64 @@ sysmelb_Value_t sysmelb_analyzeAndEvaluateScript(sysmelb_Environment_t *environm
 
     // Functions and message send
     case ParseTreeFunctionApplication:
-        abort();
+    {
+        sysmelb_Value_t functionalValue = sysmelb_analyzeAndEvaluateScript(environment, ast->functionApplication.functional);
+        if(functionalValue.kind == SysmelValueKindFunctionReference)
+        {
+            sysmelb_function_t *function = functionalValue.functionReference;
+            switch(function->kind)
+            {
+            case SysmelFunctionKindPrimitive:
+            {
+                size_t argumentCount = ast->functionApplication.arguments.size;
+                assert(ast->functionApplication.arguments.size <= SYSMEL_MAX_ARGUMENT_COUNT);
+                sysmelb_Value_t applicationArguments[SYSMEL_MAX_ARGUMENT_COUNT];
+
+                for(size_t i = 0; i < argumentCount; ++i)
+                    applicationArguments[i] = sysmelb_analyzeAndEvaluateScript(environment, ast->functionApplication.arguments.elements[i]);
+                
+                return function->primitiveFunction(argumentCount, applicationArguments);
+            }
+            case SysmelFunctionKindPrimitiveMacro:
+            {
+                size_t argumentCount = ast->functionApplication.arguments.size;
+                assert(ast->functionApplication.arguments.size <= SYSMEL_MAX_ARGUMENT_COUNT);
+                sysmelb_Value_t applicationArguments[SYSMEL_MAX_ARGUMENT_COUNT];
+
+                for(size_t i = 0; i < argumentCount; ++i)
+                {
+                    sysmelb_Value_t argumentValue = {
+                        .kind = SysmelValueKindParseTreeReference,
+                        .parseTreeReference = ast->functionApplication.arguments.elements[i],
+                    };
+
+                    applicationArguments[i] = argumentValue;
+                }
+                
+                sysmelb_MacroContext_t macroContext = {
+                    .sourcePosition = ast->sourcePosition
+                };
+
+                sysmelb_Value_t macroResult = function->primitiveMacroFunction(&macroContext, argumentCount, applicationArguments);
+                assert(macroResult.kind == SysmelValueKindParseTreeReference);
+                return sysmelb_analyzeAndEvaluateScript(environment, macroResult.parseTreeReference);
+            }
+            default:
+                abort();
+            }
+        }
+        else if(functionalValue.kind == SysmelValueKindTypeReference)
+        {
+            fprintf(stderr, "TODO: type() constructors.");
+            abort();
+        }
+        else
+        {
+            fprintf(stderr, "Unsupported application.");
+            abort();           
+        }
+        break;
+    }
     case ParseTreeMessageSend:
     {
         sysmelb_Value_t receiver = sysmelb_analyzeAndEvaluateScript(environment, ast->messageSend.receiver);
@@ -108,7 +165,6 @@ sysmelb_Value_t sysmelb_analyzeAndEvaluateScript(sysmelb_Environment_t *environm
                 messageArguments[i + 1] = sysmelb_analyzeAndEvaluateScript(environment, ast->messageSend.arguments.elements[i]);
             return method->primitiveFunction(1 + argumentCount, messageArguments);
         }
-            break;
         case SysmelFunctionKindPrimitiveMacro:
             fprintf(stderr, "TODO: Support macro message sends");
             abort();
@@ -141,9 +197,38 @@ sysmelb_Value_t sysmelb_analyzeAndEvaluateScript(sysmelb_Environment_t *environm
     case ParseTreeSequence:
         {
             sysmelb_Value_t lastResult = {};
-            for(ast->sequence.elements.size
+            for(size_t i = 0; i < ast->sequence.elements.size; ++i)
+                lastResult = sysmelb_analyzeAndEvaluateScript(environment, ast->sequence.elements.elements[i]);
+            return lastResult;
+        }
+
+    // Control flow.
+    case ParseTreeIfSelection:
+        {
+            sysmelb_Value_t condition = sysmelb_analyzeAndEvaluateScript(environment, ast->ifSelection.condition);
+            if(condition.kind != SysmelValueKindBoolean)
+            {
+                fprintf(stderr, "Expected a boolean condition.");
+            }
+
+            if(condition.boolean)
+            {
+                if(ast->ifSelection.trueExpression)
+                    return sysmelb_analyzeAndEvaluateScript(environment, ast->ifSelection.trueExpression);
+            }
+            else
+            {
+                if(ast->ifSelection.falseExpression)
+                    return sysmelb_analyzeAndEvaluateScript(environment, ast->ifSelection.falseExpression);
+            }
+
+            sysmelb_Value_t voidResult = {
+                .kind = SysmelValueKindVoid
+            };
+            return voidResult;
         }
     default:
         abort();
     }
+    abort();
 }

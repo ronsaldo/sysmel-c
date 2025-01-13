@@ -2,17 +2,22 @@
 #define SYSMELB_VALUE_H
 
 #include "types.h"
+#include <stdbool.h>
 
 typedef enum sysmelb_ValueKind_e {
     SysmelValueKindNull,
-    SysmelValueKindTypeReference,
-    SysmelValueKindFunctionReference,
-    SysmelValueKindSymbolReference,
-    SysmelValueKindStringReference,
+    SysmelValueKindVoid,
+    SysmelValueKindBoolean,
     SysmelValueKindCharacter,
     SysmelValueKindInteger,
     SysmelValueKindUnsignedInteger,
     SysmelValueKindFloatingPoint,
+
+    SysmelValueKindTypeReference,
+    SysmelValueKindFunctionReference,
+    SysmelValueKindParseTreeReference,
+    SysmelValueKindSymbolReference,
+    SysmelValueKindStringReference,
 } sysmelb_ValueKind_t;
 
 typedef struct sysmelb_Value_s sysmelb_Value_t;
@@ -28,6 +33,7 @@ struct sysmelb_Value_s
     sysmelb_ValueKind_t kind;
     sysmelb_Type_t *type;
     union {
+        bool boolean;
         sysmelb_IntegerLiteralType_t integer;
         sysmelb_UnsignedIntegerLiteralType_t unsignedInteger;
         double floatingPoint;

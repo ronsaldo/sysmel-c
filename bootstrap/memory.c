@@ -1,5 +1,6 @@
 #include "memory.h"
 #include <stdlib.h>
+#include <string.h>
 
 typedef struct sysmelb_AllocationHeader_s sysmelb_AllocationHeader_t;
 
@@ -15,6 +16,7 @@ void *sysmelb_allocate(size_t allocationSize)
 {
     size_t sizeWithHeader = sizeof(sysmelb_AllocationHeader_t) + allocationSize;
     sysmelb_AllocationHeader_t *header = malloc(sizeWithHeader);
+    memset(header, 0, sizeWithHeader);
     header->nextAllocation = sysmelb_LastMemoryAllocation;
     header->allocationSize = allocationSize;
     sysmelb_LastMemoryAllocation = header;
@@ -24,11 +26,8 @@ void *sysmelb_allocate(size_t allocationSize)
 
 void sysmelb_freeAllocation(void *allocation)
 {
-    if(!allocation)
-        return;
-        
-    sysmelb_AllocationHeader_t *header = (sysmelb_AllocationHeader_t*)allocation - 1;
-    free(header);
+    // TODO: Implement this properly.
+    (void)allocation;
 }
 
 void sysmelb_freeAll(void)
