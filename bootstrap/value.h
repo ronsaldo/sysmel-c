@@ -6,6 +6,7 @@
 typedef enum sysmelb_ValueKind_e {
     SysmelValueKindNull,
     SysmelValueKindTypeReference,
+    SysmelValueKindFunctionReference,
     SysmelValueKindSymbolReference,
     SysmelValueKindStringReference,
     SysmelValueKindCharacter,
@@ -15,9 +16,12 @@ typedef enum sysmelb_ValueKind_e {
 } sysmelb_ValueKind_t;
 
 typedef struct sysmelb_Value_s sysmelb_Value_t;
+typedef struct sysmelb_function_s sysmelb_function_t;
 
 typedef int64_t sysmelb_IntegerLiteralType_t;
 typedef uint64_t sysmelb_UnsignedIntegerLiteralType_t;
+
+typedef struct sysmelb_ParseTreeNode_s sysmelb_ParseTreeNode_t;
 
 struct sysmelb_Value_s
 {
@@ -30,6 +34,8 @@ struct sysmelb_Value_s
 
         sysmelb_Type_t *typeReference;
         sysmelb_symbol_t *symbolReference;
+        sysmelb_function_t *functionReference;
+        sysmelb_ParseTreeNode_t *parseTreeReference;
 
         struct
         {

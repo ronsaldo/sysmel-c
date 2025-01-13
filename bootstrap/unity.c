@@ -1,4 +1,5 @@
 #include "environment.c"
+#include "function.h"
 #include "hashtable.c"
 #include "main.c"
 #include "memory.c"
