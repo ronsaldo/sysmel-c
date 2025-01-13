@@ -137,7 +137,12 @@ sysmelb_Value_t sysmelb_analyzeAndEvaluateScript(sysmelb_Environment_t *environm
             }
             return sysmelb_analyzeAndEvaluateScript(environment, receiver);
         }
-        abort();
+    // Sequences, array, tuples
+    case ParseTreeSequence:
+        {
+            sysmelb_Value_t lastResult = {};
+            for(ast->sequence.elements.size
+        }
     default:
         abort();
     }
