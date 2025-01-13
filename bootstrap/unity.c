@@ -7,6 +7,7 @@
 #include "parse-tree.c"
 #include "parser.c"
 #include "scanner.c"
+#include "semantics.c"
 #include "source-code.c"
 #include "string.c"
 #include "symbol.c"

@@ -2,6 +2,8 @@
 #include "scanner.h"
 #include "parser.h"
 #include "module.h"
+#include "semantics.h"
+#include "value.h"
 #include <string.h>
 #include <stdio.h>
 
@@ -38,13 +40,17 @@ void parseOnlyText(const char *text)
     printf("\n");
 }
 
-void analyzeText(const char *text)
+void evaluateText(const char *text)
 {
     sysmelb_SourceCode_t *sourceCode = sysmelb_makeSourceCodeFromString("CLI", text);
     sysmelb_TokenDynarray_t scannedTokens = sysmelb_scanSourceCode(sourceCode);
 
     sysmelb_ParseTreeNode_t *parseTree = parseTokenList(sourceCode, scannedTokens.size, scannedTokens.tokens);
-
+    
+    sysmelb_Environment_t *environment = sysmelb_module_createTopLevelEnvironment(currentModule);
+    sysmelb_Value_t result = sysmelb_analyzeAndEvaluateScript(environment, parseTree);
+    sysmelb_printValue(result);
+    printf("\n");
 }
 
 int main(int argc, const char **argv)
@@ -76,11 +82,11 @@ int main(int argc, const char **argv)
             {
                 currentModule = sysmelb_createModuleNamed(sysmelb_internSymbolC(argv[++i]));
             }
-            else if(!strcmp(arg, "-analyze-only") && i + 1 < argc)
+            else if(!strcmp(arg, "-eval") && i + 1 < argc)
             {
                 if(!currentModule)
                     currentModule = sysmelb_createModuleNamed(sysmelb_internSymbolC("CLI"));
-                analyzeText(argv[++i]);
+                evaluateText(argv[++i]);
             }
             
         }

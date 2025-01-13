@@ -6,6 +6,9 @@
 typedef enum sysmelb_ValueKind_e {
     SysmelValueKindNull,
     SysmelValueKindTypeReference,
+    SysmelValueKindSymbolReference,
+    SysmelValueKindStringReference,
+    SysmelValueKindCharacter,
     SysmelValueKindInteger,
     SysmelValueKindUnsignedInteger,
     SysmelValueKindFloatingPoint,
@@ -19,12 +22,20 @@ typedef uint64_t sysmelb_UnsignedIntegerLiteralType_t;
 struct sysmelb_Value_s
 {
     sysmelb_ValueKind_t kind;
-
+    sysmelb_Type_t *type;
     union {
         sysmelb_IntegerLiteralType_t integer;
         sysmelb_UnsignedIntegerLiteralType_t unsignedInteger;
-        sysmelb_Type_t *typeReference;
         double floatingPoint;
+
+        sysmelb_Type_t *typeReference;
+        sysmelb_symbol_t *symbolReference;
+
+        struct
+        {
+            size_t stringSize;
+            const char *string;
+        };
     };
 };
 

@@ -13,6 +13,15 @@ void sysmelb_printValue(sysmelb_Value_t value)
         else
             printf("AnonTypeReference");
         break;
+    case SysmelValueKindSymbolReference:
+        printf("#%.*s", value.symbolReference->size, value.symbolReference->string);
+        break;
+    case SysmelValueKindStringReference:
+        printf("\"%.*s\"", (int)value.stringSize, value.string);
+        break;
+    case SysmelValueKindCharacter:
+        printf("%c", (int)value.unsignedInteger);
+        break;
     case SysmelValueKindInteger:
         printf("%lld", (long long int)value.integer);
         break;

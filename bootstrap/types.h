@@ -21,6 +21,7 @@ typedef enum sysmelb_TypeKind_e {
     SysmelTypeKindSum,
     SysmelTypeKindInteger,
     SysmelTypeKindFloat,
+    SysmelTypeKindUniverse,
     SysmelTypeKindPrimitiveCharacter,
     SysmelTypeKindPrimitiveSignedInteger,
     SysmelTypeKindPrimitiveUnsignedInteger,
@@ -48,6 +49,7 @@ typedef struct sysmelb_BasicTypes_s {
     sysmelb_Type_t *symbol;
     sysmelb_Type_t *integer;
     sysmelb_Type_t *floatingPoint;
+    sysmelb_Type_t *universe;
 
     sysmelb_Type_t *int8;
     sysmelb_Type_t *int16;

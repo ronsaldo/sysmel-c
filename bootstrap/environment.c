@@ -21,6 +21,7 @@ sysmelb_SymbolBinding_t *sysmelb_createSymbolTypeBinding(sysmelb_Type_t *type)
     memset(binding, 0, sizeof(sysmelb_SymbolBinding_t));
     binding->kind = SysmelSymbolValueBinding;
     binding->value.kind = SysmelValueKindTypeReference;
+    binding->value.type = sysmelb_getBasicTypes()->universe;
     binding->value.typeReference = type;
     return binding;
 }
