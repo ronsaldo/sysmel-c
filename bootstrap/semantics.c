@@ -2,6 +2,7 @@
 #include "function.h"
 #include "types.h"
 #include "error.h"
+#include "memory.h"
 #include <stdio.h>
 
 #define SYSMEL_MAX_ARGUMENT_COUNT 16
@@ -203,6 +204,86 @@ sysmelb_Value_t sysmelb_analyzeAndEvaluateScript(sysmelb_Environment_t *environm
             return lastResult;
         }
 
+    case ParseTreeArray:
+        {
+            size_t arraySize = ast->tuple.elements.size;
+            sysmelb_ArrayHeader_t *arrayData = sysmelb_allocate(sizeof(sysmelb_ByteArrayHeader_t) + arraySize * sizeof(sysmelb_Value_t));
+            arrayData->size = arraySize;
+            for(size_t i = 0; i < arraySize; ++i)
+                arrayData->elements[i] = sysmelb_analyzeAndEvaluateScript(environment, ast->tuple.elements.elements[i]);
+
+            sysmelb_Value_t result = {
+                .kind = SysmelValueKindArrayReference,
+                .arrayReference = arrayData
+            };
+            return result;
+        }
+    case ParseTreeByteArray:
+        {
+            size_t arraySize = ast->tuple.elements.size;
+            sysmelb_ByteArrayHeader_t *byteArrayData = sysmelb_allocate(sizeof(sysmelb_ByteArrayHeader_t) + arraySize * sizeof(sysmelb_Value_t));
+            byteArrayData->size = arraySize;
+            for(size_t i = 0; i < arraySize; ++i)
+            {
+                sysmelb_Value_t elementValue = sysmelb_analyzeAndEvaluateScript(environment, ast->tuple.elements.elements[i]);
+                byteArrayData->elements[i] = (uint8_t)elementValue.unsignedInteger;
+            }
+
+            sysmelb_Value_t result = {
+                .kind = SysmelValueKindByteArrayReference,
+                .byteArrayReference = byteArrayData
+            };
+            return result;
+        }
+    case ParseTreeTuple:
+        {
+            size_t tupleSize = ast->tuple.elements.size;
+            sysmelb_TupleHeader_t *tupleData = sysmelb_allocate(sizeof(sysmelb_TupleHeader_t) + tupleSize * sizeof(sysmelb_Value_t));
+            tupleData->size = tupleSize;
+            for(size_t i = 0; i < tupleSize; ++i)
+                tupleData->elements[i] = sysmelb_analyzeAndEvaluateScript(environment, ast->tuple.elements.elements[i]);
+
+            sysmelb_Value_t result = {
+                .kind = SysmelValueKindTupleReference,
+                .tupleReference = tupleData
+            };
+            return result;
+        }
+
+    // Dictionary
+    case ParseTreeAssociation:
+        {
+            sysmelb_Association_t *association = sysmelb_allocate(sizeof(sysmelb_Association_t));
+            association->key = sysmelb_analyzeAndEvaluateScript(environment, ast->association.key);
+            if(ast->association.value)
+                association->value = sysmelb_analyzeAndEvaluateScript(environment, ast->association.value);
+
+            sysmelb_Value_t result = {
+                .kind = SysmelValueKindAssociationReference,
+                .associationReference = association
+            };
+            return result;
+        }
+
+    case ParseTreeDictionary:
+        {
+            size_t dictionarySize = ast->dictionary.elements.size;
+            sysmelb_Dictionary_t *dictionary = sysmelb_allocate(sizeof(sysmelb_Dictionary_t) + dictionarySize * sizeof(sysmelb_Association_t*));
+            dictionary->size = dictionarySize;
+            for(size_t i = 0; i < dictionarySize; ++i)
+            {
+                sysmelb_Value_t elementValue = sysmelb_analyzeAndEvaluateScript(environment, ast->dictionary.elements.elements[i]);
+                if(elementValue.kind != SysmelValueKindAssociationReference)
+                    sysmelb_errorPrintf(ast->dictionary.elements.elements[i]->sourcePosition, "Expected an association for the dictionary.");
+                dictionary->elements[i] = elementValue.associationReference;
+            }
+            
+            sysmelb_Value_t result = {
+                .kind = SysmelValueKindDictionaryReference,
+                .dictionaryReference = dictionary
+            };
+            return result;
+        }
     // Control flow.
     case ParseTreeIfSelection:
         {

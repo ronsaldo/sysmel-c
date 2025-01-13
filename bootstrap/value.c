@@ -1,5 +1,6 @@
 #include "value.h"
 #include <stdio.h>
+
 void sysmelb_printValue(sysmelb_Value_t value)
 {
     const char *printingSuffix = "";
@@ -31,6 +32,57 @@ void sysmelb_printValue(sysmelb_Value_t value)
         break;
     case SysmelValueKindCharacter:
         printf("%c%s", (int)value.unsignedInteger, printingSuffix);
+        break;
+    case SysmelValueKindArrayReference:
+        printf("[");
+        for(size_t i = 0; i < value.arrayReference->size; ++i)
+        {
+            if(i != 0)
+                printf(" . ");
+            sysmelb_printValue(value.arrayReference->elements[i]);
+        }
+        printf("]");
+        break;
+    case SysmelValueKindByteArrayReference:
+        printf("#[");
+        for(size_t i = 0; i < value.byteArrayReference->size; ++i)
+        {
+            if(i != 0)
+                printf(" . ");
+            printf("%d", value.byteArrayReference->elements[i]);
+        }
+        printf("]");
+        break;
+    case SysmelValueKindTupleReference:
+        printf("(");
+        for(size_t i = 0; i < value.tupleReference->size; ++i)
+        {
+            if(i != 0)
+                printf(", ");
+            sysmelb_printValue(value.tupleReference->elements[i]);
+        }
+        printf(")");
+        break;
+    case SysmelValueKindAssociationReference:
+        sysmelb_printValue(value.associationReference->key);
+        printf(" : ");
+        sysmelb_printValue(value.associationReference->value);
+        break;
+    case SysmelValueKindDictionaryReference:
+        {
+            size_t dictionarySize = value.dictionaryReference->size;
+            printf("#{");
+            for(size_t i = 0; i < dictionarySize; ++i)
+            {
+                if(i != 0)
+                    printf(". ");
+                sysmelb_Association_t *assoc = value.dictionaryReference->elements[i];
+                sysmelb_printValue(assoc->key);
+                printf(" : ");
+                sysmelb_printValue(assoc->value);
+            }
+            printf("}");
+        }
         break;
     case SysmelValueKindInteger:
         printf("%lld%s", (long long int)value.integer, printingSuffix);

@@ -18,6 +18,11 @@ typedef enum sysmelb_ValueKind_e {
     SysmelValueKindParseTreeReference,
     SysmelValueKindSymbolReference,
     SysmelValueKindStringReference,
+    SysmelValueKindArrayReference,
+    SysmelValueKindByteArrayReference,
+    SysmelValueKindTupleReference,
+    SysmelValueKindAssociationReference,
+    SysmelValueKindDictionaryReference,
 } sysmelb_ValueKind_t;
 
 typedef struct sysmelb_Value_s sysmelb_Value_t;
@@ -27,6 +32,13 @@ typedef int64_t sysmelb_IntegerLiteralType_t;
 typedef uint64_t sysmelb_UnsignedIntegerLiteralType_t;
 
 typedef struct sysmelb_ParseTreeNode_s sysmelb_ParseTreeNode_t;
+
+typedef struct sysmelb_ArrayHeader_s sysmelb_ArrayHeader_t;
+typedef struct sysmelb_ByteArrayHeader_s sysmelb_ByteArrayHeader_t;
+typedef struct sysmelb_TupleHeader_s sysmelb_TupleHeader_t;
+
+typedef struct sysmelb_Association_s sysmelb_Association_t;
+typedef struct sysmelb_Dictionary_s sysmelb_Dictionary_t;
 
 struct sysmelb_Value_s
 {
@@ -42,6 +54,11 @@ struct sysmelb_Value_s
         sysmelb_symbol_t *symbolReference;
         sysmelb_function_t *functionReference;
         sysmelb_ParseTreeNode_t *parseTreeReference;
+        sysmelb_ArrayHeader_t *arrayReference;
+        sysmelb_ByteArrayHeader_t *byteArrayReference;
+        sysmelb_TupleHeader_t *tupleReference;
+        sysmelb_Association_t *associationReference;
+        sysmelb_Dictionary_t *dictionaryReference;
 
         struct
         {
@@ -49,6 +66,36 @@ struct sysmelb_Value_s
             const char *string;
         };
     };
+};
+
+struct sysmelb_ArrayHeader_s
+{
+    size_t size;
+    sysmelb_Value_t elements[];
+};
+
+struct sysmelb_ByteArrayHeader_s
+{
+    size_t size;
+    uint8_t elements[];
+};
+
+struct sysmelb_TupleHeader_s
+{
+    size_t size;
+    sysmelb_Value_t elements[];
+};
+
+struct sysmelb_Association_s
+{
+    sysmelb_Value_t key;
+    sysmelb_Value_t value;
+};
+
+struct sysmelb_Dictionary_s
+{
+    size_t size;
+    sysmelb_Association_t *elements[];
 };
 
 void sysmelb_printValue(sysmelb_Value_t value);
