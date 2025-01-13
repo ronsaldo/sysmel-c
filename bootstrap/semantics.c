@@ -214,6 +214,7 @@ sysmelb_Value_t sysmelb_analyzeAndEvaluateScript(sysmelb_Environment_t *environm
 
             sysmelb_Value_t result = {
                 .kind = SysmelValueKindArrayReference,
+                .type = sysmelb_getBasicTypes()->array,
                 .arrayReference = arrayData
             };
             return result;
@@ -231,6 +232,7 @@ sysmelb_Value_t sysmelb_analyzeAndEvaluateScript(sysmelb_Environment_t *environm
 
             sysmelb_Value_t result = {
                 .kind = SysmelValueKindByteArrayReference,
+                .type = sysmelb_getBasicTypes()->byteArray,
                 .byteArrayReference = byteArrayData
             };
             return result;
@@ -245,6 +247,7 @@ sysmelb_Value_t sysmelb_analyzeAndEvaluateScript(sysmelb_Environment_t *environm
 
             sysmelb_Value_t result = {
                 .kind = SysmelValueKindTupleReference,
+                .type = sysmelb_getBasicTypes()->tuple,
                 .tupleReference = tupleData
             };
             return result;
@@ -260,6 +263,7 @@ sysmelb_Value_t sysmelb_analyzeAndEvaluateScript(sysmelb_Environment_t *environm
 
             sysmelb_Value_t result = {
                 .kind = SysmelValueKindAssociationReference,
+                .type = sysmelb_getBasicTypes()->association,
                 .associationReference = association
             };
             return result;
@@ -280,6 +284,7 @@ sysmelb_Value_t sysmelb_analyzeAndEvaluateScript(sysmelb_Environment_t *environm
             
             sysmelb_Value_t result = {
                 .kind = SysmelValueKindDictionaryReference,
+                .type = sysmelb_getBasicTypes()->dictionary,
                 .dictionaryReference = dictionary
             };
             return result;

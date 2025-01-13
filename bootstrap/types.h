@@ -18,11 +18,16 @@ typedef enum sysmelb_TypeKind_e {
     SysmelTypeKindCharacter,
     SysmelTypeKindString,
     SysmelTypeKindSymbol,
+    SysmelTypeKindArray,
+    SysmelTypeKindAssociation,
+    SysmelTypeKindDictionary,
+    SysmelTypeKindByteArray,
     SysmelTypeKindTuple,
     SysmelTypeKindSum,
     SysmelTypeKindInteger,
     SysmelTypeKindFloat,
     SysmelTypeKindUniverse,
+    SysmelTypeKindParseTreeNode,
     SysmelTypeKindPrimitiveCharacter,
     SysmelTypeKindPrimitiveSignedInteger,
     SysmelTypeKindPrimitiveUnsignedInteger,
@@ -52,6 +57,13 @@ typedef struct sysmelb_BasicTypes_s {
     sysmelb_Type_t *integer;
     sysmelb_Type_t *floatingPoint;
     sysmelb_Type_t *universe;
+
+    sysmelb_Type_t *array;
+    sysmelb_Type_t *byteArray;
+    sysmelb_Type_t *tuple;
+    sysmelb_Type_t *association;
+    sysmelb_Type_t *dictionary;
+    sysmelb_Type_t *parseTreeNode;
 
     sysmelb_Type_t *char8;
     sysmelb_Type_t *char16;

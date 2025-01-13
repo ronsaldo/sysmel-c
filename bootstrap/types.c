@@ -58,6 +58,13 @@ static void sysmelb_createBasicTypes(void)
     sysmelb_BasicTypesData.floatingPoint  = sysmelb_allocateValueType(SysmelTypeKindFloat, sysmelb_internSymbolC("Float"), 8, 8);
     sysmelb_BasicTypesData.universe       = sysmelb_allocateValueType(SysmelTypeKindUniverse, sysmelb_internSymbolC("Type"), 8, 8);
 
+    sysmelb_BasicTypesData.array          = sysmelb_allocateValueType(SysmelTypeKindArray, sysmelb_internSymbolC("Array"), pointerSize, pointerAlignment);
+    sysmelb_BasicTypesData.byteArray      = sysmelb_allocateValueType(SysmelTypeKindByteArray, sysmelb_internSymbolC("ByteArray"), pointerSize, pointerAlignment);
+    sysmelb_BasicTypesData.tuple          = sysmelb_allocateValueType(SysmelTypeKindTuple, sysmelb_internSymbolC("Tuple"), pointerSize, pointerAlignment);
+    sysmelb_BasicTypesData.association    = sysmelb_allocateValueType(SysmelTypeKindAssociation, sysmelb_internSymbolC("Association"), pointerSize, pointerAlignment);
+    sysmelb_BasicTypesData.dictionary     = sysmelb_allocateValueType(SysmelTypeKindDictionary, sysmelb_internSymbolC("Dictionary"), pointerSize, pointerAlignment);
+    sysmelb_BasicTypesData.parseTreeNode  = sysmelb_allocateValueType(SysmelTypeKindParseTreeNode, sysmelb_internSymbolC("ParseTreeNode"), pointerSize, pointerAlignment);
+
     sysmelb_BasicTypesData.char8    = sysmelb_allocateValueType(SysmelTypeKindPrimitiveCharacter, sysmelb_internSymbolC("Int8"), 1, 1);
     sysmelb_BasicTypesData.char16   = sysmelb_allocateValueType(SysmelTypeKindPrimitiveCharacter, sysmelb_internSymbolC("Int16"), 2, 2);
     sysmelb_BasicTypesData.char32   = sysmelb_allocateValueType(SysmelTypeKindPrimitiveCharacter, sysmelb_internSymbolC("Int32"), 4, 4);
