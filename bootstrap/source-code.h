@@ -20,7 +20,7 @@ typedef struct sysmelb_SourcePosition_s
     int endLine;
     int startColumn;
     int endColumn;
-}sysmelb_SourcePosition_t;
+} sysmelb_SourcePosition_t;
 
 sysmelb_SourceCode_t *sysmelb_makeSourceCodeFromFileNamed(const char *fileName);
 sysmelb_SourceCode_t *sysmelb_makeSourceCodeFromString(const char *name, const char *string);

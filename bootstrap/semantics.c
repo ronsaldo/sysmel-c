@@ -1,6 +1,7 @@
 #include "semantics.h"
 #include "function.h"
 #include "types.h"
+#include "error.h"
 #include <stdio.h>
 
 #define SYSMEL_MAX_ARGUMENT_COUNT 16
@@ -63,7 +64,7 @@ sysmelb_Value_t sysmelb_analyzeAndEvaluateScript(sysmelb_Environment_t *environm
             sysmelb_SymbolBinding_t *binding = sysmelb_environmentLookRecursively(environment, ast->identifierReference.identifier);
             if(!binding)
             {
-                fprintf(stderr, "Failed to find binding for symbol #%.*s\n", (int)ast->identifierReference.identifier->size, ast->identifierReference.identifier->string);
+                sysmelb_errorPrintf(ast->sourcePosition, "Failed to find binding for symbol #%.*s\n", (int)ast->identifierReference.identifier->size, ast->identifierReference.identifier->string);
                 abort();
             }
             switch(binding->kind)
@@ -125,12 +126,12 @@ sysmelb_Value_t sysmelb_analyzeAndEvaluateScript(sysmelb_Environment_t *environm
         }
         else if(functionalValue.kind == SysmelValueKindTypeReference)
         {
-            fprintf(stderr, "TODO: type() constructors.");
+            sysmelb_errorPrintf(ast->sourcePosition, "TODO: type() constructors.");
             abort();
         }
         else
         {
-            fprintf(stderr, "Unsupported application.");
+            sysmelb_errorPrintf(ast->sourcePosition, "Unsupported application.");
             abort();           
         }
         break;
@@ -141,7 +142,7 @@ sysmelb_Value_t sysmelb_analyzeAndEvaluateScript(sysmelb_Environment_t *environm
         sysmelb_Value_t selector = sysmelb_analyzeAndEvaluateScript(environment, ast->messageSend.selector);
         if(selector.kind != SysmelValueKindSymbolReference)
         {
-            fprintf(stderr, "Expected a symbol for a message send selector.");
+            sysmelb_errorPrintf(ast->sourcePosition, "Expected a symbol for a message send selector.");
             abort();
         }
 
@@ -149,7 +150,7 @@ sysmelb_Value_t sysmelb_analyzeAndEvaluateScript(sysmelb_Environment_t *environm
         sysmelb_function_t *method = sysmelb_type_lookupSelector(receiver.type, selector.symbolReference);
         if(!method)
         {
-            fprintf(stderr, "Failed to find method with selector #%.*s.\n", selector.symbolReference->size, selector.symbolReference->string);
+            sysmelb_errorPrintf(ast->sourcePosition, "Failed to find method with selector #%.*s.\n", selector.symbolReference->size, selector.symbolReference->string);
             abort();
         }
         
@@ -166,7 +167,7 @@ sysmelb_Value_t sysmelb_analyzeAndEvaluateScript(sysmelb_Environment_t *environm
             return method->primitiveFunction(1 + argumentCount, messageArguments);
         }
         case SysmelFunctionKindPrimitiveMacro:
-            fprintf(stderr, "TODO: Support macro message sends");
+            sysmelb_errorPrintf(ast->sourcePosition, "TODO: Support macro message sends");
             abort();
             break;
         }
@@ -208,7 +209,7 @@ sysmelb_Value_t sysmelb_analyzeAndEvaluateScript(sysmelb_Environment_t *environm
             sysmelb_Value_t condition = sysmelb_analyzeAndEvaluateScript(environment, ast->ifSelection.condition);
             if(condition.kind != SysmelValueKindBoolean)
             {
-                fprintf(stderr, "Expected a boolean condition.");
+                sysmelb_errorPrintf(ast->sourcePosition, "Expected a boolean condition.");
             }
 
             if(condition.boolean)
