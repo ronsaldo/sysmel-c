@@ -472,6 +472,9 @@ sysmelb_ScannerToken_t sysmelb_scanSingleToken(sysmelb_scannerState_t *state)
             return scannerState_makeTokenStartingFrom(state, SysmelTokenAssignment, &initialState);
         }
         return scannerState_makeTokenStartingFrom(state, SysmelTokenColon, &initialState);
+    case '$':
+        scannerState_advance(state, 1);
+        return scannerState_makeTokenStartingFrom(state, SysmelTokenDollar, &initialState);
     case '`':
         if (scannerState_peek(state, 0) == '\'')
         {

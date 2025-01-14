@@ -17,15 +17,16 @@ sysmelb_ParseTreeNode_t *parser_parseTerm(sysmelb_parserState_t *state);
 sysmelb_ParseTreeNode_t *parser_parseDictionary(sysmelb_parserState_t *state);
 sysmelb_ParseTreeNode_t *parser_parseBlock(sysmelb_parserState_t *state);
 sysmelb_ParseTreeNode_t *parser_parseExpression(sysmelb_parserState_t *state);
+sysmelb_ParseTreeNode_t *parser_parseBindableName(sysmelb_parserState_t *state);
 
 void sysmelb_ParseTreeNodeDynArray_incrementCapacity(sysmelb_ParseTreeNodeDynArray_t *dynArray)
 {
-    size_t newCapacity = dynArray->capacity*2;
-    if(newCapacity < 16)
+    size_t newCapacity = dynArray->capacity * 2;
+    if (newCapacity < 16)
         newCapacity = 16;
 
-    sysmelb_ParseTreeNode_t **newStorage = sysmelb_allocate(newCapacity * sizeof(sysmelb_ParseTreeNode_t*));
-    memcpy(newStorage, dynArray->elements, dynArray->size * sizeof(sysmelb_ParseTreeNode_t*));
+    sysmelb_ParseTreeNode_t **newStorage = sysmelb_allocate(newCapacity * sizeof(sysmelb_ParseTreeNode_t *));
+    memcpy(newStorage, dynArray->elements, dynArray->size * sizeof(sysmelb_ParseTreeNode_t *));
     sysmelb_freeAllocation(dynArray->elements);
     dynArray->capacity = newCapacity;
     dynArray->elements = newStorage;
@@ -33,7 +34,7 @@ void sysmelb_ParseTreeNodeDynArray_incrementCapacity(sysmelb_ParseTreeNodeDynArr
 
 void sysmelb_ParseTreeNodeDynArray_add(sysmelb_ParseTreeNodeDynArray_t *dynArray, sysmelb_ParseTreeNode_t *element)
 {
-    if(dynArray->size >= dynArray->capacity)
+    if (dynArray->size >= dynArray->capacity)
         sysmelb_ParseTreeNodeDynArray_incrementCapacity(dynArray);
 
     dynArray->elements[dynArray->size++] = element;
@@ -199,7 +200,7 @@ sysmelb_IntegerLiteralType_t parseIntegerConstant(size_t constantStringSize, con
     return result;
 }
 
-sysmelb_ParseTreeNode_t* parseLiteralInteger(sysmelb_parserState_t *state)
+sysmelb_ParseTreeNode_t *parseLiteralInteger(sysmelb_parserState_t *state)
 {
     sysmelb_ScannerToken_t *token = parserState_next(state);
     assert(token->kind == SysmelTokenNat);
@@ -210,7 +211,7 @@ sysmelb_ParseTreeNode_t* parseLiteralInteger(sysmelb_parserState_t *state)
     return literal;
 }
 
-sysmelb_ParseTreeNode_t* parseLiteralFloat(sysmelb_parserState_t *state)
+sysmelb_ParseTreeNode_t *parseLiteralFloat(sysmelb_parserState_t *state)
 {
     sysmelb_ScannerToken_t *token = parserState_next(state);
     assert(token->kind == SysmelTokenFloat);
@@ -224,8 +225,7 @@ sysmelb_ParseTreeNode_t* parseLiteralFloat(sysmelb_parserState_t *state)
     return literal;
 }
 
-
-char* parseCEscapedString(size_t stringSize, const char *string, size_t *outSize)
+char *parseCEscapedString(size_t stringSize, const char *string, size_t *outSize)
 {
     char *result = sysmelb_allocate(stringSize + 1);
     memset(result, 0, stringSize + 1);
@@ -259,7 +259,7 @@ char* parseCEscapedString(size_t stringSize, const char *string, size_t *outSize
         }
     }
 
-    if(outSize)
+    if (outSize)
         *outSize = dest - result;
     return result;
 }
@@ -295,7 +295,8 @@ sysmelb_ParseTreeNode_t *parseLiteralSymbol(sysmelb_parserState_t *state)
 
     const char *symbolValue = token->textPosition + 1;
     size_t symbolValueSize = token->textSize - 1;
-    if (symbolValue[0] == '"') {
+    if (symbolValue[0] == '"')
+    {
         symbolValue = symbolValue + 1;
         symbolValueSize = symbolValueSize - 2;
         symbolValue = parseCEscapedString(symbolValueSize, symbolValue, &symbolValueSize);
@@ -325,7 +326,7 @@ sysmelb_ParseTreeNode_t *parser_parseLiteral(sysmelb_parserState_t *state)
     }
 }
 
-sysmelb_ParseTreeNode_t * parser_parseIdentifier(sysmelb_parserState_t *state)
+sysmelb_ParseTreeNode_t *parser_parseIdentifier(sysmelb_parserState_t *state)
 {
     sysmelb_ScannerToken_t *token = parserState_next(state);
     assert(token->kind == SysmelTokenIdentifier);
@@ -356,8 +357,7 @@ sysmelb_ParseTreeNode_t *parser_parseParenthesis(sysmelb_parserState_t *state)
     assert(parserState_peekKind(state, 0) == SysmelTokenLeftParent);
     parserState_advance(state);
 
-    if (parser_isBinaryExpressionOperator(parserState_peekKind(state, 0))
-        && parserState_peekKind(state, 1) == SysmelTokenRightParent)
+    if (parser_isBinaryExpressionOperator(parserState_peekKind(state, 0)) && parserState_peekKind(state, 1) == SysmelTokenRightParent)
     {
         sysmelb_ScannerToken_t *token = parserState_next(state);
         parserState_advance(state);
@@ -375,7 +375,7 @@ sysmelb_ParseTreeNode_t *parser_parseParenthesis(sysmelb_parserState_t *state)
         return node;
     }
 
-    sysmelb_ParseTreeNode_t * expression = parser_parseSequenceUntilEndOrDelimiter(state, SysmelTokenRightParent);
+    sysmelb_ParseTreeNode_t *expression = parser_parseSequenceUntilEndOrDelimiter(state, SysmelTokenRightParent);
     expression = parserState_expectAddingErrorToNode(state, SysmelTokenRightParent, expression);
     return expression;
 }
@@ -388,7 +388,7 @@ sysmelb_ParseTreeNode_t *parser_parseArray(sysmelb_parserState_t *state)
 
     sysmelb_ParseTreeNodeDynArray_t expressions = parser_parseExpressionListUntilEndOrDelimiter(state, SysmelTokenRightBracket);
 
-    if(parserState_peekKind(state, 0) == SysmelTokenRightBracket)
+    if (parserState_peekKind(state, 0) == SysmelTokenRightBracket)
     {
         parserState_advance(state);
     }
@@ -397,7 +397,7 @@ sysmelb_ParseTreeNode_t *parser_parseArray(sysmelb_parserState_t *state)
         // TODO: add an error
         abort();
     }
-    
+
     // Array
     sysmelb_ParseTreeNode_t *array = sysmelb_newParseTreeNode(ParseTreeArray, parserState_sourcePositionFrom(state, startPosition));
     array->array.elements = expressions;
@@ -412,7 +412,7 @@ sysmelb_ParseTreeNode_t *parser_parseByteArray(sysmelb_parserState_t *state)
 
     sysmelb_ParseTreeNodeDynArray_t expressions = parser_parseExpressionListUntilEndOrDelimiter(state, SysmelTokenRightBracket);
 
-    if(parserState_peekKind(state, 0) == SysmelTokenRightBracket)
+    if (parserState_peekKind(state, 0) == SysmelTokenRightBracket)
     {
         parserState_advance(state);
     }
@@ -421,7 +421,7 @@ sysmelb_ParseTreeNode_t *parser_parseByteArray(sysmelb_parserState_t *state)
         // TODO: an error
         abort();
     }
-    
+
     // Byte
     sysmelb_ParseTreeNode_t *node = sysmelb_newParseTreeNode(ParseTreeByteArray, parserState_sourcePositionFrom(state, startPosition));
     node->byteArray.elements = expressions;
@@ -430,7 +430,7 @@ sysmelb_ParseTreeNode_t *parser_parseByteArray(sysmelb_parserState_t *state)
 
 bool parser_isUnaryPostfixTokenKind(sysmelb_TokenKind_t kind)
 {
-    switch(kind)
+    switch (kind)
     {
     case SysmelTokenIdentifier:
     case SysmelTokenLeftParent:
@@ -452,76 +452,76 @@ sysmelb_ParseTreeNode_t *parser_parseUnaryPostfixExpression(sysmelb_parserState_
     while (parser_isUnaryPostfixTokenKind(parserState_peekKind(state, 0)))
     {
         sysmelb_ScannerToken_t *token = parserState_peek(state, 0);
-        switch(token->kind)
+        switch (token->kind)
         {
         case SysmelTokenIdentifier:
-            {
-                parserState_advance(state);
-                sysmelb_symbol_t *selectorSymbol = sysmelb_internSymbol(token->textSize, token->textPosition);
-                sysmelb_ParseTreeNode_t *selector = sysmelb_newParseTreeNode(ParseTreeLiteralSymbolNode, token->sourcePosition);
-                selector->literalSymbol.internedSymbol = selectorSymbol;
+        {
+            parserState_advance(state);
+            sysmelb_symbol_t *selectorSymbol = sysmelb_internSymbol(token->textSize, token->textPosition);
+            sysmelb_ParseTreeNode_t *selector = sysmelb_newParseTreeNode(ParseTreeLiteralSymbolNode, token->sourcePosition);
+            selector->literalSymbol.internedSymbol = selectorSymbol;
 
-                sysmelb_ParseTreeNode_t *message = sysmelb_newParseTreeNode(ParseTreeMessageSend, parserState_sourcePositionFrom(state, startPosition));
-                message->messageSend.receiver = receiver;
-                message->messageSend.selector = selector;
-                
-                receiver = message;
-            }
-            break;
+            sysmelb_ParseTreeNode_t *message = sysmelb_newParseTreeNode(ParseTreeMessageSend, parserState_sourcePositionFrom(state, startPosition));
+            message->messageSend.receiver = receiver;
+            message->messageSend.selector = selector;
+
+            receiver = message;
+        }
+        break;
         case SysmelTokenLeftParent:
-            {
+        {
+            parserState_advance(state);
+            sysmelb_ParseTreeNodeDynArray_t arguments = parser_parseExpressionListUntilEndOrDelimiter(state, SysmelTokenRightParent);
+            if (parserState_peekKind(state, 0) == SysmelTokenRightParent)
                 parserState_advance(state);
-                sysmelb_ParseTreeNodeDynArray_t arguments = parser_parseExpressionListUntilEndOrDelimiter(state, SysmelTokenRightParent);
-                if(parserState_peekKind(state, 0) == SysmelTokenRightParent)
-                    parserState_advance(state);
-                else
-                    sysmelb_ParseTreeNodeDynArray_add(&arguments, parserState_makeErrorAtCurrentSourcePosition(state, "Expected a right parenthesis"));
-                
-                sysmelb_ParseTreeNode_t *application = sysmelb_newParseTreeNode(ParseTreeFunctionApplication, parserState_sourcePositionFrom(state, startPosition));
-                application->functionApplication.functional = receiver;
-                application->functionApplication.arguments = arguments;
-                
-                receiver = application;
-            }
-            break;
+            else
+                sysmelb_ParseTreeNodeDynArray_add(&arguments, parserState_makeErrorAtCurrentSourcePosition(state, "Expected a right parenthesis"));
+
+            sysmelb_ParseTreeNode_t *application = sysmelb_newParseTreeNode(ParseTreeFunctionApplication, parserState_sourcePositionFrom(state, startPosition));
+            application->functionApplication.functional = receiver;
+            application->functionApplication.arguments = arguments;
+
+            receiver = application;
+        }
+        break;
         case SysmelTokenLeftBracket:
         case SysmelTokenByteArrayStart:
-            {
+        {
+            parserState_advance(state);
+            sysmelb_ParseTreeNodeDynArray_t arguments = parser_parseExpressionListUntilEndOrDelimiter(state, SysmelTokenRightBracket);
+            if (parserState_peekKind(state, 0) == SysmelTokenRightParent)
                 parserState_advance(state);
-                sysmelb_ParseTreeNodeDynArray_t arguments = parser_parseExpressionListUntilEndOrDelimiter(state, SysmelTokenRightBracket);
-                if(parserState_peekKind(state, 0) == SysmelTokenRightParent)
-                    parserState_advance(state);
-                else
-                    sysmelb_ParseTreeNodeDynArray_add(&arguments, parserState_makeErrorAtCurrentSourcePosition(state, "Expected a right parenthesis"));
-                
-                sysmelb_ParseTreeNode_t *application = sysmelb_newParseTreeNode(ParseTreeFunctionApplication, parserState_sourcePositionFrom(state, startPosition));
-                application->functionApplication.functional = receiver;
-                application->functionApplication.arguments = arguments;
-                receiver = application;
-            }
-            break;
+            else
+                sysmelb_ParseTreeNodeDynArray_add(&arguments, parserState_makeErrorAtCurrentSourcePosition(state, "Expected a right parenthesis"));
+
+            sysmelb_ParseTreeNode_t *application = sysmelb_newParseTreeNode(ParseTreeFunctionApplication, parserState_sourcePositionFrom(state, startPosition));
+            application->functionApplication.functional = receiver;
+            application->functionApplication.arguments = arguments;
+            receiver = application;
+        }
+        break;
         case SysmelTokenLeftCurlyBracket:
-            {
-                sysmelb_ParseTreeNode_t *argument = parser_parseBlock(state);
+        {
+            sysmelb_ParseTreeNode_t *argument = parser_parseBlock(state);
 
-                sysmelb_ParseTreeNode_t *application = sysmelb_newParseTreeNode(ParseTreeFunctionApplication, parserState_sourcePositionFrom(state, startPosition));
-                application->functionApplication.functional = receiver;
-                sysmelb_ParseTreeNodeDynArray_add(&application->functionApplication.arguments, argument);
+            sysmelb_ParseTreeNode_t *application = sysmelb_newParseTreeNode(ParseTreeFunctionApplication, parserState_sourcePositionFrom(state, startPosition));
+            application->functionApplication.functional = receiver;
+            sysmelb_ParseTreeNodeDynArray_add(&application->functionApplication.arguments, argument);
 
-                receiver = application;
-            }
-            break;
+            receiver = application;
+        }
+        break;
         case SysmelTokenDictionaryStart:
-            {
-                sysmelb_ParseTreeNode_t *argument = parser_parseDictionary(state);
+        {
+            sysmelb_ParseTreeNode_t *argument = parser_parseDictionary(state);
 
-                sysmelb_ParseTreeNode_t *application = sysmelb_newParseTreeNode(ParseTreeFunctionApplication, parserState_sourcePositionFrom(state, startPosition));
-                application->functionApplication.functional = receiver;
-                sysmelb_ParseTreeNodeDynArray_add(&application->functionApplication.arguments, argument);
+            sysmelb_ParseTreeNode_t *application = sysmelb_newParseTreeNode(ParseTreeFunctionApplication, parserState_sourcePositionFrom(state, startPosition));
+            application->functionApplication.functional = receiver;
+            sysmelb_ParseTreeNodeDynArray_add(&application->functionApplication.arguments, argument);
 
-                receiver = application;
-            }
-            break;
+            receiver = application;
+        }
+        break;
         default:
             return receiver;
         }
@@ -603,12 +603,12 @@ sysmelb_ParseTreeNode_t *parser_parseBinaryExpressionSequence(sysmelb_parserStat
 
     sysmelb_ParseTreeNodeDynArray_t elements = {0};
     sysmelb_ParseTreeNodeDynArray_add(&elements, operand);
-    
+
     while (parser_isBinaryExpressionOperator(parserState_peekKind(state, 0)))
     {
         sysmelb_ScannerToken_t *operatorToken = parserState_next(state);
         sysmelb_symbol_t *operatorSymbol = sysmelb_internSymbol(operatorToken->textSize, operatorToken->textPosition);
-        sysmelb_ParseTreeNode_t *operator = sysmelb_newParseTreeNode(ParseTreeLiteralSymbolNode, operatorToken->sourcePosition);
+        sysmelb_ParseTreeNode_t *operator= sysmelb_newParseTreeNode(ParseTreeLiteralSymbolNode, operatorToken->sourcePosition);
         operator->literalSymbol.internedSymbol = operatorSymbol;
         sysmelb_ParseTreeNodeDynArray_add(&elements, operator);
 
@@ -630,7 +630,7 @@ sysmelb_ParseTreeNode_t *parser_parseAssociationExpression(sysmelb_parserState_t
         return key;
 
     parserState_advance(state);
-    sysmelb_ParseTreeNode_t * value = parser_parseAssociationExpression(state);
+    sysmelb_ParseTreeNode_t *value = parser_parseAssociationExpression(state);
 
     sysmelb_ParseTreeNode_t *node = sysmelb_newParseTreeNode(ParseTreeAssociation, parserState_sourcePositionFrom(state, startPosition));
     node->association.key = key;
@@ -646,7 +646,7 @@ sysmelb_ParseTreeNode_t *parser_parseKeywordApplication(sysmelb_parserState_t *s
     sysmelb_dynstring_t selectorStream = {0};
     sysmelb_ParseTreeNodeDynArray_t arguments = {0};
 
-    while(parserState_peekKind(state, 0) == SysmelTokenKeyword)
+    while (parserState_peekKind(state, 0) == SysmelTokenKeyword)
     {
         sysmelb_ScannerToken_t *keywordToken = parserState_next(state);
         sysmelb_dynstring_append(&selectorStream, keywordToken->textSize, keywordToken->textPosition);
@@ -660,7 +660,7 @@ sysmelb_ParseTreeNode_t *parser_parseKeywordApplication(sysmelb_parserState_t *s
     sysmelb_ParseTreeNode_t *identifierReference = sysmelb_newParseTreeNode(ParseTreeIdentifierReference, parserState_sourcePositionFrom(state, startPosition));
     identifierReference->identifierReference.identifier = identifierSymbol;
 
-    sysmelb_ParseTreeNode_t *application = sysmelb_newParseTreeNode(ParseTreeFunctionApplication, parserState_sourcePositionFrom(state, startPosition)); 
+    sysmelb_ParseTreeNode_t *application = sysmelb_newParseTreeNode(ParseTreeFunctionApplication, parserState_sourcePositionFrom(state, startPosition));
     application->functionApplication.functional = identifierReference;
     application->functionApplication.arguments = arguments;
     return application;
@@ -670,13 +670,13 @@ sysmelb_ParseTreeNode_t *parser_parseKeywordMessageSend(sysmelb_parserState_t *s
 {
     size_t startPosition = state->position;
     sysmelb_ParseTreeNode_t *receiver = parser_parseAssociationExpression(state);
-    if(parserState_peekKind(state, 0) != SysmelTokenKeyword)
+    if (parserState_peekKind(state, 0) != SysmelTokenKeyword)
         return receiver;
-    
+
     sysmelb_dynstring_t selectorStream = {0};
     sysmelb_ParseTreeNodeDynArray_t arguments = {0};
 
-    while(parserState_peekKind(state, 0) == SysmelTokenKeyword)
+    while (parserState_peekKind(state, 0) == SysmelTokenKeyword)
     {
         sysmelb_ScannerToken_t *keywordToken = parserState_next(state);
         sysmelb_dynstring_append(&selectorStream, keywordToken->textSize, keywordToken->textPosition);
@@ -686,7 +686,7 @@ sysmelb_ParseTreeNode_t *parser_parseKeywordMessageSend(sysmelb_parserState_t *s
     }
 
     sysmelb_symbol_t *selectorSymbol = sysmelb_internSymbol(selectorStream.size, selectorStream.data);
-    
+
     sysmelb_ParseTreeNode_t *selector = sysmelb_newParseTreeNode(ParseTreeLiteralSymbolNode, parserState_sourcePositionFrom(state, startPosition));
     selector->literalSymbol.internedSymbol = selectorSymbol;
 
@@ -701,10 +701,10 @@ sysmelb_ParseTreeNode_t *parser_parseCascadedMessage(sysmelb_parserState_t *stat
 {
     size_t startPosition = state->position;
     sysmelb_ScannerToken_t *token = parserState_peek(state, 0);
-    if(parserState_peekKind(state, 0) == SysmelTokenIdentifier)
+    if (parserState_peekKind(state, 0) == SysmelTokenIdentifier)
     {
         parserState_advance(state);
-        
+
         sysmelb_ParseTreeNode_t *selector = sysmelb_newParseTreeNode(ParseTreeLiteralSymbolNode, token->sourcePosition);
         selector->literalSymbol.internedSymbol = sysmelb_internSymbol(token->textSize, token->textPosition);
 
@@ -712,12 +712,12 @@ sysmelb_ParseTreeNode_t *parser_parseCascadedMessage(sysmelb_parserState_t *stat
         cascadedMessage->cascadedMessage.selector = selector;
         return cascadedMessage;
     }
-    else if(parserState_peekKind(state, 0) == SysmelTokenKeyword)
+    else if (parserState_peekKind(state, 0) == SysmelTokenKeyword)
     {
         sysmelb_dynstring_t selectorStream = {0};
         sysmelb_ParseTreeNodeDynArray_t arguments = {0};
 
-        while(parserState_peekKind(state, 0) == SysmelTokenKeyword)
+        while (parserState_peekKind(state, 0) == SysmelTokenKeyword)
         {
             sysmelb_ScannerToken_t *keywordToken = parserState_next(state);
             sysmelb_dynstring_append(&selectorStream, keywordToken->textSize, keywordToken->textPosition);
@@ -727,7 +727,7 @@ sysmelb_ParseTreeNode_t *parser_parseCascadedMessage(sysmelb_parserState_t *stat
         }
 
         sysmelb_symbol_t *selectorSymbol = sysmelb_internSymbol(selectorStream.size, selectorStream.data);
-        
+
         sysmelb_ParseTreeNode_t *selector = sysmelb_newParseTreeNode(ParseTreeLiteralSymbolNode, parserState_sourcePositionFrom(state, startPosition));
         selector->literalSymbol.internedSymbol = selectorSymbol;
 
@@ -736,7 +736,7 @@ sysmelb_ParseTreeNode_t *parser_parseCascadedMessage(sysmelb_parserState_t *stat
         cascadedMessage->cascadedMessage.arguments = arguments;
         return cascadedMessage;
     }
-    else if(parser_isBinaryExpressionOperator(parserState_peekKind(state, 0)))
+    else if (parser_isBinaryExpressionOperator(parserState_peekKind(state, 0)))
     {
         parserState_advance(state);
         sysmelb_symbol_t *selectorSymbol = sysmelb_internSymbol(token->textSize, token->textPosition);
@@ -763,13 +763,13 @@ sysmelb_ParseTreeNode_t *parser_parseMessageCascade(sysmelb_parserState_t *state
     sysmelb_ParseTreeNode_t *firstMessageOrReceiver = parser_parseKeywordMessageSend(state);
     if (parserState_peekKind(state, 0) != SysmelTokenSemicolon)
         return firstMessageOrReceiver;
-    
+
     sysmelb_ParseTreeNode_t *receiver = firstMessageOrReceiver;
     sysmelb_ParseTreeNodeDynArray_t cascadedMessages = {0};
-    if(firstMessageOrReceiver->kind == ParseTreeMessageSend)
+    if (firstMessageOrReceiver->kind == ParseTreeMessageSend)
     {
         receiver = firstMessageOrReceiver->messageSend.receiver;
-        
+
         sysmelb_ParseTreeNode_t *firstCascadedMessage = sysmelb_newParseTreeNode(ParseTreeCascadedMessage, firstMessageOrReceiver->sourcePosition);
         firstCascadedMessage->cascadedMessage.selector = firstMessageOrReceiver->messageSend.selector;
         firstCascadedMessage->cascadedMessage.arguments = firstMessageOrReceiver->messageSend.arguments;
@@ -842,20 +842,24 @@ sysmelb_ParseTreeNode_t *parser_parseCommaExpression(sysmelb_parserState_t *stat
 sysmelb_ParseTreeNode_t *parser_parseFunctionalType(sysmelb_parserState_t *state)
 {
     size_t startPosition = state->position;
-    sysmelb_ParseTreeNode_t *argumentPatternOrExpression = parser_parseCommaExpression(state);
+    sysmelb_ParseTreeNodeDynArray_t arguments = {0};
+    sysmelb_ParseTreeNode_t *resultTypeExpression = NULL;
+    while(parserState_peekKind(state, 0) == SysmelTokenDollar)
+    {
+        sysmelb_ParseTreeNode_t *argument = parser_parseBindableName(state);
+        sysmelb_ParseTreeNodeDynArray_add(&arguments, argument);
+    }
 
     if (parserState_peekKind(state, 0) == SysmelTokenColonColon)
     {
         parserState_advance(state);
-        sysmelb_ParseTreeNode_t *resultTypeExpression = parser_parseFunctionalType(state);
-        
-        sysmelb_ParseTreeNode_t *functionalType = sysmelb_newParseTreeNode(ParseTreeFunctionalDependentPattern, parserState_sourcePositionFrom(state, startPosition));
-        functionalType->functionalDependentPattern.argumentPattern = argumentPatternOrExpression;
-        functionalType->functionalDependentPattern.resultValue = resultTypeExpression;
-        return functionalType;
+        resultTypeExpression = parser_parseExpression(state);
     }
 
-    return argumentPatternOrExpression;
+    sysmelb_ParseTreeNode_t *functionalType = sysmelb_newParseTreeNode(ParseTreeFunctionalDependentType, parserState_sourcePositionFrom(state, startPosition));
+    functionalType->functionalDependentType.argumentDefinition = arguments;
+    functionalType->functionalDependentType.resultTypeExpression = resultTypeExpression;
+    return functionalType;
 }
 
 sysmelb_ParseTreeNode_t *parser_parseBlock(sysmelb_parserState_t *state)
@@ -871,7 +875,7 @@ sysmelb_ParseTreeNode_t *parser_parseBlock(sysmelb_parserState_t *state)
         parserState_advance(state);
         if (parserState_peekKind(state, 0) == SysmelTokenBar)
         {
-            functionalType = sysmelb_newParseTreeNode(ParseTreeFunctionalDependentPattern, parserState_currentSourcePosition(state));
+            functionalType = sysmelb_newParseTreeNode(ParseTreeFunctionalDependentType, parserState_currentSourcePosition(state));
         }
         else
         {
@@ -879,7 +883,7 @@ sysmelb_ParseTreeNode_t *parser_parseBlock(sysmelb_parserState_t *state)
             parserState_expectAddingErrorToNode(state, SysmelTokenBar, functionalType);
         }
     }
-    
+
     // Body
     sysmelb_ParseTreeNode_t *body = parser_parseSequenceUntilEndOrDelimiter(state, SysmelTokenRightCurlyBracket);
     parserState_expectAddingErrorToNode(state, SysmelTokenRightCurlyBracket, body);
@@ -904,20 +908,20 @@ sysmelb_ParseTreeNode_t *parser_parseDictionaryAssociation(sysmelb_parserState_t
     size_t startPosition = state->position;
     sysmelb_ParseTreeNode_t *key = NULL;
     sysmelb_ParseTreeNode_t *value = NULL;
-    if(parserState_peekKind(state, 0) == SysmelTokenKeyword)
+    if (parserState_peekKind(state, 0) == SysmelTokenKeyword)
     {
         sysmelb_ScannerToken_t *keyToken = parserState_next(state);
         sysmelb_symbol_t *keySymbol = sysmelb_internSymbol(keyToken->textSize - 1, keyToken->textPosition);
         key = sysmelb_newParseTreeNode(ParseTreeLiteralSymbolNode, keyToken->sourcePosition);
         key->literalSymbol.internedSymbol = keySymbol;
 
-        if(parserState_peekKind(state, 0) != SysmelTokenDot && parserState_peekKind(state, 0) != SysmelTokenRightCurlyBracket)
+        if (parserState_peekKind(state, 0) != SysmelTokenDot && parserState_peekKind(state, 0) != SysmelTokenRightCurlyBracket)
             value = parser_parseAssociationExpression(state);
     }
     else
     {
         key = parser_parseBinaryExpressionSequence(state);
-        if(parserState_peekKind(state, 0) == SysmelTokenColon)
+        if (parserState_peekKind(state, 0) == SysmelTokenColon)
         {
             parserState_advance(state);
             value = parser_parseAssociationExpression(state);
@@ -944,7 +948,7 @@ sysmelb_ParseTreeNode_t *parser_parseDictionary(sysmelb_parserState_t *state)
     // Parse the next expression
     bool expectsExpression = true;
     sysmelb_ParseTreeNodeDynArray_t elements = {0};
-    
+
     while (!parserState_atEnd(state) && parserState_peekKind(state, 0) != SysmelTokenRightCurlyBracket)
     {
         if (!expectsExpression)
@@ -963,7 +967,7 @@ sysmelb_ParseTreeNode_t *parser_parseDictionary(sysmelb_parserState_t *state)
     }
 
     // }
-    if(parserState_peekKind(state, 0) == SysmelTokenRightCurlyBracket)
+    if (parserState_peekKind(state, 0) == SysmelTokenRightCurlyBracket)
         parserState_advance(state);
     else
         sysmelb_ParseTreeNodeDynArray_add(&elements, parserState_makeErrorAtCurrentSourcePosition(state, "Expected a right curly bracket."));
@@ -975,14 +979,14 @@ sysmelb_ParseTreeNode_t *parser_parseDictionary(sysmelb_parserState_t *state)
 
 void parser_parseOptionalBindableNameType(sysmelb_parserState_t *state, bool *outIsImplicit, sysmelb_ParseTreeNode_t **outTypeExpression)
 {
-    if(parserState_peekKind(state, 0) == SysmelTokenLeftBracket)
+    if (parserState_peekKind(state, 0) == SysmelTokenLeftBracket)
     {
         parserState_advance(state);
         *outTypeExpression = parser_parseExpression(state);
         *outTypeExpression = parserState_expectAddingErrorToNode(state, SysmelTokenRightBracket, *outTypeExpression);
         *outIsImplicit = true;
     }
-    else if(parserState_peekKind(state, 0) == SysmelTokenLeftParent)
+    else if (parserState_peekKind(state, 0) == SysmelTokenLeftParent)
     {
         parserState_advance(state);
         *outTypeExpression = parser_parseExpression(state);
@@ -996,9 +1000,32 @@ void parser_parseOptionalBindableNameType(sysmelb_parserState_t *state, bool *ou
     }
 }
 
+void parser_parseOptionalBindableDependentType(sysmelb_parserState_t *state, bool *outIsImplicit, sysmelb_ParseTreeNode_t **outTypeExpression)
+{
+    if (parserState_peekKind(state, 0) == SysmelTokenLeftBracket)
+    {
+        parserState_advance(state);
+        *outTypeExpression = parser_parseFunctionalType(state);
+        *outTypeExpression = parserState_expectAddingErrorToNode(state, SysmelTokenRightBracket, *outTypeExpression);
+        *outIsImplicit = true;
+    }
+    else if (parserState_peekKind(state, 0) == SysmelTokenLeftParent)
+    {
+        parserState_advance(state);
+        *outTypeExpression = parser_parseFunctionalType(state);
+        *outTypeExpression = parserState_expectAddingErrorToNode(state, SysmelTokenRightParent, *outTypeExpression);
+        *outIsImplicit = false;
+    }
+    else
+    {
+        *outIsImplicit = false;
+        *outTypeExpression = NULL;
+    }
+}
+
 sysmelb_ParseTreeNode_t *parser_parseNameExpression(sysmelb_parserState_t *state)
 {
-    if(parserState_peekKind(state, 0) == SysmelTokenIdentifier)
+    if (parserState_peekKind(state, 0) == SysmelTokenIdentifier)
     {
         sysmelb_ScannerToken_t *token = parserState_next(state);
         sysmelb_symbol_t *tokenSymbol = sysmelb_internSymbol(token->textSize, token->textPosition);
@@ -1016,7 +1043,7 @@ sysmelb_ParseTreeNode_t *parser_parseNameExpression(sysmelb_parserState_t *state
 sysmelb_ParseTreeNode_t *parser_parseBindableName(sysmelb_parserState_t *state)
 {
     size_t startPosition = state->position;
-    assert(parserState_peekKind(state, 0) == SysmelTokenColon);
+    assert(parserState_peekKind(state, 0) == SysmelTokenDollar);
     parserState_advance(state);
 
     bool isExistential = false;
@@ -1049,13 +1076,13 @@ sysmelb_ParseTreeNode_t *parser_parseBindableName(sysmelb_parserState_t *state)
     else
     {
         nameExpression = parser_parseNameExpression(state);
-        if(!typeExpression)
+        if (!typeExpression)
         {
-            parser_parseOptionalBindableNameType(state, &isImplicit, &typeExpression);
-            hasPostTypeExpression = typeExpression != NULL;    
+            parser_parseOptionalBindableDependentType(state, &isImplicit, &typeExpression);
+            hasPostTypeExpression = typeExpression != NULL;
         }
 
-        if(parserState_peekKind(state, 0) == SysmelTokenEllipsis)
+        if (parserState_peekKind(state, 0) == SysmelTokenEllipsis)
         {
             parserState_advance(state);
             isVariadic = true;
@@ -1065,10 +1092,10 @@ sysmelb_ParseTreeNode_t *parser_parseBindableName(sysmelb_parserState_t *state)
     sysmelb_ParseTreeNode_t *bindableName = sysmelb_newParseTreeNode(ParseTreeBindableName, parserState_sourcePositionFrom(state, startPosition));
     bindableName->bindableName.typeExpression = typeExpression;
     bindableName->bindableName.nameExpression = nameExpression;
-    bindableName->bindableName.isImplicit    = isImplicit;
+    bindableName->bindableName.isImplicit = isImplicit;
     bindableName->bindableName.isExistential = isExistential;
-    bindableName->bindableName.isVariadic    = isVariadic;
-    bindableName->bindableName.isMutable     = isMutable;
+    bindableName->bindableName.isVariadic = isVariadic;
+    bindableName->bindableName.isMutable = isMutable;
     bindableName->bindableName.hasPostTypeExpression = hasPostTypeExpression;
     return bindableName;
 }
@@ -1089,52 +1116,16 @@ sysmelb_ParseTreeNode_t *parser_parseTerm(sysmelb_parserState_t *state)
         return parser_parseByteArray(state);
     case SysmelTokenDictionaryStart:
         return parser_parseDictionary(state);
-    case SysmelTokenColon:
+    case SysmelTokenDollar:
         return parser_parseBindableName(state);
     default:
         return parser_parseLiteral(state);
     }
 }
 
-sysmelb_ParseTreeNode_t *parser_parseFunctionalTypeWithOptionalArgument(sysmelb_parserState_t *state)
-{
-    size_t startPosition = state->position;
-    if (parserState_peekKind(state, 0) == SysmelTokenColonColon)
-    {
-        parserState_advance(state);
-        sysmelb_ParseTreeNode_t *resultTypeExpression = parser_parseFunctionalType(state);
-        sysmelb_ParseTreeNode_t *functionalNode = sysmelb_newParseTreeNode(ParseTreeFunctionalDependentPattern, parserState_sourcePositionFrom(state, startPosition));
-        functionalNode->functionalDependentPattern.resultValue = resultTypeExpression;
-        return functionalNode;
-    }
-    else
-    {
-        return parser_parseFunctionalType(state);
-    }
-}
-
-sysmelb_ParseTreeNode_t *parser_parseBindExpression(sysmelb_parserState_t *state)
-{
-    size_t startPosition = state->position;
-    sysmelb_ParseTreeNode_t *patternExpressionOrValue = parser_parseFunctionalTypeWithOptionalArgument(state);
-    if (parserState_peekKind(state, 0) == SysmelTokenBindOperator)
-    {
-        parserState_advance(state);
-        sysmelb_ParseTreeNode_t *boundValue = parser_parseBindExpression(state);
-        sysmelb_ParseTreeNode_t *bindPattern = sysmelb_newParseTreeNode(ParseTreeBindPattern, parserState_sourcePositionFrom(state, startPosition));
-        bindPattern->bindPattern.pattern = patternExpressionOrValue;
-        bindPattern->bindPattern.value = boundValue;
-        return bindPattern;
-    }
-    else
-    {
-        return patternExpressionOrValue;
-    }
-}
-
 sysmelb_ParseTreeNode_t *parser_parseExpression(sysmelb_parserState_t *state)
 {
-    return parser_parseBindExpression(state);
+    return parser_parseCommaExpression(state);
 }
 
 sysmelb_ParseTreeNodeDynArray_t parser_parseExpressionListUntilEndOrDelimiter(sysmelb_parserState_t *state, sysmelb_TokenKind_t delimiter)
@@ -1170,7 +1161,7 @@ sysmelb_ParseTreeNode_t *parser_parseSequenceUntilEndOrDelimiter(sysmelb_parserS
 {
     size_t startingPosition = state->position;
     sysmelb_ParseTreeNodeDynArray_t expressions = parser_parseExpressionListUntilEndOrDelimiter(state, delimiter);
-    if(expressions.size == 1)
+    if (expressions.size == 1)
         return expressions.elements[0];
 
     sysmelb_ParseTreeNode_t *sequenceNode = sysmelb_newParseTreeNode(ParseTreeSequence, parserState_sourcePositionFrom(state, startingPosition));

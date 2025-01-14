@@ -9,7 +9,7 @@
             "type": "cppdbg",
             "request": "launch",
             "program": "${workspaceFolder}/build/bootstrap",
-            "args": ["-eval", "1 asInt32; asInt8"],
+            "args": ["${workspaceFolder}/samples/02-Functions.sysmel"],
             "stopAtEntry": false,
             "cwd": "${workspaceFolder}",
             "environment": [],

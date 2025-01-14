@@ -333,6 +333,11 @@ sysmelb_Value_t sysmelb_analyzeAndEvaluateScript(sysmelb_Environment_t *environm
         return sysmelb_analyzeAndEvaluateScript(blockEnvironment, ast->lexicalBlock.expression);
     }
 
+    case ParseTreeFunctionalDependentType:
+    {
+        sysmelb_errorPrintf(ast->bindableName.nameExpression->sourcePosition, "Todo: Support dependent types by themselves.");
+        abort();
+    }
     case ParseTreeBindableName:
     {
         if(ast->bindableName.isMutable)
@@ -361,11 +366,18 @@ sysmelb_Value_t sysmelb_analyzeAndEvaluateScript(sysmelb_Environment_t *environm
         sysmelb_ParseTreeNode_t *store = ast->assignment.store;
         sysmelb_ParseTreeNode_t *value = ast->assignment.value;
         if(store->kind == ParseTreeBindableName)
-        {
+        {   
             sysmelb_Value_t nameValue = sysmelb_analyzeAndEvaluateScript(environment, store->bindableName.nameExpression);
             if(nameValue.kind != SysmelValueKindSymbolReference)
                 sysmelb_errorPrintf(store->bindableName.nameExpression->sourcePosition, "Expected a name");
-            
+
+
+            if(store->bindableName.hasPostTypeExpression && store->bindableName.typeExpression->kind == ParseTreeFunctionalDependentType)
+            {
+
+                abort();
+            }
+
             sysmelb_Value_t initialValue = sysmelb_analyzeAndEvaluateScript(environment, value);
             if(store->bindableName.isMutable)
             {

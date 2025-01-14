@@ -55,8 +55,7 @@ typedef enum sysmelb_ParseTreeNodeKind_e {
     ParseTreeSplice,
 
     // Binding and pattern matching
-    ParseTreeBindPattern,
-    ParseTreeFunctionalDependentPattern,
+    ParseTreeFunctionalDependentType,
     ParseTreeBindableName,
 
     // Assignment
@@ -193,16 +192,10 @@ typedef struct sysmelb_ParseTreeSplice_s {
 } sysmelb_ParseTreeSplice_t;
 
 // Binding and pattern matching
-typedef struct sysmelb_ParseTreeBindPattern_s {
-    sysmelb_ParseTreeNode_t *pattern;
-    sysmelb_ParseTreeNode_t *value;
-} sysmelb_ParseTreeBindPattern_t;
-
-typedef struct sysmelb_ParseTreeFunctionalDependentPattern_s {
-    sysmelb_ParseTreeNode_t *argumentPattern;
-    sysmelb_ParseTreeNode_t *resultValue;
-    sysmelb_symbol_t *callingConvention;
-} sysmelb_ParseTreeFunctionalDependentPattern_t;
+typedef struct sysmelb_ParseTreeFunctionalDependentType_s {
+    sysmelb_ParseTreeNodeDynArray_t argumentDefinition;
+    sysmelb_ParseTreeNode_t *resultTypeExpression;
+} ParseTreeFunctionalDependentType_t;
 
 typedef struct sysmelb_ParseTreeBindableName_s {
     sysmelb_ParseTreeNode_t *typeExpression;
@@ -282,8 +275,7 @@ typedef struct sysmelb_ParseTreeNode_s {
         sysmelb_ParseTreeSplice_t splice;
 
         // Binding and pattern matching.
-        sysmelb_ParseTreeBindPattern_t bindPattern;
-        sysmelb_ParseTreeFunctionalDependentPattern_t functionalDependentPattern;
+        ParseTreeFunctionalDependentType_t functionalDependentType;
         sysmelb_ParseTreeBindableName_t bindableName;
 
         // Assignment

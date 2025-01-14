@@ -207,16 +207,24 @@ void sysmelb_dumpParseTree(sysmelb_ParseTreeNode_t *node)
         break;
 
     // Binding and pattern matching
-    case ParseTreeBindPattern:
-        printf("ParseTreeBindPattern(");
-        printf(")");
-        break;
-    case ParseTreeFunctionalDependentPattern:
+    case ParseTreeFunctionalDependentType:
         printf("ParseTreeFunctionalDependentPattern(");
+        size_t argumentCount = node->functionalDependentType.argumentDefinition.size;
+        for(size_t i = 0; i < argumentCount; ++i)
+        {
+            if(i != 0)
+                printf(" ");
+            sysmelb_dumpParseTree(node->functionalDependentType.argumentDefinition.elements[i]);
+        }
+        printf(" :: ");
+        sysmelb_dumpParseTree(node->functionalDependentType.resultTypeExpression);
         printf(")");
         break;
     case ParseTreeBindableName:
         printf("ParseTreeBindableName(");
+        sysmelb_dumpParseTree(node->bindableName.nameExpression);
+        printf(" hasPostType(%s) ", node->bindableName.hasPostTypeExpression ? "yes" : "no");
+        sysmelb_dumpParseTree(node->bindableName.typeExpression);
         printf(")");
         break;
 

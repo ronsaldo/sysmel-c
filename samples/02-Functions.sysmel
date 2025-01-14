@@ -1,0 +1,7 @@
+$sum($(Integer)x $(Integer)y :: Integer) := x + y.
+
+$id($(Integer)x :: Integer) := x.
+
+printLine(id(42))
+printLine(id(sum(42 . 5)))
+
