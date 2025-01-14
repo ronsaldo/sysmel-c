@@ -133,6 +133,23 @@ static sysmelb_Value_t sysmelb_WhileDoPrimitiveMacro(sysmelb_MacroContext_t *mac
     return result;
 }
 
+static sysmelb_Value_t sysmelb_printLine(size_t argumentCount, sysmelb_Value_t *arguments)
+{
+    for(size_t i = 0; i < argumentCount; ++i)
+    {
+        if(arguments[i].kind == SysmelValueKindStringReference)
+            printf("%.*s", (int)arguments[i].stringSize, arguments[i].string);
+        else
+            sysmelb_printValue(arguments[i]);
+    }
+        
+    printf("\n");
+    sysmelb_Value_t result = {
+        .kind = SysmelValueKindVoid
+    };
+    return result;
+}
+
 sysmelb_Environment_t *sysmelb_getOrCreateIntrinsicsEnvironment()
 {
     if(sysmelb_IntrinsicsEnvironmentCreated)
@@ -229,6 +246,15 @@ sysmelb_Environment_t *sysmelb_getOrCreateIntrinsicsEnvironment()
         function->kind = SysmelFunctionKindPrimitiveMacro;
         function->name = sysmelb_internSymbolC("while:do:");
         function->primitiveMacroFunction = sysmelb_WhileDoPrimitiveMacro;
+
+        sysmelb_Environment_setLocalSymbolBinding(&sysmelb_IntrinsicsEnvironment, function->name, sysmelb_createSymbolFunctionBinding(function));
+    }
+
+    {
+        sysmelb_function_t *function = sysmelb_allocate(sizeof(sysmelb_function_t));
+        function->kind = SysmelFunctionKindPrimitive;
+        function->name = sysmelb_internSymbolC("printLine");
+        function->primitiveFunction = sysmelb_printLine;
 
         sysmelb_Environment_setLocalSymbolBinding(&sysmelb_IntrinsicsEnvironment, function->name, sysmelb_createSymbolFunctionBinding(function));
     }

@@ -27,6 +27,7 @@ typedef enum sysmelb_TypeKind_e {
     SysmelTypeKindInteger,
     SysmelTypeKindFloat,
     SysmelTypeKindUniverse,
+    SysmelTypeKindSimpleFunction,
     SysmelTypeKindParseTreeNode,
     SysmelTypeKindValueReference,
     SysmelTypeKindPrimitiveCharacter,

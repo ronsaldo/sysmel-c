@@ -53,6 +53,18 @@ void evaluateText(const char *text)
     printf("\n");
 }
 
+void evaluateTextFileNamed(const char *textFileName)
+{
+    sysmelb_SourceCode_t *sourceCode = sysmelb_makeSourceCodeFromFileNamed(textFileName);
+    sysmelb_TokenDynarray_t scannedTokens = sysmelb_scanSourceCode(sourceCode);
+    sysmelb_ParseTreeNode_t *parseTree = parseTokenList(sourceCode, scannedTokens.size, scannedTokens.tokens);
+    
+    if(!currentModule)
+        currentModule = sysmelb_createModuleNamed(sysmelb_internSymbolC(sourceCode->name));
+    sysmelb_Environment_t *environment = sysmelb_module_createTopLevelEnvironment(currentModule);
+    sysmelb_analyzeAndEvaluateScript(environment, parseTree);
+}
+
 int main(int argc, const char **argv)
 {
     for(int i = 1; i < argc; ++i)
@@ -88,7 +100,10 @@ int main(int argc, const char **argv)
                     currentModule = sysmelb_createModuleNamed(sysmelb_internSymbolC("CLI"));
                 evaluateText(argv[++i]);
             }
-            
+        }
+        else
+        {
+            evaluateTextFileNamed(arg);            
         }
 
     }
