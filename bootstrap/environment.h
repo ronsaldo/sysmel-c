@@ -40,6 +40,7 @@ typedef enum sysmelb_SymbolBindingKind_e
     SysmelSymbolValueBinding,
     SysmelSymbolArgumentBinding,
     SysmelSymbolCaptureBinding,
+    SysmelSymbolTemporaryBinding,
 } sysmelb_SymbolBindingKind_t;
 
 typedef struct sysmelb_SymbolBinding_s
@@ -59,6 +60,12 @@ typedef struct sysmelb_SymbolBinding_s
         {
             uint16_t captureIndex;
             sysmelb_Type_t *captureType;
+        };
+
+        struct
+        {
+            uint16_t temporaryIndex;
+            sysmelb_Type_t *temporaryType;
         };
     };
 } sysmelb_SymbolBinding_t;

@@ -68,6 +68,7 @@ typedef struct sysmelb_BasicTypes_s {
     sysmelb_Type_t *dictionary;
     sysmelb_Type_t *parseTreeNode;
     sysmelb_Type_t *valueReference;
+    sysmelb_Type_t *function;
 
     sysmelb_Type_t *char8;
     sysmelb_Type_t *char16;

@@ -22,6 +22,13 @@ typedef enum sysmelb_FunctionOpcode_e
     SysmelFunctionOpcodePushLiteral,
     SysmelFunctionOpcodePushArgument,
     SysmelFunctionOpcodePushCapture,
+    SysmelFunctionOpcodePushTemporary,
+    SysmelFunctionOpcodeStoreTemporary,
+    SysmelFunctionOpcodePopAndStoreTemporary,
+    SysmelFunctionOpcodePop,
+    SysmelFunctionOpcodeReturn,
+    SysmelFunctionOpcodeApplyFunction,
+    SysmelFunctionOpcodeSendMessage,
 } sysmelb_FunctionOpcode_t;
 
 typedef struct sysmelb_FunctionInstruction_s sysmelb_FunctionInstruction_t;
@@ -36,10 +43,10 @@ typedef sysmelb_Value_t (*sysmelb_PrimitiveMacroFunction_t) (sysmelb_MacroContex
 typedef struct sysmelb_FunctionBytecode_s {
     uint16_t argumentCount;
     uint16_t captureCount;
-    uint32_t activationContextSize;
+    uint32_t temporaryZoneSize;
     uint32_t instructionCapacity;
     uint32_t instructionSize;
-    sysmelb_FunctionInstruction_t *instruction;
+    sysmelb_FunctionInstruction_t *instructions;
 } sysmelb_FunctionBytecode_t;
 
 typedef struct sysmelb_function_s {
@@ -54,10 +61,17 @@ typedef struct sysmelb_function_s {
     };
 } sysmelb_function_t;
 
-sysmelb_FunctionBytecode_t sysmelb_bytecode_addInstruction(sysmelb_FunctionBytecode_t*bytecode, sysmelb_FunctionInstruction_t instructionToAdd);
+void sysmelb_bytecode_addInstruction(sysmelb_FunctionBytecode_t*bytecode, sysmelb_FunctionInstruction_t instructionToAdd);
 void sysmelb_bytecode_pushLiteral(sysmelb_FunctionBytecode_t *bytecode, sysmelb_Value_t *literal);
 void sysmelb_bytecode_pushArgument(sysmelb_FunctionBytecode_t *bytecode, uint16_t argumentIndex);
 void sysmelb_bytecode_pushCapture(sysmelb_FunctionBytecode_t *bytecode, uint16_t captureIndex);
+void sysmelb_bytecode_pushTemporary(sysmelb_FunctionBytecode_t *bytecode, uint16_t captureIndex);
+void sysmelb_bytecode_pop(sysmelb_FunctionBytecode_t *bytecode);
+void sysmelb_bytecode_return(sysmelb_FunctionBytecode_t *bytecode);
+uint16_t sysmelb_bytecode_allocateTemporary(sysmelb_FunctionBytecode_t *bytecode);
+
+void sysmelb_bytecode_applyFunction(sysmelb_FunctionBytecode_t *bytecode, uint16_t argumentCount);
+void sysmelb_bytecode_sendMessage(sysmelb_FunctionBytecode_t *bytecode, sysmelb_symbol_t *selector, uint16_t argumentCount);
 
 sysmelb_Value_t sysmelb_interpretBytecodeFunction(sysmelb_function_t *function, size_t argumentCount, sysmelb_Value_t *arguments);
 #endif //SYSMELB_FUNCTION_H

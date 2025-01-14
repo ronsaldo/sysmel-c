@@ -154,7 +154,8 @@ static sysmelb_Value_t sysmelb_printLine(size_t argumentCount, sysmelb_Value_t *
         
     printf("\n");
     sysmelb_Value_t result = {
-        .kind = SysmelValueKindVoid
+        .kind = SysmelValueKindVoid,
+        .type = sysmelb_getBasicTypes()->null
     };
     return result;
 }
