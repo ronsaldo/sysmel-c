@@ -9,7 +9,7 @@
             "type": "cppdbg",
             "request": "launch",
             "program": "${workspaceFolder}/build/bootstrap",
-            "args": ["${workspaceFolder}/samples/02-Functions.sysmel"],
+            "args": ["${workspaceFolder}/samples/03-Factorial.sysmel"],
             //"args": ["${workspaceFolder}/samples/01-HelloWorld.sysmel"],
             "stopAtEntry": false,
             "cwd": "${workspaceFolder}",

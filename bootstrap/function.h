@@ -31,6 +31,9 @@ typedef enum sysmelb_FunctionOpcode_e
     SysmelFunctionOpcodeReturn,
     SysmelFunctionOpcodeApplyFunction,
     SysmelFunctionOpcodeSendMessage,
+    SysmelFunctionOpcodeJump,
+    SysmelFunctionOpcodeJumpIfFalse,
+    SysmelFunctionOpcodeJumpIfTrue,
 } sysmelb_FunctionOpcode_t;
 
 typedef struct sysmelb_FunctionInstruction_s sysmelb_FunctionInstruction_t;
@@ -63,7 +66,7 @@ typedef struct sysmelb_function_s {
     };
 } sysmelb_function_t;
 
-void sysmelb_bytecode_addInstruction(sysmelb_FunctionBytecode_t*bytecode, sysmelb_FunctionInstruction_t instructionToAdd);
+uint16_t sysmelb_bytecode_addInstruction(sysmelb_FunctionBytecode_t*bytecode, sysmelb_FunctionInstruction_t instructionToAdd);
 void sysmelb_bytecode_pushLiteral(sysmelb_FunctionBytecode_t *bytecode, sysmelb_Value_t *literal);
 void sysmelb_bytecode_pushArgument(sysmelb_FunctionBytecode_t *bytecode, uint16_t argumentIndex);
 void sysmelb_bytecode_pushCapture(sysmelb_FunctionBytecode_t *bytecode, uint16_t captureIndex);
@@ -71,6 +74,11 @@ void sysmelb_bytecode_pushTemporary(sysmelb_FunctionBytecode_t *bytecode, uint16
 void sysmelb_bytecode_pop(sysmelb_FunctionBytecode_t *bytecode);
 void sysmelb_bytecode_return(sysmelb_FunctionBytecode_t *bytecode);
 uint16_t sysmelb_bytecode_allocateTemporary(sysmelb_FunctionBytecode_t *bytecode);
+
+uint16_t sysmelb_bytecode_jump(sysmelb_FunctionBytecode_t *bytecode);
+uint16_t sysmelb_bytecode_jumpIfFalse(sysmelb_FunctionBytecode_t *bytecode);
+uint16_t sysmelb_bytecode_jumpIfTrue(sysmelb_FunctionBytecode_t *bytecode);
+void sysmelb_bytecode_patchJumpToHere(sysmelb_FunctionBytecode_t *bytecode, uint16_t jumpInstructionIndex);
 
 void sysmelb_bytecode_applyFunction(sysmelb_FunctionBytecode_t *bytecode, uint16_t argumentCount);
 void sysmelb_bytecode_sendMessage(sysmelb_FunctionBytecode_t *bytecode, sysmelb_symbol_t *selector, uint16_t argumentCount);

@@ -1,0 +1,7 @@
+$factorial($(Integer)n :: Integer) := {
+    if: n <= 0
+    then: 1
+    else: factorial(n-1) * n
+}.
+
+printLine(factorial(10))

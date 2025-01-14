@@ -22,6 +22,7 @@ typedef struct sysmelb_FunctionInstruction_s {
         };
 
         uint16_t temporaryIndex;
+        int16_t jumpOffset;
     };
 } sysmelb_FunctionInstruction_t;
 
@@ -41,10 +42,12 @@ void sysmelb_bytecode_ensureCapacity(sysmelb_FunctionBytecode_t*bytecode)
     sysmelb_freeAllocation(bytecode->instructions);
     bytecode->instructions = newStorage;
 }
-void sysmelb_bytecode_addInstruction(sysmelb_FunctionBytecode_t*bytecode, sysmelb_FunctionInstruction_t instructionToAdd)
+uint16_t sysmelb_bytecode_addInstruction(sysmelb_FunctionBytecode_t*bytecode, sysmelb_FunctionInstruction_t instructionToAdd)
 {
     sysmelb_bytecode_ensureCapacity(bytecode);
+    uint16_t instructionIndex = bytecode->instructionSize;
     bytecode->instructions[bytecode->instructionSize++] = instructionToAdd;
+    return instructionIndex;
 }
 
 void sysmelb_bytecode_pushLiteral(sysmelb_FunctionBytecode_t *bytecode, sysmelb_Value_t *literal)
@@ -87,6 +90,39 @@ uint16_t sysmelb_bytecode_allocateTemporary(sysmelb_FunctionBytecode_t *bytecode
 {
     assert(bytecode->temporaryZoneSize < SYSMEL_BYTECODE_MAX_TEMPORARY_COUNT);
     return bytecode->temporaryZoneSize++;
+}
+
+uint16_t sysmelb_bytecode_jump(sysmelb_FunctionBytecode_t *bytecode)
+{
+    sysmelb_FunctionInstruction_t inst = {
+        .opcode = SysmelFunctionOpcodeJump,
+        .jumpOffset = 0
+    };
+    return sysmelb_bytecode_addInstruction(bytecode, inst);
+}
+
+uint16_t sysmelb_bytecode_jumpIfFalse(sysmelb_FunctionBytecode_t *bytecode)
+{
+    sysmelb_FunctionInstruction_t inst = {
+        .opcode = SysmelFunctionOpcodeJumpIfFalse,
+        .jumpOffset = 0
+    };
+    return sysmelb_bytecode_addInstruction(bytecode, inst);
+}
+
+uint16_t sysmelb_bytecode_jumpIfTrue(sysmelb_FunctionBytecode_t *bytecode)
+{
+    sysmelb_FunctionInstruction_t inst = {
+        .opcode = SysmelFunctionOpcodeJumpIfTrue,
+        .jumpOffset = 0
+    };
+    return sysmelb_bytecode_addInstruction(bytecode, inst);
+}
+
+void sysmelb_bytecode_patchJumpToHere(sysmelb_FunctionBytecode_t *bytecode, uint16_t jumpInstructionIndex)
+{
+    int16_t offset = bytecode->instructionSize - jumpInstructionIndex;
+    bytecode->instructions[jumpInstructionIndex].jumpOffset = offset;
 }
 
 void sysmelb_bytecode_applyFunction(sysmelb_FunctionBytecode_t *bytecode, uint16_t argumentCount)
@@ -217,7 +253,20 @@ sysmelb_Value_t sysmelb_interpretBytecodeFunction(sysmelb_function_t *function, 
             result = sysmelb_bytecodeActivationContext_top(&context);
             return result;
         case SysmelFunctionOpcodeApplyFunction:
-            abort();
+            {
+                uint32_t applicationArgumentCount = currentInstruction->applicationArgumentCount;
+                uint32_t popCount = applicationArgumentCount;
+                for(uint32_t i = 0; i < popCount; ++i)
+                    context.calloutArguments[popCount - 1 - i] = sysmelb_bytecodeActivationContext_pop(&context);
+
+                sysmelb_Value_t function = sysmelb_bytecodeActivationContext_pop(&context);
+                assert(function.kind == SysmelValueKindFunctionReference);
+
+                sysmelb_Value_t value = sysmelb_callFunctionWithArguments(function.functionReference, popCount, context.calloutArguments);
+                sysmelb_bytecodeActivationContext_push(&context, value);
+                ++pc;
+                break;
+            }
         case SysmelFunctionOpcodeSendMessage:
             {
                 uint32_t messageArgumentCount = currentInstruction->messageSendArguments;
@@ -239,6 +288,27 @@ sysmelb_Value_t sysmelb_interpretBytecodeFunction(sysmelb_function_t *function, 
                 ++pc;
                 break;
             }
+        case SysmelFunctionOpcodeJumpIfFalse:
+            sysmelb_Value_t condition = sysmelb_bytecodeActivationContext_pop(&context);
+            assert(condition.kind == SysmelValueKindBoolean);
+            if(condition.boolean)
+                ++pc;
+            else
+                pc += currentInstruction->jumpOffset;
+            break;
+        case SysmelFunctionOpcodeJumpIfTrue:
+        {
+            sysmelb_Value_t condition = sysmelb_bytecodeActivationContext_pop(&context);
+            assert(condition.kind == SysmelValueKindBoolean);
+            if(condition.boolean)
+                pc += currentInstruction->jumpOffset;
+            else
+                ++pc;
+        }
+            break;
+        case SysmelFunctionOpcodeJump:
+            pc += currentInstruction->jumpOffset;
+            break;
         default:
             abort();
         }
