@@ -1,4 +1,5 @@
 #include "function.h"
+#include "error.h"
 #include "memory.h"
 #include "value.h"
 #include <string.h>
@@ -152,6 +153,20 @@ sysmelb_Value_t sysmelb_bytecodeActivationContext_top(sysmelb_bytecodeActivation
     return context->stack[context->stackSize - 1];
 }
 
+sysmelb_Value_t sysmelb_callFunctionWithArguments(sysmelb_function_t *function, size_t argumentCount, sysmelb_Value_t *arguments)
+{
+    switch(function->kind)
+    {
+    case SysmelFunctionKindPrimitive:
+        return function->primitiveFunction(argumentCount, arguments);
+    case SysmelFunctionKindPrimitiveMacro: abort();
+    case SysmelFunctionKindInterpreted:
+        return sysmelb_interpretBytecodeFunction(function, argumentCount, arguments);
+    case SysmelFunctionKindInterpretedMacro: abort();
+    default: abort();
+    }
+}
+
 sysmelb_Value_t sysmelb_interpretBytecodeFunction(sysmelb_function_t *function, size_t argumentCount, sysmelb_Value_t *arguments)
 {
     sysmelb_Value_t result = {
@@ -204,7 +219,26 @@ sysmelb_Value_t sysmelb_interpretBytecodeFunction(sysmelb_function_t *function, 
         case SysmelFunctionOpcodeApplyFunction:
             abort();
         case SysmelFunctionOpcodeSendMessage:
-            abort();
+            {
+                uint32_t messageArgumentCount = currentInstruction->messageSendArguments;
+                uint32_t popCount = messageArgumentCount + /*receiver*/ 1;
+                for(uint32_t i = 0; i < popCount; ++i)
+                    context.calloutArguments[popCount - 1 - i] = sysmelb_bytecodeActivationContext_pop(&context);
+
+                sysmelb_Value_t receiver = context.calloutArguments[0];
+                assert(receiver.type != NULL);
+                sysmelb_function_t *method = sysmelb_type_lookupSelector(receiver.type, currentInstruction->messageSendSelector);
+                if(!method)
+                {
+                    sysmelb_SourcePosition_t noPosition = {0};
+                    sysmelb_errorPrintf(noPosition, "Message not understood");
+                }
+
+                sysmelb_Value_t value = sysmelb_callFunctionWithArguments(method, popCount, context.calloutArguments);
+                sysmelb_bytecodeActivationContext_push(&context, value);
+                ++pc;
+                break;
+            }
         default:
             abort();
         }

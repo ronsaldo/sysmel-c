@@ -70,6 +70,9 @@
         "namespace.h": "c",
         "stdbool.h": "c",
         "types.h": "c",
-        "value.h": "c"
+        "value.h": "c",
+        "function.h": "c",
+        "semantics.h": "c",
+        "error.h": "c"
     }
 }

@@ -7,6 +7,8 @@
 #include "source-code.h"
 #include <stddef.h>
 
+#define SYSMEL_MAX_ARGUMENT_COUNT 16
+
 typedef struct sysmelb_Value_s sysmelb_Value_t;
 
 typedef enum sysmelb_FunctionKind_e {
@@ -73,5 +75,6 @@ uint16_t sysmelb_bytecode_allocateTemporary(sysmelb_FunctionBytecode_t *bytecode
 void sysmelb_bytecode_applyFunction(sysmelb_FunctionBytecode_t *bytecode, uint16_t argumentCount);
 void sysmelb_bytecode_sendMessage(sysmelb_FunctionBytecode_t *bytecode, sysmelb_symbol_t *selector, uint16_t argumentCount);
 
+sysmelb_Value_t sysmelb_callFunctionWithArguments(sysmelb_function_t *function, size_t argumentCount, sysmelb_Value_t *arguments);
 sysmelb_Value_t sysmelb_interpretBytecodeFunction(sysmelb_function_t *function, size_t argumentCount, sysmelb_Value_t *arguments);
 #endif //SYSMELB_FUNCTION_H

@@ -5,8 +5,6 @@
 #include "memory.h"
 #include <stdio.h>
 
-#define SYSMEL_MAX_ARGUMENT_COUNT 16
-
 sysmelb_Value_t sysmelb_analyzeAndEvaluateScript(sysmelb_Environment_t *environment, sysmelb_ParseTreeNode_t *ast)
 {
     switch(ast->kind)
