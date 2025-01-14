@@ -5,6 +5,7 @@
 
 #include "source-code.h"
 #include "symbol.h"
+#include "value.h"
 #include <stddef.h>
 #include <stdbool.h>
 #include <stdint.h>
@@ -21,6 +22,7 @@ typedef enum sysmelb_ParseTreeNodeKind_e {
     ParseTreeLiteralFloatNode,
     ParseTreeLiteralStringNode,
     ParseTreeLiteralSymbolNode,
+    ParseTreeLiteralValueNode,
 
     // Identifiers
     ParseTreeIdentifierReference,
@@ -100,6 +102,10 @@ typedef struct sysmelb_ParseTreeLiteralStringNode_s {
 typedef struct sysmelb_ParseTreeLiteralSymbolNode_s {
     sysmelb_symbol_t *internedSymbol;
 } sysmelb_ParseTreeLiteralSymbolNode_t;
+
+typedef struct sysmelb_ParseTreeLiteralValueNode_s {
+    sysmelb_Value_t value;
+} sysmelb_ParseTreeLiteralValueNode_t;
 
 // Identifier reference.
 typedef struct sysmelb_ParseTreeIdentifierReference_s {
@@ -243,6 +249,7 @@ typedef struct sysmelb_ParseTreeNode_s {
         sysmelb_ParseTreeLiteralFloatNode_t literalFloat;
         sysmelb_ParseTreeLiteralStringNode_t literalString;
         sysmelb_ParseTreeLiteralSymbolNode_t literalSymbol;
+        sysmelb_ParseTreeLiteralValueNode_t literalValue;
 
         // Identifiers
         sysmelb_ParseTreeIdentifierReference_t identifierReference;

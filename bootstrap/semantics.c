@@ -58,6 +58,8 @@ sysmelb_Value_t sysmelb_analyzeAndEvaluateScript(sysmelb_Environment_t *environm
             };
             return value;
         }
+    case ParseTreeLiteralValueNode:
+        return ast->literalValue.value;
 
     // Identifiers
     case ParseTreeIdentifierReference:
@@ -184,8 +186,33 @@ sysmelb_Value_t sysmelb_analyzeAndEvaluateScript(sysmelb_Environment_t *environm
     }
         abort();
     case ParseTreeMessageCascade:
-        abort();
+    {
+        sysmelb_Value_t receiver = sysmelb_analyzeAndEvaluateScript(environment, ast->messageCascade.receiver);
+        sysmelb_ParseTreeNode_t *receiverLiteral = sysmelb_newParseTreeNode(ParseTreeLiteralValueNode, ast->messageCascade.receiver->sourcePosition);
+        receiverLiteral->literalValue.value = receiver;
+
+        sysmelb_Value_t result = receiver;
+        size_t messageCount = ast->messageCascade.cascadedMessages.size;
+        for(size_t i = 0; i < messageCount; ++i)
+        {
+            sysmelb_ParseTreeNode_t *cascaded = ast->messageCascade.cascadedMessages.elements[i];
+            if(cascaded->kind != ParseTreeCascadedMessage)
+            {
+                sysmelb_errorPrintf(cascaded->sourcePosition, "Expected a cascaded message.");
+                abort();
+            }
+
+            sysmelb_ParseTreeNode_t *cascadedMessage = sysmelb_newParseTreeNode(ParseTreeMessageSend, cascaded->sourcePosition);
+            cascadedMessage->messageSend.receiver = receiverLiteral;
+            cascadedMessage->messageSend.selector = cascaded->cascadedMessage.selector;
+            cascadedMessage->messageSend.arguments = cascaded->cascadedMessage.arguments;
+            result = sysmelb_analyzeAndEvaluateScript(environment, cascadedMessage);
+        }
+
+        return result;
+    }
     case ParseTreeCascadedMessage:
+        sysmelb_errorPrintf(ast->sourcePosition, "Cascaded message must be a part of a cascade.");
         abort();
     case ParseTreeBinaryOperatorSequence:
         {

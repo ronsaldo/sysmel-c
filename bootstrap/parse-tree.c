@@ -37,6 +37,11 @@ void sysmelb_dumpParseTree(sysmelb_ParseTreeNode_t *node)
     case ParseTreeLiteralSymbolNode:
         printf("LiteralSymbol(%.*s)", node->literalSymbol.internedSymbol->size, node->literalSymbol.internedSymbol->string);
         break;
+    case ParseTreeLiteralValueNode:
+        printf("LiteralValue(");
+        sysmelb_printValue(node->literalValue.value);
+        printf(")");
+        break;
 
     // Identifier
     case ParseTreeIdentifierReference:

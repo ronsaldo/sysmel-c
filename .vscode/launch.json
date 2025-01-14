@@ -9,7 +9,7 @@
             "type": "cppdbg",
             "request": "launch",
             "program": "${workspaceFolder}/build/bootstrap",
-            "args": ["-eval", ":!a := 42"],
+            "args": ["-eval", "1 asInt32; asInt8"],
             "stopAtEntry": false,
             "cwd": "${workspaceFolder}",
             "environment": [],

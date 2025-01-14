@@ -4,7 +4,7 @@
 #pragma once
 
 #include "symbol.h"
-#include "parse-tree.h"
+#include "source-code.h"
 #include <stddef.h>
 
 typedef struct sysmelb_Value_s sysmelb_Value_t;
