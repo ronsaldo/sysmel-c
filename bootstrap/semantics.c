@@ -151,8 +151,17 @@ sysmelb_Value_t sysmelb_analyzeAndEvaluateScript(sysmelb_Environment_t *environm
         sysmelb_function_t *method = sysmelb_type_lookupSelector(receiver.type, selector.symbolReference);
         if(!method)
         {
-            sysmelb_errorPrintf(ast->sourcePosition, "Failed to find method with selector #%.*s.\n", selector.symbolReference->size, selector.symbolReference->string);
-            abort();
+            if(receiver.kind == SysmelValueKindValueBoxReference)
+            {
+                receiver = receiver.valueBoxReference->currentValue;
+                method = sysmelb_type_lookupSelector(receiver.type, selector.symbolReference);
+            }
+
+            if(!method)
+            {
+                sysmelb_errorPrintf(ast->sourcePosition, "Failed to find method with selector #%.*s.\n", selector.symbolReference->size, selector.symbolReference->string);
+                abort();
+            }
         }
         
         switch(method->kind)
@@ -210,7 +219,7 @@ sysmelb_Value_t sysmelb_analyzeAndEvaluateScript(sysmelb_Environment_t *environm
             sysmelb_ArrayHeader_t *arrayData = sysmelb_allocate(sizeof(sysmelb_ByteArrayHeader_t) + arraySize * sizeof(sysmelb_Value_t));
             arrayData->size = arraySize;
             for(size_t i = 0; i < arraySize; ++i)
-                arrayData->elements[i] = sysmelb_analyzeAndEvaluateScript(environment, ast->tuple.elements.elements[i]);
+                arrayData->elements[i] = sysmelb_decayValue(sysmelb_analyzeAndEvaluateScript(environment, ast->tuple.elements.elements[i]));
 
             sysmelb_Value_t result = {
                 .kind = SysmelValueKindArrayReference,
@@ -226,7 +235,7 @@ sysmelb_Value_t sysmelb_analyzeAndEvaluateScript(sysmelb_Environment_t *environm
             byteArrayData->size = arraySize;
             for(size_t i = 0; i < arraySize; ++i)
             {
-                sysmelb_Value_t elementValue = sysmelb_analyzeAndEvaluateScript(environment, ast->tuple.elements.elements[i]);
+                sysmelb_Value_t elementValue = sysmelb_decayValue(sysmelb_analyzeAndEvaluateScript(environment, ast->tuple.elements.elements[i]));
                 byteArrayData->elements[i] = (uint8_t)elementValue.unsignedInteger;
             }
 
@@ -243,7 +252,7 @@ sysmelb_Value_t sysmelb_analyzeAndEvaluateScript(sysmelb_Environment_t *environm
             sysmelb_TupleHeader_t *tupleData = sysmelb_allocate(sizeof(sysmelb_TupleHeader_t) + tupleSize * sizeof(sysmelb_Value_t));
             tupleData->size = tupleSize;
             for(size_t i = 0; i < tupleSize; ++i)
-                tupleData->elements[i] = sysmelb_analyzeAndEvaluateScript(environment, ast->tuple.elements.elements[i]);
+                tupleData->elements[i] = sysmelb_decayValue(sysmelb_analyzeAndEvaluateScript(environment, ast->tuple.elements.elements[i]));
 
             sysmelb_Value_t result = {
                 .kind = SysmelValueKindTupleReference,

@@ -27,6 +27,8 @@ sysmelb_function_t *sysmelb_type_lookupSelector(sysmelb_Type_t *type, sysmelb_sy
     const sysmelb_SymbolHashtablePair_t *pair = sysmelb_SymbolHashtable_lookupSymbol(&type->methodDict, selector);
     if(pair)
         return pair->value;
+    if(type->supertype)
+        return sysmelb_type_lookupSelector(type->supertype, selector);
     return NULL;
 }
 
@@ -121,7 +123,7 @@ static sysmelb_IntegerLiteralType_t sysmelb_normalizeIntegerValue(sysmelb_Type_t
 static sysmelb_Value_t sysmelb_primitive_negated(size_t argumentCount, sysmelb_Value_t *arguments)
 {
     assert(argumentCount == 1);
-    sysmelb_Value_t integerValue = arguments[0];
+    sysmelb_Value_t integerValue = sysmelb_decayValue(arguments[0]);
     integerValue.integer = sysmelb_normalizeIntegerValue(integerValue.type, -integerValue.integer);
     return integerValue;
 }
@@ -129,7 +131,7 @@ static sysmelb_Value_t sysmelb_primitive_negated(size_t argumentCount, sysmelb_V
 static sysmelb_Value_t sysmelb_primitive_bitInvert(size_t argumentCount, sysmelb_Value_t *arguments)
 {
     assert(argumentCount == 1);
-    sysmelb_Value_t integerValue = arguments[0];
+    sysmelb_Value_t integerValue = sysmelb_decayValue(arguments[0]);
     integerValue.integer = sysmelb_normalizeIntegerValue(integerValue.type, ~integerValue.integer);
     return integerValue;
 }
@@ -137,8 +139,8 @@ static sysmelb_Value_t sysmelb_primitive_bitInvert(size_t argumentCount, sysmelb
 static sysmelb_Value_t sysmelb_primitive_plus(size_t argumentCount, sysmelb_Value_t *arguments)
 {
     assert(argumentCount == 2);
-    sysmelb_Value_t leftValue = arguments[0];
-    sysmelb_Value_t rightValue = arguments[1];
+    sysmelb_Value_t leftValue = sysmelb_decayValue(arguments[0]);
+    sysmelb_Value_t rightValue = sysmelb_decayValue(arguments[1]);
     sysmelb_Value_t result = leftValue;
     result.integer = sysmelb_normalizeIntegerValue(result.type, leftValue.integer + rightValue.integer);
     return result;
@@ -147,8 +149,8 @@ static sysmelb_Value_t sysmelb_primitive_plus(size_t argumentCount, sysmelb_Valu
 static sysmelb_Value_t sysmelb_primitive_minus(size_t argumentCount, sysmelb_Value_t *arguments)
 {
     assert(argumentCount == 2);
-    sysmelb_Value_t leftValue = arguments[0];
-    sysmelb_Value_t rightValue = arguments[1];
+    sysmelb_Value_t leftValue = sysmelb_decayValue(arguments[0]);
+    sysmelb_Value_t rightValue = sysmelb_decayValue(arguments[1]);
     sysmelb_Value_t result = leftValue;
     result.integer = sysmelb_normalizeIntegerValue(result.type, leftValue.integer - rightValue.integer);
     return result;
@@ -157,8 +159,8 @@ static sysmelb_Value_t sysmelb_primitive_minus(size_t argumentCount, sysmelb_Val
 static sysmelb_Value_t sysmelb_primitive_times(size_t argumentCount, sysmelb_Value_t *arguments)
 {
     assert(argumentCount == 2);
-    sysmelb_Value_t leftValue = arguments[0];
-    sysmelb_Value_t rightValue = arguments[1];
+    sysmelb_Value_t leftValue = sysmelb_decayValue(arguments[0]);
+    sysmelb_Value_t rightValue = sysmelb_decayValue(arguments[1]);
     sysmelb_Value_t result = leftValue;
     result.integer = sysmelb_normalizeIntegerValue(result.type, leftValue.integer * rightValue.integer);
     return result;
@@ -167,8 +169,8 @@ static sysmelb_Value_t sysmelb_primitive_times(size_t argumentCount, sysmelb_Val
 static sysmelb_Value_t sysmelb_primitive_integerDivision(size_t argumentCount, sysmelb_Value_t *arguments)
 {
     assert(argumentCount == 2);
-    sysmelb_Value_t leftValue = arguments[0];
-    sysmelb_Value_t rightValue = arguments[1];
+    sysmelb_Value_t leftValue = sysmelb_decayValue(arguments[0]);
+    sysmelb_Value_t rightValue = sysmelb_decayValue(arguments[1]);
     sysmelb_Value_t result = leftValue;
     result.integer = sysmelb_normalizeIntegerValue(result.type, leftValue.integer / rightValue.integer);
     return result;
@@ -177,8 +179,8 @@ static sysmelb_Value_t sysmelb_primitive_integerDivision(size_t argumentCount, s
 static sysmelb_Value_t sysmelb_primitive_integerModule(size_t argumentCount, sysmelb_Value_t *arguments)
 {
     assert(argumentCount == 2);
-    sysmelb_Value_t leftValue = arguments[0];
-    sysmelb_Value_t rightValue = arguments[1];
+    sysmelb_Value_t leftValue = sysmelb_decayValue(arguments[0]);
+    sysmelb_Value_t rightValue = sysmelb_decayValue(arguments[1]);
     sysmelb_Value_t result = leftValue;
     result.integer = sysmelb_normalizeIntegerValue(result.type, leftValue.integer % rightValue.integer);
     return result;
@@ -187,8 +189,8 @@ static sysmelb_Value_t sysmelb_primitive_integerModule(size_t argumentCount, sys
 static sysmelb_Value_t sysmelb_primitive_integerEquals(size_t argumentCount, sysmelb_Value_t *arguments)
 {
     assert(argumentCount == 2);
-    sysmelb_Value_t leftValue = arguments[0];
-    sysmelb_Value_t rightValue = arguments[1];
+    sysmelb_Value_t leftValue = sysmelb_decayValue(arguments[0]);
+    sysmelb_Value_t rightValue = sysmelb_decayValue(arguments[1]);
     sysmelb_Value_t result = {
         .kind = SysmelValueKindBoolean,
         .boolean = leftValue.integer == rightValue.integer
@@ -199,8 +201,8 @@ static sysmelb_Value_t sysmelb_primitive_integerEquals(size_t argumentCount, sys
 static sysmelb_Value_t sysmelb_primitive_integerNotEquals(size_t argumentCount, sysmelb_Value_t *arguments)
 {
     assert(argumentCount == 2);
-    sysmelb_Value_t leftValue = arguments[0];
-    sysmelb_Value_t rightValue = arguments[1];
+    sysmelb_Value_t leftValue = sysmelb_decayValue(arguments[0]);
+    sysmelb_Value_t rightValue = sysmelb_decayValue(arguments[1]);
     sysmelb_Value_t result = {
         .kind = SysmelValueKindBoolean,
         .boolean = leftValue.integer != rightValue.integer
@@ -211,8 +213,8 @@ static sysmelb_Value_t sysmelb_primitive_integerNotEquals(size_t argumentCount, 
 static sysmelb_Value_t sysmelb_primitive_integerLessThan(size_t argumentCount, sysmelb_Value_t *arguments)
 {
     assert(argumentCount == 2);
-    sysmelb_Value_t leftValue = arguments[0];
-    sysmelb_Value_t rightValue = arguments[1];
+    sysmelb_Value_t leftValue = sysmelb_decayValue(arguments[0]);
+    sysmelb_Value_t rightValue = sysmelb_decayValue(arguments[1]);
     sysmelb_Value_t result = {
         .kind = SysmelValueKindBoolean,
         .boolean = (leftValue.kind == SysmelValueKindUnsignedInteger)
@@ -225,8 +227,8 @@ static sysmelb_Value_t sysmelb_primitive_integerLessThan(size_t argumentCount, s
 static sysmelb_Value_t sysmelb_primitive_integerLessOrEquals(size_t argumentCount, sysmelb_Value_t *arguments)
 {
     assert(argumentCount == 2);
-    sysmelb_Value_t leftValue = arguments[0];
-    sysmelb_Value_t rightValue = arguments[1];
+    sysmelb_Value_t leftValue = sysmelb_decayValue(arguments[0]);
+    sysmelb_Value_t rightValue = sysmelb_decayValue(arguments[1]);
     sysmelb_Value_t result = {
         .kind = SysmelValueKindBoolean,
         .boolean = (leftValue.kind == SysmelValueKindUnsignedInteger)
@@ -239,8 +241,8 @@ static sysmelb_Value_t sysmelb_primitive_integerLessOrEquals(size_t argumentCoun
 static sysmelb_Value_t sysmelb_primitive_integerGreaterThan(size_t argumentCount, sysmelb_Value_t *arguments)
 {
     assert(argumentCount == 2);
-    sysmelb_Value_t leftValue = arguments[0];
-    sysmelb_Value_t rightValue = arguments[1];
+    sysmelb_Value_t leftValue = sysmelb_decayValue(arguments[0]);
+    sysmelb_Value_t rightValue = sysmelb_decayValue(arguments[1]);
     sysmelb_Value_t result = {
         .kind = SysmelValueKindBoolean,
         .boolean = (leftValue.kind == SysmelValueKindUnsignedInteger)
@@ -253,8 +255,8 @@ static sysmelb_Value_t sysmelb_primitive_integerGreaterThan(size_t argumentCount
 static sysmelb_Value_t sysmelb_primitive_integerGreaterOrEquals(size_t argumentCount, sysmelb_Value_t *arguments)
 {
     assert(argumentCount == 2);
-    sysmelb_Value_t leftValue = arguments[0];
-    sysmelb_Value_t rightValue = arguments[1];
+    sysmelb_Value_t leftValue = sysmelb_decayValue(arguments[0]);
+    sysmelb_Value_t rightValue = sysmelb_decayValue(arguments[1]);
     sysmelb_Value_t result = {
         .kind = SysmelValueKindBoolean,
         .boolean = (leftValue.kind == SysmelValueKindUnsignedInteger)
@@ -267,7 +269,7 @@ static sysmelb_Value_t sysmelb_primitive_integerGreaterOrEquals(size_t argumentC
 static sysmelb_Value_t sysmelb_primitive_integerAsInt8(size_t argumentCount, sysmelb_Value_t *arguments)
 {
     assert(argumentCount == 1);
-    sysmelb_Value_t originalValue = arguments[0];
+    sysmelb_Value_t originalValue = sysmelb_decayValue(arguments[0]);
     sysmelb_Value_t result = {
         .kind = SysmelValueKindInteger,
         .type = sysmelb_BasicTypesData.int8,
@@ -279,7 +281,7 @@ static sysmelb_Value_t sysmelb_primitive_integerAsInt8(size_t argumentCount, sys
 static sysmelb_Value_t sysmelb_primitive_integerAsInt16(size_t argumentCount, sysmelb_Value_t *arguments)
 {
     assert(argumentCount == 1);
-    sysmelb_Value_t originalValue = arguments[0];
+    sysmelb_Value_t originalValue = sysmelb_decayValue(arguments[0]);
     sysmelb_Value_t result = {
         .kind = SysmelValueKindInteger,
         .type = sysmelb_BasicTypesData.int16,
@@ -291,7 +293,7 @@ static sysmelb_Value_t sysmelb_primitive_integerAsInt16(size_t argumentCount, sy
 static sysmelb_Value_t sysmelb_primitive_integerAsInt32(size_t argumentCount, sysmelb_Value_t *arguments)
 {
     assert(argumentCount == 1);
-    sysmelb_Value_t originalValue = arguments[0];
+    sysmelb_Value_t originalValue = sysmelb_decayValue(arguments[0]);
     sysmelb_Value_t result = {
         .kind = SysmelValueKindInteger,
         .type = sysmelb_BasicTypesData.int32,
@@ -303,7 +305,7 @@ static sysmelb_Value_t sysmelb_primitive_integerAsInt32(size_t argumentCount, sy
 static sysmelb_Value_t sysmelb_primitive_integerAsInt64(size_t argumentCount, sysmelb_Value_t *arguments)
 {
     assert(argumentCount == 1);
-    sysmelb_Value_t originalValue = arguments[0];
+    sysmelb_Value_t originalValue = sysmelb_decayValue(arguments[0]);
     sysmelb_Value_t result = {
         .kind = SysmelValueKindInteger,
         .type = sysmelb_BasicTypesData.int64,
@@ -315,7 +317,7 @@ static sysmelb_Value_t sysmelb_primitive_integerAsInt64(size_t argumentCount, sy
 static sysmelb_Value_t sysmelb_primitive_integerAsUInt8(size_t argumentCount, sysmelb_Value_t *arguments)
 {
     assert(argumentCount == 1);
-    sysmelb_Value_t originalValue = arguments[0];
+    sysmelb_Value_t originalValue = sysmelb_decayValue(arguments[0]);
     sysmelb_Value_t result = {
         .kind = SysmelValueKindUnsignedInteger,
         .type = sysmelb_BasicTypesData.uint8,
@@ -327,7 +329,7 @@ static sysmelb_Value_t sysmelb_primitive_integerAsUInt8(size_t argumentCount, sy
 static sysmelb_Value_t sysmelb_primitive_integerAsUInt16(size_t argumentCount, sysmelb_Value_t *arguments)
 {
     assert(argumentCount == 1);
-    sysmelb_Value_t originalValue = arguments[0];
+    sysmelb_Value_t originalValue = sysmelb_decayValue(arguments[0]);
     sysmelb_Value_t result = {
         .kind = SysmelValueKindUnsignedInteger,
         .type = sysmelb_BasicTypesData.uint16,
@@ -339,7 +341,7 @@ static sysmelb_Value_t sysmelb_primitive_integerAsUInt16(size_t argumentCount, s
 static sysmelb_Value_t sysmelb_primitive_integerAsUInt32(size_t argumentCount, sysmelb_Value_t *arguments)
 {
     assert(argumentCount == 1);
-    sysmelb_Value_t originalValue = arguments[0];
+    sysmelb_Value_t originalValue = sysmelb_decayValue(arguments[0]);
     sysmelb_Value_t result = {
         .kind = SysmelValueKindUnsignedInteger,
         .type = sysmelb_BasicTypesData.uint32,
@@ -351,7 +353,7 @@ static sysmelb_Value_t sysmelb_primitive_integerAsUInt32(size_t argumentCount, s
 static sysmelb_Value_t sysmelb_primitive_integerAsUInt64(size_t argumentCount, sysmelb_Value_t *arguments)
 {
     assert(argumentCount == 1);
-    sysmelb_Value_t originalValue = arguments[0];
+    sysmelb_Value_t originalValue = sysmelb_decayValue(arguments[0]);
     sysmelb_Value_t result = {
         .kind = SysmelValueKindUnsignedInteger,
         .type = sysmelb_BasicTypesData.uint64,
@@ -363,7 +365,7 @@ static sysmelb_Value_t sysmelb_primitive_integerAsUInt64(size_t argumentCount, s
 static sysmelb_Value_t sysmelb_primitive_integerAsFloat32(size_t argumentCount, sysmelb_Value_t *arguments)
 {
     assert(argumentCount == 1);
-    sysmelb_Value_t originalValue = arguments[0];
+    sysmelb_Value_t originalValue = sysmelb_decayValue(arguments[0]);
     sysmelb_Value_t result = {
         .kind = SysmelValueKindFloatingPoint,
         .type = sysmelb_BasicTypesData.float32,
@@ -377,7 +379,7 @@ static sysmelb_Value_t sysmelb_primitive_integerAsFloat32(size_t argumentCount, 
 static sysmelb_Value_t sysmelb_primitive_integerAsFloat64(size_t argumentCount, sysmelb_Value_t *arguments)
 {
     assert(argumentCount == 1);
-    sysmelb_Value_t originalValue = arguments[0];
+    sysmelb_Value_t originalValue = sysmelb_decayValue(arguments[0]);
     sysmelb_Value_t result = {
         .kind = SysmelValueKindFloatingPoint,
         .type = sysmelb_BasicTypesData.float64,

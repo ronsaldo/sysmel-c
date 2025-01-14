@@ -108,6 +108,7 @@ struct sysmelb_ValueBox_s
     sysmelb_Value_t currentValue;
 };
 
+sysmelb_Value_t sysmelb_decayValue(sysmelb_Value_t value);
 void sysmelb_printValue(sysmelb_Value_t value);
 
 #endif //SYSMELB_VALUE_H

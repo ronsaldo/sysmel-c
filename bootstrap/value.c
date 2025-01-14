@@ -1,6 +1,13 @@
 #include "value.h"
 #include <stdio.h>
 
+sysmelb_Value_t sysmelb_decayValue(sysmelb_Value_t value)
+{
+    if(value.kind == SysmelValueKindValueBoxReference)
+        return value.valueBoxReference->currentValue;
+    return value;
+}
+
 void sysmelb_printValue(sysmelb_Value_t value)
 {
     const char *printingSuffix = "";

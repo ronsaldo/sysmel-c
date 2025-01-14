@@ -39,6 +39,7 @@ struct sysmelb_Type_s {
     sysmelb_TypeKind_t kind;
     sysmelb_symbol_t *name;
     const char *printingSuffix;
+    sysmelb_Type_t *supertype;
     uint32_t valueSize;
     uint32_t valueAlignment;
     uint32_t heapSize;
