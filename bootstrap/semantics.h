@@ -6,5 +6,6 @@
 #include "value.h"
 
 sysmelb_Value_t sysmelb_analyzeAndEvaluateScript(sysmelb_Environment_t *environment, sysmelb_ParseTreeNode_t *ast);
+sysmelb_Value_t sysmelb_analyzeAndCompileClosure(sysmelb_Environment_t *environment, sysmelb_ParseTreeNode_t *ast);
 
 #endif //SYSMELB_SEMANTICS_H

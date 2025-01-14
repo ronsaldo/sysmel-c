@@ -18,6 +18,15 @@ static sysmelb_Environment_t sysmelb_EmptyEnvironment = {
 static bool sysmelb_IntrinsicsEnvironmentCreated;
 static sysmelb_Environment_t sysmelb_IntrinsicsEnvironment;
 
+sysmelb_SymbolBinding_t *sysmelb_createSymbolArgumentBinding(uint16_t argumentIndex, sysmelb_Type_t *type)
+{
+    sysmelb_SymbolBinding_t *binding = sysmelb_allocate(sizeof(sysmelb_SymbolBinding_t));
+    binding->kind = SysmelSymbolArgumentBinding;
+    binding->argumentIndex = argumentIndex;
+    binding->argumentType = type;
+    return binding;
+}
+
 sysmelb_SymbolBinding_t *sysmelb_createSymbolValueBinding(sysmelb_Value_t value)
 {
     sysmelb_SymbolBinding_t *binding = sysmelb_allocate(sizeof(sysmelb_SymbolBinding_t));
@@ -290,6 +299,14 @@ sysmelb_Environment_t *sysmelb_createLexicalEnvironment(sysmelb_Environment_t *p
 {
     sysmelb_Environment_t *environment = sysmelb_allocate(sizeof(sysmelb_Environment_t));
     environment->kind = SysmelEnvKindLexical;
+    environment->parent = parent;
+    return environment;
+}
+
+sysmelb_Environment_t *sysmelb_createFunctionAnalysisEnvironment(sysmelb_Environment_t *parent)
+{
+    sysmelb_Environment_t *environment = sysmelb_allocate(sizeof(sysmelb_Environment_t));
+    environment->kind = SysmelEnvKindFunctionalAnalysis;
     environment->parent = parent;
     return environment;
 }

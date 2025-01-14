@@ -61,6 +61,9 @@ typedef enum sysmelb_ParseTreeNodeKind_e {
     // Assignment
     ParseTreeAssignment,
 
+    // Closure and functions
+    ParseTreeFunction,
+
     // Control flow. Exposed via macros
     ParseTreeIfSelection,
     ParseTreeWhileLoop,
@@ -208,6 +211,13 @@ typedef struct sysmelb_ParseTreeBindableName_s {
     bool isPublic;
 } sysmelb_ParseTreeBindableName_t;
 
+typedef struct sysmelb_ParseTreeFunction_s {
+    sysmelb_ParseTreeNode_t *functionDependentType;
+    sysmelb_ParseTreeNode_t *bodyExpression;
+    sysmelb_symbol_t *name;
+    bool isPublic;
+} sysmelb_ParseTreeFunction_t;
+
 // Assignment
 typedef struct sysmelb_ParseTreeAssignment_s {
     sysmelb_ParseTreeNode_t *store;
@@ -277,6 +287,7 @@ typedef struct sysmelb_ParseTreeNode_s {
         // Binding and pattern matching.
         ParseTreeFunctionalDependentType_t functionalDependentType;
         sysmelb_ParseTreeBindableName_t bindableName;
+        sysmelb_ParseTreeFunction_t function;
 
         // Assignment
         sysmelb_ParseTreeAssignment_t assignment;

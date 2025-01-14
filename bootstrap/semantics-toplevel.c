@@ -123,6 +123,16 @@ sysmelb_Value_t sysmelb_analyzeAndEvaluateScript(sysmelb_Environment_t *environm
                 assert(macroResult.kind == SysmelValueKindParseTreeReference);
                 return sysmelb_analyzeAndEvaluateScript(environment, macroResult.parseTreeReference);
             }
+            case SysmelFunctionKindInterpreted:
+                size_t argumentCount = ast->functionApplication.arguments.size;
+                assert(ast->functionApplication.arguments.size <= SYSMEL_MAX_ARGUMENT_COUNT);
+                sysmelb_Value_t applicationArguments[SYSMEL_MAX_ARGUMENT_COUNT];
+
+                for(size_t i = 0; i < argumentCount; ++i)
+                    applicationArguments[i] = sysmelb_analyzeAndEvaluateScript(environment, ast->functionApplication.arguments.elements[i]);
+                
+                return sysmelb_interpretBytecodeFunction(function, argumentCount, applicationArguments);
+
             default:
                 abort();
             }
@@ -182,6 +192,8 @@ sysmelb_Value_t sysmelb_analyzeAndEvaluateScript(sysmelb_Environment_t *environm
             sysmelb_errorPrintf(ast->sourcePosition, "TODO: Support macro message sends");
             abort();
             break;
+        default:
+            abort();
         }
     }
         abort();
@@ -374,8 +386,11 @@ sysmelb_Value_t sysmelb_analyzeAndEvaluateScript(sysmelb_Environment_t *environm
 
             if(store->bindableName.hasPostTypeExpression && store->bindableName.typeExpression->kind == ParseTreeFunctionalDependentType)
             {
-
-                abort();
+                sysmelb_ParseTreeNode_t *functionNode = sysmelb_newParseTreeNode(ParseTreeFunction, ast->sourcePosition);
+                functionNode->function.functionDependentType = store->bindableName.typeExpression;
+                functionNode->function.bodyExpression = value;
+                functionNode->function.name = nameValue.symbolReference;
+                return sysmelb_analyzeAndCompileClosure(environment, functionNode);
             }
 
             sysmelb_Value_t initialValue = sysmelb_analyzeAndEvaluateScript(environment, value);
