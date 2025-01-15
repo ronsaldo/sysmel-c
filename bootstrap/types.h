@@ -49,10 +49,20 @@ struct sysmelb_Type_s {
     uint32_t valueAlignment;
     uint32_t heapSize;
     uint32_t heapAlignment;
-    uint32_t fieldCount;
     sysmelb_SymbolHashtable_t methodDict;
-    sysmelb_Type_t **fields;
-    sysmelb_symbol_t **fieldNames;
+    union
+    {
+        struct {
+            uint32_t fieldCount;
+            sysmelb_Type_t **fields;
+            sysmelb_symbol_t **fieldNames;
+        }tupleAndRecords;
+
+        struct {
+            uint32_t alternativeCount;
+            sysmelb_Type_t **alternatives;
+        } sumType;
+    };
 };
 
 typedef struct sysmelb_BasicTypes_s {

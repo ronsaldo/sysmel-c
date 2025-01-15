@@ -1,9 +1,10 @@
-Record: MyPair withFields: #{
+Record: TestPair withFields: #{
     first: Int32.
     second: Int32
 }.
 
-printLine(MyPair).
-printLine(MyPair()).
-printLine(MyPair(1i32 . 2i32)).
-printLine(MyPair#{first: 42i32. second: 8i32}).
+printLine(TestPair).
+printLine(TestPair()).
+printLine(TestPair(1i32 . 2i32)).
+printLine(TestPair#{first: 42i32. second: 8i32}).
+

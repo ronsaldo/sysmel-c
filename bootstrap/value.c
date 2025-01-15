@@ -115,10 +115,10 @@ void sysmelb_printValue(sysmelb_Value_t value)
             if(value.type->name)
                 printf("%.*s", value.type->name->size, value.type->name->string);
             printf("#{");
-            for(uint32_t i = 0; i < value.type->fieldCount; ++i)
+            for(uint32_t i = 0; i < value.type->tupleAndRecords.fieldCount; ++i)
             {
                 if(i != 0) printf(" ");
-                sysmelb_symbol_t *fieldName = value.type->fieldNames[i];
+                sysmelb_symbol_t *fieldName = value.type->tupleAndRecords.fieldNames[i];
                 printf("%.*s: ", fieldName->size, fieldName->string);
                 sysmelb_printValue(value.tupleReference->elements[i]);
                 printf(".");

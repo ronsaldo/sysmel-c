@@ -56,28 +56,28 @@ sysmelb_Type_t *sysmelb_allocateRecordType(sysmelb_symbol_t *name, sysmelb_Dicti
     type->supertype = sysmelb_getBasicTypes()->record;
 
     size_t fieldCount = fieldsAndTypes->size;
-    type->fieldCount = fieldCount;
-    type->fields = sysmelb_allocate(sizeof(sysmelb_Type_t*)*fieldCount);
-    type->fieldNames = sysmelb_allocate(sizeof(sysmelb_symbol_t*)*fieldCount);
+    type->tupleAndRecords.fieldCount = fieldCount;
+    type->tupleAndRecords.fields = sysmelb_allocate(sizeof(sysmelb_Type_t*)*fieldCount);
+    type->tupleAndRecords.fieldNames = sysmelb_allocate(sizeof(sysmelb_symbol_t*)*fieldCount);
 
     for(size_t i = 0; i < fieldCount; ++i)
     {
         sysmelb_Association_t *assoc = fieldsAndTypes->elements[i];
         assert(assoc->key.kind == SysmelValueKindSymbolReference);
         assert(assoc->value.kind == SysmelValueKindTypeReference);
-        type->fieldNames[i] = assoc->key.symbolReference;
-        type->fields[i] = assoc->value.typeReference;
+        type->tupleAndRecords.fieldNames[i] = assoc->key.symbolReference;
+        type->tupleAndRecords.fields[i] = assoc->value.typeReference;
     }
     return type;
 }
 int sysmelb_findIndexOfFieldNamed(sysmelb_Type_t *type, sysmelb_symbol_t *name)
 {
-    if(!type->fields || !type->fieldNames)
+    if(!type->tupleAndRecords.fields || !type->tupleAndRecords.fieldNames)
         return -1;
 
-    for(uint32_t i = 0; i < type->fieldCount; ++i)
+    for(uint32_t i = 0; i < type->tupleAndRecords.fieldCount; ++i)
     {
-        if(type->fieldNames[i] == name)
+        if(type->tupleAndRecords.fieldNames[i] == name)
             return (int)i;
     }
 
@@ -88,9 +88,9 @@ sysmelb_Value_t sysmelb_instantiateTypeWithArguments(sysmelb_Type_t *type, size_
 {
     if(type->kind == SysmelTypeKindRecord || type->kind == SysmelTypeKindTuple)
     {
-        assert(argumentCount <= type->fieldCount);
-        sysmelb_TupleHeader_t *tupleOrRecord = sysmelb_allocate(sizeof(sysmelb_TupleHeader_t) + sizeof(sysmelb_Value_t)*type->fieldCount);
-        tupleOrRecord->size = type->fieldCount;
+        assert(argumentCount <= type->tupleAndRecords.fieldCount);
+        sysmelb_TupleHeader_t *tupleOrRecord = sysmelb_allocate(sizeof(sysmelb_TupleHeader_t) + sizeof(sysmelb_Value_t)*type->tupleAndRecords.fieldCount);
+        tupleOrRecord->size = type->tupleAndRecords.fieldCount;
         if(argumentCount == 1 && arguments[0].kind == SysmelValueKindDictionaryReference)
         {
             sysmelb_Dictionary_t *dict = arguments[0].dictionaryReference;

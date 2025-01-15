@@ -73,6 +73,11 @@
         "value.h": "c",
         "function.h": "c",
         "semantics.h": "c",
-        "error.h": "c"
+        "error.h": "c",
+        "string.h": "c",
+        "__functional_base_03": "c",
+        "__hash_table": "c",
+        "__tree": "c",
+        "__tuple": "c"
     }
 }
