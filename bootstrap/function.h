@@ -10,6 +10,7 @@
 #define SYSMEL_MAX_ARGUMENT_COUNT 16
 
 typedef struct sysmelb_Value_s sysmelb_Value_t;
+typedef struct sysmelb_Environment_s sysmelb_Environment_t;
 
 typedef enum sysmelb_FunctionKind_e {
     SysmelFunctionKindPrimitive,
@@ -40,6 +41,7 @@ typedef struct sysmelb_FunctionInstruction_s sysmelb_FunctionInstruction_t;
 
 typedef struct sysmelb_MacroContext_s {
     sysmelb_SourcePosition_t sourcePosition;
+    sysmelb_Environment_t *environment;
 } sysmelb_MacroContext_t;
 
 typedef sysmelb_Value_t (*sysmelb_PrimitiveFunction_t) (size_t argumentCount, sysmelb_Value_t *arguments);

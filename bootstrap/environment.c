@@ -1,14 +1,17 @@
 #include "environment.h"
+#include "error.h"
 #include "function.h"
 #include "memory.h"
 #include "parse-tree.h"
 #include "namespace.h"
+#include "semantics.h"
 #include "types.h"
 #include "value.h"
 #include <stddef.h>
 #include <stdbool.h>
 #include <assert.h>
 #include <string.h>
+#include <stdlib.h>
 #include <stdio.h>
 
 static sysmelb_Environment_t sysmelb_EmptyEnvironment = {
@@ -159,6 +162,45 @@ static sysmelb_Value_t sysmelb_printLine(size_t argumentCount, sysmelb_Value_t *
     };
     return result;
 }
+static sysmelb_Value_t sysmelb_RecordWithFieldsMacro(sysmelb_MacroContext_t *macroContext, size_t argumentCount, sysmelb_Value_t *arguments)
+{
+    assert(argumentCount == 2);
+    sysmelb_symbol_t *name = NULL;
+
+    if (arguments[0].parseTreeReference->kind == ParseTreeIdentifierReference)
+        name = arguments[0].parseTreeReference->identifierReference.identifier;
+    else if (arguments[0].parseTreeReference->kind == ParseTreeLiteralSymbolNode)
+        name = arguments[0].parseTreeReference->literalSymbol.internedSymbol;
+    else
+    {
+        sysmelb_Value_t nameValue = sysmelb_analyzeAndEvaluateScript(macroContext->environment, arguments[0].parseTreeReference);
+        if(nameValue.kind != SysmelValueKindSymbolReference)
+            sysmelb_errorPrintf(macroContext->sourcePosition, "A non-valid name object is being passed.");
+        name = nameValue.symbolReference;
+    }
+
+    sysmelb_Value_t dictionaryWithFieldAndType = sysmelb_analyzeAndEvaluateScript(macroContext->environment, arguments[1].parseTreeReference);
+    if(dictionaryWithFieldAndType.kind != SysmelValueKindDictionaryReference)
+    {
+        sysmelb_errorPrintf(arguments[1].parseTreeReference->sourcePosition, "An ImmutableDictionar with field names and types is expected.");
+        abort();
+    }
+
+    sysmelb_Type_t *recordType = sysmelb_allocateRecordType(name, dictionaryWithFieldAndType.dictionaryReference);
+    sysmelb_Value_t result = {
+        .kind = SysmelValueKindTypeReference,
+        .type = sysmelb_getBasicTypes()->universe,
+        .typeReference = recordType
+    };
+    
+    if(name)
+    {
+        sysmelb_SymbolBinding_t *resultBinding = sysmelb_createSymbolValueBinding(result);
+        sysmelb_Environment_setLocalSymbolBinding(macroContext->environment, name, resultBinding);
+    }
+    
+    return result;
+}
 
 sysmelb_Environment_t *sysmelb_getOrCreateIntrinsicsEnvironment()
 {
@@ -187,6 +229,7 @@ sysmelb_Environment_t *sysmelb_getOrCreateIntrinsicsEnvironment()
     {
         sysmelb_Value_t nullValue = {
             .kind = SysmelValueKindNull,
+            .type = sysmelb_getBasicTypes()->null
         };
 
         sysmelb_Environment_setLocalSymbolBinding(&sysmelb_IntrinsicsEnvironment, sysmelb_internSymbolC("null"), sysmelb_createSymbolValueBinding(nullValue));        
@@ -263,6 +306,7 @@ sysmelb_Environment_t *sysmelb_getOrCreateIntrinsicsEnvironment()
         sysmelb_Environment_setLocalSymbolBinding(&sysmelb_IntrinsicsEnvironment, function->name, sysmelb_createSymbolFunctionBinding(function));
     }
 
+    // Console printing
     {
         sysmelb_function_t *function = sysmelb_allocate(sizeof(sysmelb_function_t));
         function->kind = SysmelFunctionKindPrimitive;
@@ -272,6 +316,15 @@ sysmelb_Environment_t *sysmelb_getOrCreateIntrinsicsEnvironment()
         sysmelb_Environment_setLocalSymbolBinding(&sysmelb_IntrinsicsEnvironment, function->name, sysmelb_createSymbolFunctionBinding(function));
     }
 
+    // Record type
+    {
+        sysmelb_function_t *function = sysmelb_allocate(sizeof(sysmelb_function_t));
+        function->kind = SysmelFunctionKindPrimitiveMacro;
+        function->name = sysmelb_internSymbolC("Record:withFields:");
+        function->primitiveMacroFunction = sysmelb_RecordWithFieldsMacro;
+
+        sysmelb_Environment_setLocalSymbolBinding(&sysmelb_IntrinsicsEnvironment, function->name, sysmelb_createSymbolFunctionBinding(function));
+    }
     sysmelb_IntrinsicsEnvironmentCreated = true;
     return &sysmelb_IntrinsicsEnvironment;
 }

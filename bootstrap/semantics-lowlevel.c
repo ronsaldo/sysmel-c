@@ -156,12 +156,19 @@ static void sysmelb_analyzeAndCompileClosureBody(sysmelb_Environment_t *environm
                         }
                         
                         sysmelb_MacroContext_t macroContext = {
-                            .sourcePosition = ast->sourcePosition
+                            .sourcePosition = ast->sourcePosition,
+                            .environment = environment,
                         };
 
                         sysmelb_Value_t macroResult = calledFunctionOrMacro->primitiveMacroFunction(&macroContext, argumentCount, applicationArguments);
-                        assert(macroResult.kind == SysmelValueKindParseTreeReference);
-                        return sysmelb_analyzeAndCompileClosureBody(environment, function, macroResult.parseTreeReference);
+                        if(macroResult.kind == SysmelValueKindParseTreeReference)
+                        {
+                            return sysmelb_analyzeAndCompileClosureBody(environment, function, macroResult.parseTreeReference);
+                        }
+                        else
+                        {
+                            return sysmelb_bytecode_pushLiteral(&function->bytecode, &macroResult);
+                        }
                     }
                     default:
                         break;

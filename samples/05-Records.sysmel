@@ -1,0 +1,9 @@
+Record: MyPair withFields: #{
+    first: Int32.
+    second: Int32
+}.
+
+printLine(MyPair).
+printLine(MyPair()).
+printLine(MyPair(1i32 . 2i32)).
+printLine(MyPair#{first: 42i32. second: 8i32}).

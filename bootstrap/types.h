@@ -10,6 +10,7 @@
 #include <stdint.h>
 
 typedef struct sysmelb_Type_s sysmelb_Type_t;
+typedef struct sysmelb_Dictionary_s sysmelb_Dictionary_t;
 
 typedef enum sysmelb_TypeKind_e {
     SysmelTypeKindNull,
@@ -25,6 +26,7 @@ typedef enum sysmelb_TypeKind_e {
     SysmelTypeKindDictionary,
     SysmelTypeKindByteArray,
     SysmelTypeKindTuple,
+    SysmelTypeKindRecord,
     SysmelTypeKindSum,
     SysmelTypeKindInteger,
     SysmelTypeKindFloat,
@@ -49,7 +51,8 @@ struct sysmelb_Type_s {
     uint32_t heapAlignment;
     uint32_t fieldCount;
     sysmelb_SymbolHashtable_t methodDict;
-    sysmelb_Type_t *fields;
+    sysmelb_Type_t **fields;
+    sysmelb_symbol_t **fieldNames;
 };
 
 typedef struct sysmelb_BasicTypes_s {
@@ -68,6 +71,8 @@ typedef struct sysmelb_BasicTypes_s {
     sysmelb_Type_t *array;
     sysmelb_Type_t *byteArray;
     sysmelb_Type_t *tuple;
+    sysmelb_Type_t *record;
+    sysmelb_Type_t *sum;
     sysmelb_Type_t *association;
     sysmelb_Type_t *dictionary;
     sysmelb_Type_t *parseTreeNode;
@@ -97,6 +102,8 @@ void sysmelb_type_addPrimitiveMacroMethod(sysmelb_Type_t *type, sysmelb_symbol_t
 sysmelb_function_t *sysmelb_type_lookupSelector(sysmelb_Type_t *type, sysmelb_symbol_t *selector);
 
 sysmelb_Type_t *sysmelb_allocateValueType(sysmelb_TypeKind_t kind, sysmelb_symbol_t *name, uint32_t size, uint32_t alignment);
+sysmelb_Type_t *sysmelb_allocateRecordType(sysmelb_symbol_t *name, sysmelb_Dictionary_t *fieldsAndTypes);
+sysmelb_Value_t sysmelb_instantiateTypeWithArguments(sysmelb_Type_t *type, size_t argumentCount, sysmelb_Value_t *arguments);
 const sysmelb_BasicTypes_t *sysmelb_getBasicTypes(void);
 
 #endif //SYSMEL_TYPES_H

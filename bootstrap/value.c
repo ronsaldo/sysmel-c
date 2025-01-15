@@ -110,14 +110,32 @@ void sysmelb_printValue(sysmelb_Value_t value)
         printf("]");
         break;
     case SysmelValueKindTupleReference:
-        printf("(");
-        for(size_t i = 0; i < value.tupleReference->size; ++i)
+        if(value.type->kind == SysmelTypeKindRecord)
         {
-            if(i != 0)
-                printf(", ");
-            sysmelb_printValue(value.tupleReference->elements[i]);
+            if(value.type->name)
+                printf("%.*s", value.type->name->size, value.type->name->string);
+            printf("#{");
+            for(uint32_t i = 0; i < value.type->fieldCount; ++i)
+            {
+                if(i != 0) printf(" ");
+                sysmelb_symbol_t *fieldName = value.type->fieldNames[i];
+                printf("%.*s: ", fieldName->size, fieldName->string);
+                sysmelb_printValue(value.tupleReference->elements[i]);
+                printf(".");
+            }
+            printf("}");
         }
-        printf(")");
+        else
+        {
+            printf("(");
+            for(size_t i = 0; i < value.tupleReference->size; ++i)
+            {
+                if(i != 0)
+                    printf(", ");
+                sysmelb_printValue(value.tupleReference->elements[i]);
+            }
+            printf(")");
+        }
         break;
     case SysmelValueKindAssociationReference:
         sysmelb_printValue(value.associationReference->key);

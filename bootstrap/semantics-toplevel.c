@@ -114,12 +114,15 @@ sysmelb_Value_t sysmelb_analyzeAndEvaluateScript(sysmelb_Environment_t *environm
                 }
                 
                 sysmelb_MacroContext_t macroContext = {
-                    .sourcePosition = ast->sourcePosition
+                    .sourcePosition = ast->sourcePosition,
+                    .environment = environment
                 };
 
                 sysmelb_Value_t macroResult = function->primitiveMacroFunction(&macroContext, argumentCount, applicationArguments);
-                assert(macroResult.kind == SysmelValueKindParseTreeReference);
-                return sysmelb_analyzeAndEvaluateScript(environment, macroResult.parseTreeReference);
+                if(macroResult.kind == SysmelValueKindParseTreeReference)
+                    return sysmelb_analyzeAndEvaluateScript(environment, macroResult.parseTreeReference);
+                else
+                    return macroResult;
             }
             case SysmelFunctionKindInterpreted:
                 size_t argumentCount = ast->functionApplication.arguments.size;
@@ -137,8 +140,15 @@ sysmelb_Value_t sysmelb_analyzeAndEvaluateScript(sysmelb_Environment_t *environm
         }
         else if(functionalValue.kind == SysmelValueKindTypeReference)
         {
-            sysmelb_errorPrintf(ast->sourcePosition, "TODO: type() constructors.");
-            abort();
+            size_t argumentCount = ast->functionApplication.arguments.size;
+            assert(ast->functionApplication.arguments.size <= SYSMEL_MAX_ARGUMENT_COUNT);
+            sysmelb_Value_t applicationArguments[SYSMEL_MAX_ARGUMENT_COUNT];
+
+            for(size_t i = 0; i < argumentCount; ++i)
+                applicationArguments[i] = sysmelb_analyzeAndEvaluateScript(environment, ast->functionApplication.arguments.elements[i]);
+
+            sysmelb_Value_t instance = sysmelb_instantiateTypeWithArguments(functionalValue.typeReference, argumentCount, applicationArguments);
+            return instance;
         }
         else
         {

@@ -3,6 +3,9 @@
 #include "value.h"
 #include <stdbool.h>
 
+static bool sysmelb_BasicTypesDataInitialized;
+static sysmelb_BasicTypes_t sysmelb_BasicTypesData;
+
 void sysmelb_type_addPrimitiveMethod(sysmelb_Type_t *type, sysmelb_symbol_t *selector, sysmelb_PrimitiveFunction_t primitive)
 {
     sysmelb_function_t *function = sysmelb_allocate(sizeof(sysmelb_function_t));
@@ -43,8 +46,89 @@ sysmelb_Type_t *sysmelb_allocateValueType(sysmelb_TypeKind_t kind, sysmelb_symbo
     return type;
 }
 
-bool sysmelb_BasicTypesDataInitialized;
-sysmelb_BasicTypes_t sysmelb_BasicTypesData;
+sysmelb_Type_t *sysmelb_allocateRecordType(sysmelb_symbol_t *name, sysmelb_Dictionary_t *fieldsAndTypes)
+{
+    sysmelb_Type_t *type = sysmelb_allocate(sizeof(sysmelb_Type_t));
+    type->kind = SysmelTypeKindRecord;
+    type->name = name;
+    type->valueAlignment = 1;
+    type->valueSize = 0;
+    type->supertype = sysmelb_getBasicTypes()->record;
+
+    size_t fieldCount = fieldsAndTypes->size;
+    type->fieldCount = fieldCount;
+    type->fields = sysmelb_allocate(sizeof(sysmelb_Type_t*)*fieldCount);
+    type->fieldNames = sysmelb_allocate(sizeof(sysmelb_symbol_t*)*fieldCount);
+
+    for(size_t i = 0; i < fieldCount; ++i)
+    {
+        sysmelb_Association_t *assoc = fieldsAndTypes->elements[i];
+        assert(assoc->key.kind == SysmelValueKindSymbolReference);
+        assert(assoc->value.kind == SysmelValueKindTypeReference);
+        type->fieldNames[i] = assoc->key.symbolReference;
+        type->fields[i] = assoc->value.typeReference;
+    }
+    return type;
+}
+int sysmelb_findIndexOfFieldNamed(sysmelb_Type_t *type, sysmelb_symbol_t *name)
+{
+    if(!type->fields || !type->fieldNames)
+        return -1;
+
+    for(uint32_t i = 0; i < type->fieldCount; ++i)
+    {
+        if(type->fieldNames[i] == name)
+            return (int)i;
+    }
+
+    return -1;
+}
+
+sysmelb_Value_t sysmelb_instantiateTypeWithArguments(sysmelb_Type_t *type, size_t argumentCount, sysmelb_Value_t *arguments)
+{
+    if(type->kind == SysmelTypeKindRecord || type->kind == SysmelTypeKindTuple)
+    {
+        assert(argumentCount <= type->fieldCount);
+        sysmelb_TupleHeader_t *tupleOrRecord = sysmelb_allocate(sizeof(sysmelb_TupleHeader_t) + sizeof(sysmelb_Value_t)*type->fieldCount);
+        tupleOrRecord->size = type->fieldCount;
+        if(argumentCount == 1 && arguments[0].kind == SysmelValueKindDictionaryReference)
+        {
+            sysmelb_Dictionary_t *dict = arguments[0].dictionaryReference;
+            for (size_t i = 0; i < dict->size; ++i)
+            {
+                sysmelb_Association_t *assoc = dict->elements[i];
+                assert(assoc->key.kind == SysmelValueKindSymbolReference);
+                sysmelb_symbol_t *fieldName = assoc->key.symbolReference;
+                int fieldIndex = sysmelb_findIndexOfFieldNamed(type, assoc->key.symbolReference);
+                if(fieldIndex < 0)
+                {
+                    sysmelb_SourcePosition_t nullPosition = {};
+                    sysmelb_errorPrintf(nullPosition, "Failed to find field %.*s in record.", fieldName->size, fieldName->string);
+                    abort();
+                }
+
+                tupleOrRecord->elements[fieldIndex] = assoc->value;
+            }
+        }
+        else
+        {
+            for(size_t i = 0; i < argumentCount; ++i)
+                tupleOrRecord->elements[i] = arguments[i];
+        }
+
+        sysmelb_Value_t result = {
+            .kind = SysmelValueKindTupleReference,
+            .type = type,
+            .tupleReference = tupleOrRecord,
+        };
+
+        return result;
+    }
+
+
+    abort();
+}
+
 
 static void sysmelb_createBasicTypes(void)
 {
@@ -66,8 +150,10 @@ static void sysmelb_createBasicTypes(void)
     sysmelb_BasicTypesData.array          = sysmelb_allocateValueType(SysmelTypeKindArray, sysmelb_internSymbolC("Array"), pointerSize, pointerAlignment);
     sysmelb_BasicTypesData.byteArray      = sysmelb_allocateValueType(SysmelTypeKindByteArray, sysmelb_internSymbolC("ByteArray"), pointerSize, pointerAlignment);
     sysmelb_BasicTypesData.tuple          = sysmelb_allocateValueType(SysmelTypeKindTuple, sysmelb_internSymbolC("Tuple"), pointerSize, pointerAlignment);
+    sysmelb_BasicTypesData.record         = sysmelb_allocateValueType(SysmelTypeKindRecord, sysmelb_internSymbolC("Record"), pointerSize, pointerAlignment);
+    sysmelb_BasicTypesData.sum            = sysmelb_allocateValueType(SysmelTypeKindSum, sysmelb_internSymbolC("Sum"), pointerSize, pointerAlignment);
     sysmelb_BasicTypesData.association    = sysmelb_allocateValueType(SysmelTypeKindAssociation, sysmelb_internSymbolC("Association"), pointerSize, pointerAlignment);
-    sysmelb_BasicTypesData.dictionary     = sysmelb_allocateValueType(SysmelTypeKindDictionary, sysmelb_internSymbolC("Dictionary"), pointerSize, pointerAlignment);
+    sysmelb_BasicTypesData.dictionary     = sysmelb_allocateValueType(SysmelTypeKindDictionary, sysmelb_internSymbolC("ImmutableDictionary"), pointerSize, pointerAlignment);
     sysmelb_BasicTypesData.parseTreeNode  = sysmelb_allocateValueType(SysmelTypeKindParseTreeNode, sysmelb_internSymbolC("ParseTreeNode"), pointerSize, pointerAlignment);
     sysmelb_BasicTypesData.valueReference = sysmelb_allocateValueType(SysmelTypeKindValueReference, sysmelb_internSymbolC("ValueReference"), pointerSize, pointerAlignment);
     sysmelb_BasicTypesData.function       = sysmelb_allocateValueType(SysmelTypeKindSimpleFunction, sysmelb_internSymbolC("Function"), pointerSize, pointerAlignment);
@@ -725,6 +811,10 @@ static void sysmelb_createBasicDictionaryPrimitives(void)
     sysmelb_type_addPrimitiveMethod(sysmelb_BasicTypesData.dictionary, sysmelb_internSymbolC("at:"), sysmelb_primitive_dictionaryAt);
 }
 
+static void sysmelb_createBasicTypeUniversePrimitives(void)
+{
+}
+
 static void sysmelb_createBasicTypesPrimitives(void)
 {
     sysmelb_createBasicIntegersPrimitives();
@@ -733,6 +823,7 @@ static void sysmelb_createBasicTypesPrimitives(void)
     sysmelb_createBasicTuplePrimitives();
     sysmelb_createBasicAssociationPrimitives();
     sysmelb_createBasicDictionaryPrimitives();
+    sysmelb_createBasicTypeUniversePrimitives();
 }
 
 const sysmelb_BasicTypes_t *sysmelb_getBasicTypes(void)
