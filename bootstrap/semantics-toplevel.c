@@ -531,6 +531,12 @@ sysmelb_Value_t sysmelb_analyzeAndEvaluateScript(sysmelb_Environment_t *environm
         };
         return voidValue;
     }
+    case ParseTreeNamespaceDefinition:
+    {
+        sysmelb_Environment_t *namespaceEnvironment = sysmelb_createNamespaceEnvironment(ast->namespaceDefinition.namespace, environment);
+        sysmelb_Environment_t *lexicalEnvironment = sysmelb_createLexicalEnvironment(namespaceEnvironment);
+        return sysmelb_analyzeAndEvaluateScript(lexicalEnvironment, ast->namespaceDefinition.definition);
+    }
     default:
         abort();
     }

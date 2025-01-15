@@ -84,6 +84,17 @@ sysmelb_SymbolBinding_t *sysmelb_environmentLookRecursively(sysmelb_Environment_
     return sysmelb_environmentLookRecursively(environment->parent, symbol);
 }
 
+sysmelb_Namespace_t *sysmelb_lookEnvironmentForNamespace(sysmelb_Environment_t *environment)
+{
+    if(!environment)
+        return NULL;
+
+    if(environment->kind == SysmelEnvKindNamespace)
+        return environment->ownerNamespace;
+    
+    return sysmelb_lookEnvironmentForNamespace(environment->parent);
+}
+
 sysmelb_Environment_t *sysmelb_getEmptyEnvironment()
 {
     return &sysmelb_EmptyEnvironment;
@@ -250,6 +261,44 @@ static sysmelb_Value_t sysmelb_EnumWithBaseTypeAndValuesMacro(sysmelb_MacroConte
     return result;
 }
 
+static sysmelb_Value_t sysmelb_NamespaceDefinitionMacro(sysmelb_MacroContext_t *macroContext, size_t argumentCount, sysmelb_Value_t *arguments)
+{
+    assert(argumentCount == 2);
+    sysmelb_symbol_t *name = NULL;
+
+    if (arguments[0].parseTreeReference->kind == ParseTreeIdentifierReference)
+        name = arguments[0].parseTreeReference->identifierReference.identifier;
+    else if (arguments[0].parseTreeReference->kind == ParseTreeLiteralSymbolNode)
+        name = arguments[0].parseTreeReference->literalSymbol.internedSymbol;
+    else
+    {
+        sysmelb_Value_t nameValue = sysmelb_analyzeAndEvaluateScript(macroContext->environment, arguments[0].parseTreeReference);
+        if(nameValue.kind != SysmelValueKindSymbolReference)
+            sysmelb_errorPrintf(macroContext->sourcePosition, "A non-valid name object is being passed.");
+        name = nameValue.symbolReference;
+    }
+
+    sysmelb_Namespace_t *currentNamespace = sysmelb_lookEnvironmentForNamespace(macroContext->environment);
+    sysmelb_Namespace_t *childNamespace = sysmelb_getOrCreateChildNamespace(currentNamespace, name);
+
+    sysmelb_ParseTreeNode_t *node = sysmelb_newParseTreeNode(ParseTreeNamespaceDefinition, macroContext->sourcePosition);
+    node->namespaceDefinition.namespace = childNamespace;
+    node->namespaceDefinition.definition = arguments[1].parseTreeReference;
+    
+    sysmelb_Value_t result = {
+        .kind = SysmelValueKindParseTreeReference,
+        .type = sysmelb_getBasicTypes()->parseTreeNode,
+        .parseTreeReference = node
+    };
+    return result;
+}
+
+static sysmelb_Value_t sysmelb_PublicMacro(sysmelb_MacroContext_t *macroContext, size_t argumentCount, sysmelb_Value_t *arguments)
+{
+    abort();
+}
+
+
 sysmelb_Environment_t *sysmelb_getOrCreateIntrinsicsEnvironment()
 {
     if(sysmelb_IntrinsicsEnvironmentCreated)
@@ -383,6 +432,27 @@ sysmelb_Environment_t *sysmelb_getOrCreateIntrinsicsEnvironment()
 
         sysmelb_Environment_setLocalSymbolBinding(&sysmelb_IntrinsicsEnvironment, function->name, sysmelb_createSymbolFunctionBinding(function));
     }
+
+    // namespace:definition:
+    {
+        sysmelb_function_t *function = sysmelb_allocate(sizeof(sysmelb_function_t));
+        function->kind = SysmelFunctionKindPrimitiveMacro;
+        function->name = sysmelb_internSymbolC("namespace:definition:");
+        function->primitiveMacroFunction = sysmelb_NamespaceDefinitionMacro;
+
+        sysmelb_Environment_setLocalSymbolBinding(&sysmelb_IntrinsicsEnvironment, function->name, sysmelb_createSymbolFunctionBinding(function));
+    }
+
+    // public:
+    {
+        sysmelb_function_t *function = sysmelb_allocate(sizeof(sysmelb_function_t));
+        function->kind = SysmelFunctionKindPrimitiveMacro;
+        function->name = sysmelb_internSymbolC("public:");
+        function->primitiveMacroFunction = sysmelb_PublicMacro;
+
+        sysmelb_Environment_setLocalSymbolBinding(&sysmelb_IntrinsicsEnvironment, function->name, sysmelb_createSymbolFunctionBinding(function));
+    }
+
     sysmelb_IntrinsicsEnvironmentCreated = true;
     return &sysmelb_IntrinsicsEnvironment;
 }
