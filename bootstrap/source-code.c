@@ -3,6 +3,34 @@
 #include <stdio.h>
 #include <string.h>
 
+void sysmelb_splitFileName(const char *inFileName, const char **outDirectory, const char **outBasename)
+{
+    int32_t separatorIndex = -1;
+    int32_t i;
+    for (i = 0; inFileName[i] != 0; ++i)
+    {
+        char c = inFileName[i];
+        if(c == '/' || c == '\\')
+            separatorIndex = i;
+    }
+    int32_t stringSize = i;
+    if(separatorIndex < 0)
+    {
+        *outDirectory = ".";
+        *outBasename = inFileName;
+    }
+
+
+    char *directory = sysmelb_allocate(separatorIndex + 2);
+    memcpy(directory, inFileName, separatorIndex + 1);
+
+    char *basename = sysmelb_allocate(stringSize - separatorIndex + 1);
+    memcpy(basename, inFileName + separatorIndex + 1, stringSize - separatorIndex);
+    
+    *outDirectory = directory;
+    *outBasename = basename;
+}
+
 sysmelb_SourceCode_t *sysmelb_makeSourceCodeFromFileNamed(const char *fileName)
 {
     FILE *file = fopen(fileName, "rb");
@@ -19,12 +47,13 @@ sysmelb_SourceCode_t *sysmelb_makeSourceCodeFromFileNamed(const char *fileName)
     char *fileData = sysmelb_allocate(fileSize);
     if(fread(fileData, fileSize, 1, file) != 1)
     {
+        perror("Failed to read input file data.");
         fclose(file);
     }
     fclose(file);
 
     sysmelb_SourceCode_t *sourceCode = sysmelb_allocate(sizeof(sysmelb_SourceCode_t));
-    sourceCode->name = fileName;
+    sysmelb_splitFileName(fileName, &sourceCode->directory, &sourceCode->name);
     sourceCode->text = fileData;
     sourceCode->textSize = fileSize;
     return sourceCode;

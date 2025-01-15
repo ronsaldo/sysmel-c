@@ -3,10 +3,14 @@
 #include "function.h"
 #include "memory.h"
 #include "parse-tree.h"
+#include "module.h"
 #include "namespace.h"
+#include "scanner.h"
+#include "parser.h"
 #include "semantics.h"
 #include "types.h"
 #include "value.h"
+#include "source-code.h"
 #include <stddef.h>
 #include <stdbool.h>
 #include <assert.h>
@@ -82,6 +86,17 @@ sysmelb_SymbolBinding_t *sysmelb_environmentLookRecursively(sysmelb_Environment_
     }
 
     return sysmelb_environmentLookRecursively(environment->parent, symbol);
+}
+
+sysmelb_Module_t *sysmelb_lookEnvironmentForModule(sysmelb_Environment_t *environment)
+{
+    if(!environment)
+        return NULL;
+
+    if(environment->kind == SysmelEnvKindModule)
+        return environment->ownerModule;
+    
+    return sysmelb_lookEnvironmentForModule(environment->parent);
 }
 
 sysmelb_Namespace_t *sysmelb_lookEnvironmentForNamespace(sysmelb_Environment_t *environment)
@@ -340,6 +355,44 @@ static sysmelb_Value_t sysmelb_PublicMacro(sysmelb_MacroContext_t *macroContext,
 
 }
 
+static sysmelb_Value_t sysmelb_loadFileOnceMacro(sysmelb_MacroContext_t *macroContext, size_t argumentCount, sysmelb_Value_t *arguments)
+{
+    assert(argumentCount == 1);
+    assert(arguments[0].kind == SysmelValueKindParseTreeReference);
+    sysmelb_Value_t sourceName = sysmelb_analyzeAndEvaluateScript(macroContext->environment, arguments[0].parseTreeReference);
+    if(sourceName.kind != SysmelValueKindStringReference)
+    {
+        sysmelb_errorPrintf(macroContext->sourcePosition, "Expected a string value for loading file.");
+        abort();
+    }
+    sysmelb_SourceCode_t *loaderSourceCode = macroContext->sourcePosition.sourceCode;
+    size_t directorySize = strlen(loaderSourceCode->directory);
+    size_t baseNameSize = sourceName.stringSize;
+
+    char *fullName = sysmelb_allocate(directorySize + baseNameSize + 1);
+    memcpy(fullName, loaderSourceCode->directory, directorySize);
+    memcpy(fullName + directorySize, sourceName.string, sourceName.stringSize);
+
+    sysmelb_SourceCode_t *sourceCode = sysmelb_makeSourceCodeFromFileNamed(fullName);
+    sysmelb_TokenDynarray_t scannedTokens = sysmelb_scanSourceCode(sourceCode);
+    sysmelb_ParseTreeNode_t *parseTree = parseTokenList(sourceCode, scannedTokens.size, scannedTokens.tokens);
+    if(sysmelb_visitForDisplayingAndCountingErrors(parseTree) != 0)
+    {
+        sysmelb_Value_t nullResult = {
+            .type = sysmelb_getBasicTypes()->null
+        };
+        return nullResult;
+    }
+    
+    sysmelb_Module_t *currentModule = sysmelb_lookEnvironmentForModule(macroContext->environment);
+    
+    
+    sysmelb_Environment_t *environment = sysmelb_module_createTopLevelEnvironment(currentModule);
+    return sysmelb_analyzeAndEvaluateScript(environment, parseTree);
+}
+
+
+
 
 sysmelb_Environment_t *sysmelb_getOrCreateIntrinsicsEnvironment()
 {
@@ -491,6 +544,16 @@ sysmelb_Environment_t *sysmelb_getOrCreateIntrinsicsEnvironment()
         function->kind = SysmelFunctionKindPrimitiveMacro;
         function->name = sysmelb_internSymbolC("public:");
         function->primitiveMacroFunction = sysmelb_PublicMacro;
+
+        sysmelb_Environment_setLocalSymbolBinding(&sysmelb_IntrinsicsEnvironment, function->name, sysmelb_createSymbolFunctionBinding(function));
+    }
+
+    // loadFileOnce:
+    {
+        sysmelb_function_t *function = sysmelb_allocate(sizeof(sysmelb_function_t));
+        function->kind = SysmelFunctionKindPrimitiveMacro;
+        function->name = sysmelb_internSymbolC("loadFileOnce:");
+        function->primitiveMacroFunction = sysmelb_loadFileOnceMacro;
 
         sysmelb_Environment_setLocalSymbolBinding(&sysmelb_IntrinsicsEnvironment, function->name, sysmelb_createSymbolFunctionBinding(function));
     }

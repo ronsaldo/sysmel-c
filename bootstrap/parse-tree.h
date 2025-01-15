@@ -314,5 +314,6 @@ void sysmelb_ParseTreeNodeDynArray_add(sysmelb_ParseTreeNodeDynArray_t *dynArray
 
 sysmelb_ParseTreeNode_t *sysmelb_newParseTreeNode(sysmelb_ParseTreeNodeKind_t kind, sysmelb_SourcePosition_t sourcePosition);
 void sysmelb_dumpParseTree(sysmelb_ParseTreeNode_t *node);
+int sysmelb_visitForDisplayingAndCountingErrors(sysmelb_ParseTreeNode_t *node);
 
 #endif //SYSMELB_PARSE_TREE_H

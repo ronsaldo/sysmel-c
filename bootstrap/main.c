@@ -46,7 +46,9 @@ void evaluateText(const char *text)
     sysmelb_TokenDynarray_t scannedTokens = sysmelb_scanSourceCode(sourceCode);
 
     sysmelb_ParseTreeNode_t *parseTree = parseTokenList(sourceCode, scannedTokens.size, scannedTokens.tokens);
-    
+    if(sysmelb_visitForDisplayingAndCountingErrors(parseTree) != 0)
+        return;
+
     sysmelb_Environment_t *environment = sysmelb_module_createTopLevelEnvironment(currentModule);
     sysmelb_Value_t result = sysmelb_analyzeAndEvaluateScript(environment, parseTree);
     sysmelb_printValue(result);
@@ -58,6 +60,8 @@ void evaluateTextFileNamed(const char *textFileName)
     sysmelb_SourceCode_t *sourceCode = sysmelb_makeSourceCodeFromFileNamed(textFileName);
     sysmelb_TokenDynarray_t scannedTokens = sysmelb_scanSourceCode(sourceCode);
     sysmelb_ParseTreeNode_t *parseTree = parseTokenList(sourceCode, scannedTokens.size, scannedTokens.tokens);
+    if(sysmelb_visitForDisplayingAndCountingErrors(parseTree) != 0)
+        return;
     
     if(!currentModule)
         currentModule = sysmelb_createModuleNamed(sysmelb_internSymbolC(sourceCode->name));

@@ -261,3 +261,9 @@ void sysmelb_dumpParseTree(sysmelb_ParseTreeNode_t *node)
         abort();
     }
 }
+
+int sysmelb_visitForDisplayingAndCountingErrors(sysmelb_ParseTreeNode_t *node)
+{
+    // TODO: Implement this
+    return 0;
+}

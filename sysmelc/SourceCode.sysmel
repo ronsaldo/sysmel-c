@@ -1,0 +1,11 @@
+namespace: SysmelC definition: {
+public: [
+    Record: SourceCode withFields: #{
+        directory: String.
+        name: String.
+        text: String.
+    }.
+
+
+].
+}.

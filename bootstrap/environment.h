@@ -76,6 +76,7 @@ sysmelb_SymbolBinding_t *sysmelb_createSymbolFunctionBinding(sysmelb_function_t 
 sysmelb_SymbolBinding_t *sysmelb_createSymbolArgumentBinding(uint16_t argumentIndex, sysmelb_Type_t *type);
 
 sysmelb_SymbolBinding_t *sysmelb_environmentLookRecursively(sysmelb_Environment_t *environment, sysmelb_symbol_t *symbol);
+sysmelb_Module_t *sysmelb_lookEnvironmentForModule(sysmelb_Environment_t *environment);
 sysmelb_Namespace_t *sysmelb_lookEnvironmentForNamespace(sysmelb_Environment_t *environment);
 
 sysmelb_Environment_t *sysmelb_getEmptyEnvironment();

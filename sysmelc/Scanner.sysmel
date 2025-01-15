@@ -1,0 +1,59 @@
+namespace: SysmelC definition: {
+public: [
+Enum: TokenKinds withBaseType: UInt8 values: #{
+    NullToken: 0u8.
+    EndOfSource:.
+    Error:.
+
+    Character:.
+    Float:.
+    Identifier:.
+    Nat:.
+    Keyword:.
+    MultiKeyword:.
+    Operator:.
+    String:.
+    Symbol:.
+
+    LeftParent:.
+    RightParent:.
+    LeftBracket:.
+    RightBracket:.
+    LeftCurlyBracket:.
+    RightCurlyBracket:.
+
+    LessThan:.
+    GreaterThan:.
+    Star:.
+    Question:.
+    Bang:.
+    Dollar:.
+    Colon:.
+    ColonColon:.
+    Bar:.
+    Assignment:.
+    Semicolon:.
+    Comma:.
+    Dot:.
+    Ellipsis:.
+    BindOperator:.
+    Quote:.
+    QuasiQuote:.
+    QuasiUnquote:.
+    Splice:.
+
+    ByteArrayStart:.
+    DictionaryStart:.
+    LiteralArrayStart:.    
+}.
+
+Record: ScannerState withFields: #{
+    sourceCode: SourceCode.
+    position: Int32.
+    line: Int32.
+    column: Int32.
+    isPreviousCR: Boolean
+}.
+]}.
+
+printLine(SysmelC ScannerState)
