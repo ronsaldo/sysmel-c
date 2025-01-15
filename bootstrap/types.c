@@ -864,6 +864,11 @@ static sysmelb_Value_t sysmelb_primitive_dictionaryAt(size_t argumentCount, sysm
     abort();
 }
 
+static sysmelb_Value_t sysmelb_primitive_withSelectorAddMethod(size_t argumentCount, sysmelb_Value_t *arguments)
+{
+    abort();
+}
+
 static void sysmelb_createBasicDictionaryPrimitives(void)
 {
     sysmelb_type_addPrimitiveMethod(sysmelb_BasicTypesData.dictionary, sysmelb_internSymbolC("size"), sysmelb_primitive_dictionarySize);
@@ -874,6 +879,7 @@ static void sysmelb_createBasicDictionaryPrimitives(void)
 
 static void sysmelb_createBasicTypeUniversePrimitives(void)
 {
+    sysmelb_type_addPrimitiveMethod(sysmelb_BasicTypesData.universe, sysmelb_internSymbolC("withSelector:addMethod:"), sysmelb_primitive_withSelectorAddMethod);
 }
 
 static void sysmelb_createBasicTypesPrimitives(void)

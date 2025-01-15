@@ -1060,9 +1060,18 @@ sysmelb_ParseTreeNode_t *parser_parseBindableName(sysmelb_parserState_t *state)
         parserState_advance(state);
     }
 
+    bool isAnonymousFunction = false;
+    if(parserState_peekKind(state, 0) == SysmelTokenDollar)
+    {
+        parserState_advance(state);
+        isAnonymousFunction = true;
+    }
+
+
     bool isImplicit = false;
     sysmelb_ParseTreeNode_t *typeExpression = NULL;
-    parser_parseOptionalBindableNameType(state, &isImplicit, &typeExpression);
+    if(!isAnonymousFunction)
+        parser_parseOptionalBindableNameType(state, &isImplicit, &typeExpression);
     bool hasPostTypeExpression = false;
 
     bool isVariadic = false;
@@ -1075,18 +1084,20 @@ sysmelb_ParseTreeNode_t *parser_parseBindableName(sysmelb_parserState_t *state)
     }
     else
     {
-        nameExpression = parser_parseNameExpression(state);
-        if (!typeExpression)
-        {
-            parser_parseOptionalBindableDependentType(state, &isImplicit, &typeExpression);
-            hasPostTypeExpression = typeExpression != NULL;
-        }
+        if(!isAnonymousFunction)
+            nameExpression = parser_parseNameExpression(state);
+    }
 
-        if (parserState_peekKind(state, 0) == SysmelTokenEllipsis)
-        {
-            parserState_advance(state);
-            isVariadic = true;
-        }
+    if (!typeExpression || isAnonymousFunction)
+    {
+        parser_parseOptionalBindableDependentType(state, &isImplicit, &typeExpression);
+        hasPostTypeExpression = typeExpression != NULL;
+    }
+
+    if (parserState_peekKind(state, 0) == SysmelTokenEllipsis)
+    {
+        parserState_advance(state);
+        isVariadic = true;
     }
 
     sysmelb_ParseTreeNode_t *bindableName = sysmelb_newParseTreeNode(ParseTreeBindableName, parserState_sourcePositionFrom(state, startPosition));

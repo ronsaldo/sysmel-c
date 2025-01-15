@@ -80,6 +80,7 @@
         "__tree": "c",
         "__tuple": "c",
         "hashtable.h": "c",
-        "parse-tree.h": "c"
+        "parse-tree.h": "c",
+        "locale": "c"
     }
 }

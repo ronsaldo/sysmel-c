@@ -433,9 +433,15 @@ sysmelb_Value_t sysmelb_analyzeAndEvaluateScript(sysmelb_Environment_t *environm
         sysmelb_ParseTreeNode_t *value = ast->assignment.value;
         if(store->kind == ParseTreeBindableName)
         {   
-            sysmelb_Value_t nameValue = sysmelb_analyzeAndEvaluateScript(environment, store->bindableName.nameExpression);
-            if(nameValue.kind != SysmelValueKindSymbolReference)
-                sysmelb_errorPrintf(store->bindableName.nameExpression->sourcePosition, "Expected a name");
+            bool isAnonymous = !store->bindableName.nameExpression;
+            sysmelb_Value_t nameValue = {};
+            
+            if(!isAnonymous)
+            {
+                nameValue = sysmelb_analyzeAndEvaluateScript(environment, store->bindableName.nameExpression);
+                if(nameValue.kind != SysmelValueKindSymbolReference)
+                    sysmelb_errorPrintf(store->bindableName.nameExpression->sourcePosition, "Expected a name");
+            }
 
 
             if(store->bindableName.hasPostTypeExpression && store->bindableName.typeExpression->kind == ParseTreeFunctionalDependentType)
@@ -443,7 +449,8 @@ sysmelb_Value_t sysmelb_analyzeAndEvaluateScript(sysmelb_Environment_t *environm
                 sysmelb_ParseTreeNode_t *functionNode = sysmelb_newParseTreeNode(ParseTreeFunction, ast->sourcePosition);
                 functionNode->function.functionDependentType = store->bindableName.typeExpression;
                 functionNode->function.bodyExpression = value;
-                functionNode->function.name = nameValue.symbolReference;
+                if(!isAnonymous)
+                    functionNode->function.name = nameValue.symbolReference;
                 return sysmelb_analyzeAndCompileClosure(environment, functionNode);
             }
 

@@ -54,6 +54,9 @@ Record: ScannerState withFields: #{
     column: Int32.
     isPreviousCR: Boolean
 }.
-]}.
+].
+
+
+}.
 
 printLine(SysmelC ScannerState)

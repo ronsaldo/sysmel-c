@@ -1,0 +1,8 @@
+Record: TestPair withFields: #{
+    first: Int32.
+    second: Int32
+}.
+
+##TestPair withSelector: #increment addMethod: $sum($(Integer)x $(Integer)y :: Integer) := x + y"
+
+##$$($(Integer)x $(Integer)y :: Integer) := x + y
