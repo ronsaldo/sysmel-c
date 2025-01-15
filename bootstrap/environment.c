@@ -196,6 +196,7 @@ sysmelb_Environment_t *sysmelb_getOrCreateIntrinsicsEnvironment()
     {
         sysmelb_Value_t voidValue = {
             .kind = SysmelValueKindVoid,
+            .type = sysmelb_getBasicTypes()->voidType
         };
 
         sysmelb_Environment_setLocalSymbolBinding(&sysmelb_IntrinsicsEnvironment, sysmelb_internSymbolC("void"), sysmelb_createSymbolValueBinding(voidValue));        
@@ -205,6 +206,7 @@ sysmelb_Environment_t *sysmelb_getOrCreateIntrinsicsEnvironment()
     {
         sysmelb_Value_t booleanFalse = {
             .kind = SysmelValueKindBoolean,
+            .type = sysmelb_getBasicTypes()->boolean,
             .boolean = false,
         };
 
@@ -215,6 +217,7 @@ sysmelb_Environment_t *sysmelb_getOrCreateIntrinsicsEnvironment()
     {
         sysmelb_Value_t booleanTrue = {
             .kind = SysmelValueKindBoolean,
+            .type = sysmelb_getBasicTypes()->boolean,
             .boolean = true,
         };
 

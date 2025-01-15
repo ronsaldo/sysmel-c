@@ -8,6 +8,55 @@ sysmelb_Value_t sysmelb_decayValue(sysmelb_Value_t value)
     return value;
 }
 
+bool sysmelb_value_equals(sysmelb_Value_t a, sysmelb_Value_t b)
+{
+    if(a.kind != b.kind)
+        return false;
+
+    switch(a.kind)
+    {
+    case SysmelValueKindNull:
+        return true;
+    case SysmelValueKindVoid:
+        return true;
+    case SysmelValueKindBoolean:
+        return a.boolean == b.boolean;
+    case SysmelValueKindCharacter:
+        return a.unsignedInteger == b.unsignedInteger;
+    case SysmelValueKindInteger:
+        return a.integer == b.integer;
+    case SysmelValueKindUnsignedInteger:
+        return a.unsignedInteger == b.unsignedInteger;
+    case SysmelValueKindFloatingPoint:
+        return a.floatingPoint == b.floatingPoint;
+
+    case SysmelValueKindTypeReference:
+        return a.typeReference == b.typeReference;
+    case SysmelValueKindFunctionReference:
+        return a.functionReference == b.functionReference;
+    case SysmelValueKindParseTreeReference:
+        return a.parseTreeReference == b.parseTreeReference;
+    case SysmelValueKindSymbolReference:
+        return a.symbolReference == b.symbolReference;
+    case SysmelValueKindStringReference:
+        return a.string == b.string && a.stringSize == b.stringSize;
+    case SysmelValueKindArrayReference:
+        return a.arrayReference == b.arrayReference;
+    case SysmelValueKindByteArrayReference:
+        return a.byteArrayReference == b.byteArrayReference;
+    case SysmelValueKindTupleReference:
+        return a.tupleReference == b.tupleReference;
+    case SysmelValueKindAssociationReference:
+        return a.associationReference == b.associationReference;
+    case SysmelValueKindDictionaryReference:
+        return a.dictionaryReference == b.dictionaryReference;
+    case SysmelValueKindValueBoxReference:
+        return a.valueBoxReference == b.valueBoxReference;
+    default:
+        return false;
+    }
+}
+
 void sysmelb_printValue(sysmelb_Value_t value)
 {
     const char *printingSuffix = "";

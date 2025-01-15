@@ -1,4 +1,5 @@
 #include "types.h"
+#include "error.h"
 #include "value.h"
 #include <stdbool.h>
 
@@ -53,6 +54,8 @@ static void sysmelb_createBasicTypes(void)
     sysmelb_BasicTypesData.null           = sysmelb_allocateValueType(SysmelTypeKindNull, sysmelb_internSymbolC("NullType"), 0, 0);
     sysmelb_BasicTypesData.gradual        = sysmelb_allocateValueType(SysmelTypeKindGradual, sysmelb_internSymbolC("?"), pointerSize, pointerSize);
     sysmelb_BasicTypesData.unit           = sysmelb_allocateValueType(SysmelTypeKindUnit, sysmelb_internSymbolC("Unit"), 0, 0);
+    sysmelb_BasicTypesData.voidType       = sysmelb_allocateValueType(SysmelTypeKindVoid, sysmelb_internSymbolC("Void"), 0, 0);
+    sysmelb_BasicTypesData.boolean        = sysmelb_allocateValueType(SysmelTypeKindBoolean, sysmelb_internSymbolC("Boolean"), 1, 1);
     sysmelb_BasicTypesData.character      = sysmelb_allocateValueType(SysmelTypeKindCharacter, sysmelb_internSymbolC("Character"), 4, 4);
     sysmelb_BasicTypesData.string         = sysmelb_allocateValueType(SysmelTypeKindString, sysmelb_internSymbolC("String"), pointerSize, pointerAlignment);
     sysmelb_BasicTypesData.symbol         = sysmelb_allocateValueType(SysmelTypeKindSymbol, sysmelb_internSymbolC("Symbol"), pointerSize, pointerAlignment);
@@ -668,10 +671,58 @@ static sysmelb_Value_t sysmelb_primitive_dictionarySize(size_t argumentCount, sy
     return result;
 }
 
+static sysmelb_Value_t sysmelb_primitive_dictionaryIncludesKey(size_t argumentCount, sysmelb_Value_t *arguments)
+{
+     assert(argumentCount == 2);
+    assert(arguments[0].kind == SysmelValueKindDictionaryReference);
+
+    size_t dictionarySize = arguments[0].dictionaryReference->size;
+    for (size_t i = 0; i < dictionarySize; ++i)
+    {
+        sysmelb_Association_t *assoc = arguments[0].dictionaryReference->elements[i];
+        if(sysmelb_value_equals(arguments[1], assoc->key))
+        {
+            sysmelb_Value_t result = {
+                .kind = SysmelValueKindBoolean,
+                .type = sysmelb_getBasicTypes()->boolean,
+                .boolean = true
+            };
+            return result;
+        }
+    }
+
+    sysmelb_Value_t result = {
+        .kind = SysmelValueKindBoolean,
+        .type = sysmelb_getBasicTypes()->boolean,
+        .boolean = false
+    };
+    return result;
+}
+
+static sysmelb_Value_t sysmelb_primitive_dictionaryAt(size_t argumentCount, sysmelb_Value_t *arguments)
+{
+    assert(argumentCount == 2);
+    assert(arguments[0].kind == SysmelValueKindDictionaryReference);
+
+    size_t dictionarySize = arguments[0].dictionaryReference->size;
+    for (size_t i = 0; i < dictionarySize; ++i)
+    {
+        sysmelb_Association_t *assoc = arguments[0].dictionaryReference->elements[i];
+        if(sysmelb_value_equals(arguments[1], assoc->key))
+            return assoc->value;
+    }
+
+    sysmelb_SourcePosition_t nullPosition = {};
+    sysmelb_errorPrintf(nullPosition, "Key is not present in the dictionary.");
+    abort();
+}
+
 static void sysmelb_createBasicDictionaryPrimitives(void)
 {
     sysmelb_type_addPrimitiveMethod(sysmelb_BasicTypesData.dictionary, sysmelb_internSymbolC("size"), sysmelb_primitive_dictionarySize);
     sysmelb_type_addPrimitiveMethod(sysmelb_BasicTypesData.dictionary, sysmelb_internSymbolC("associationAt:"), sysmelb_primitive_dictionaryAssocAt);
+    sysmelb_type_addPrimitiveMethod(sysmelb_BasicTypesData.dictionary, sysmelb_internSymbolC("includesKey:"), sysmelb_primitive_dictionaryIncludesKey);
+    sysmelb_type_addPrimitiveMethod(sysmelb_BasicTypesData.dictionary, sysmelb_internSymbolC("at:"), sysmelb_primitive_dictionaryAt);
 }
 
 static void sysmelb_createBasicTypesPrimitives(void)

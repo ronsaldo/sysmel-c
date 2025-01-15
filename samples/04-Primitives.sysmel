@@ -18,3 +18,5 @@ printLine((1 : 2) value).
 printLine(#{First: 1. Second: 2. Third: 3}).
 printLine(#{First: 1. Second: 2. Third: 3} size).
 printLine(#{First: 1. Second: 2. Third: 3} associationAt: 1).
+printLine(#{First: 1. Second: 2. Third: 3} includesKey: #First).
+printLine(#{First: 1. Second: 2. Third: 3} at: #First).

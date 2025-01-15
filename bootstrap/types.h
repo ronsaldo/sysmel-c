@@ -15,6 +15,8 @@ typedef enum sysmelb_TypeKind_e {
     SysmelTypeKindNull,
     SysmelTypeKindGradual,
     SysmelTypeKindUnit,
+    SysmelTypeKindVoid,
+    SysmelTypeKindBoolean,
     SysmelTypeKindCharacter,
     SysmelTypeKindString,
     SysmelTypeKindSymbol,
@@ -54,6 +56,8 @@ typedef struct sysmelb_BasicTypes_s {
     sysmelb_Type_t *null;
     sysmelb_Type_t *gradual;
     sysmelb_Type_t *unit;
+    sysmelb_Type_t *voidType;
+    sysmelb_Type_t *boolean;
     sysmelb_Type_t *character;
     sysmelb_Type_t *string;
     sysmelb_Type_t *symbol;

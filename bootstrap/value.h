@@ -109,6 +109,7 @@ struct sysmelb_ValueBox_s
 };
 
 sysmelb_Value_t sysmelb_decayValue(sysmelb_Value_t value);
+bool sysmelb_value_equals(sysmelb_Value_t a, sysmelb_Value_t b);
 void sysmelb_printValue(sysmelb_Value_t value);
 
 #endif //SYSMELB_VALUE_H
