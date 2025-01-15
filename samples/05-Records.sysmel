@@ -8,3 +8,13 @@ printLine(TestPair()).
 printLine(TestPair(1i32 . 2i32)).
 printLine(TestPair#{first: 42i32. second: 8i32}).
 
+printLine(TestPair#{first: 42i32. second: 8i32} at: 0).
+printLine(TestPair#{first: 42i32. second: 8i32} at: 1).
+
+printLine(TestPair#{first: 42i32. second: 8i32} first).
+printLine(TestPair#{first: 42i32. second: 8i32} second).
+
+printLine(TestPair#{first: 42i32. second: 8i32} first: 5).
+printLine(TestPair#{first: 42i32. second: 8i32} second: 6).
+
+printLine(TestPair#{first: 42i32. second: 8i32} first: 7; second: 8).

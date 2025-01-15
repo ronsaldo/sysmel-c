@@ -177,6 +177,35 @@ sysmelb_Value_t sysmelb_analyzeAndEvaluateScript(sysmelb_Environment_t *environm
                 method = sysmelb_type_lookupSelector(receiver.type, selector.symbolReference);
             }
 
+            if(receiver.kind == SysmelValueKindTupleReference && receiver.type->kind == SysmelTypeKindRecord)
+            {
+                if (ast->messageSend.arguments.size == 0)
+                {
+                    int recordFieldIndex = sysmelb_findIndexOfFieldNamed(receiver.type, selector.symbolReference);
+                    if(recordFieldIndex >= 0)
+                    {
+                        sysmelb_Value_t fieldValue = receiver.tupleReference->elements[recordFieldIndex];
+                        return fieldValue;
+                    }
+                }
+                else if(ast->messageSend.arguments.size == 1)
+                {
+                    // Remove the trailing:
+                    sysmelb_symbol_t *fieldName = selector.symbolReference;
+                    if(fieldName->size > 0 && fieldName->string[fieldName->size -1] == ':')
+                        fieldName = sysmelb_internSymbol(fieldName->size - 1, fieldName->string);
+
+                    int recordFieldIndex = sysmelb_findIndexOfFieldNamed(receiver.type, fieldName);
+                    if(recordFieldIndex >= 0)
+                    {
+                        sysmelb_Value_t newFieldValue = sysmelb_analyzeAndEvaluateScript(environment, ast->messageSend.arguments.elements[0]);
+                        receiver.tupleReference->elements[recordFieldIndex] = newFieldValue;
+                        return receiver;
+                    }
+                }
+                
+            }
+
             if(!method)
             {
                 sysmelb_errorPrintf(ast->sourcePosition, "Failed to find method with selector #%.*s.\n", selector.symbolReference->size, selector.symbolReference->string);
