@@ -203,7 +203,16 @@ sysmelb_Value_t sysmelb_analyzeAndEvaluateScript(sysmelb_Environment_t *environm
                         return receiver;
                     }
                 }
-                
+            }
+
+            if(receiver.kind == SysmelValueKindTypeReference)
+            {
+                if(receiver.typeReference->kind == SysmelTypeKindEnum)
+                {
+                    sysmelb_Value_t enumValue;
+                    if(sysmelb_findEnumValueWithName(receiver.typeReference, selector.symbolReference, &enumValue))
+                        return enumValue;
+                }
             }
 
             if(!method)

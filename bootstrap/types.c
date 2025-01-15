@@ -1,5 +1,6 @@
 #include "types.h"
 #include "error.h"
+#include "memory.h"
 #include "value.h"
 #include <stdbool.h>
 
@@ -69,6 +70,62 @@ sysmelb_Type_t *sysmelb_allocateRecordType(sysmelb_symbol_t *name, sysmelb_Dicti
         type->tupleAndRecords.fields[i] = assoc->value.typeReference;
     }
     return type;
+}
+
+sysmelb_Type_t *sysmelb_allocateEnumType(sysmelb_symbol_t *name, sysmelb_Type_t *baseType, sysmelb_Dictionary_t *namesAndValues)
+{
+    sysmelb_Type_t *type = sysmelb_allocate(sizeof(sysmelb_Type_t));
+    type->kind = SysmelTypeKindEnum;
+    type->name = name;
+    type->valueAlignment = 1;
+    type->valueSize = 0;
+    type->supertype = sysmelb_getBasicTypes()->record;
+
+    size_t valueCount = namesAndValues->size;
+    type->enumValues.baseType = baseType;
+    type->enumValues.valueCount = valueCount;
+    type->enumValues.values = sysmelb_allocate(sizeof(sysmelb_Value_t) * valueCount);
+    type->enumValues.valueNames = sysmelb_allocate(sizeof(sysmelb_symbol_t*) * valueCount);
+
+    sysmelb_Value_t lastValue = {
+        .kind = SysmelValueKindInteger,
+        .type = baseType
+    };
+
+    for(size_t i = 0; i < valueCount; ++i)
+    {
+        sysmelb_Association_t *assoc = namesAndValues->elements[i];
+        assert(assoc->key.kind == SysmelValueKindSymbolReference);
+        if(assoc->value.kind == SysmelValueKindNull && i != 0)
+        {
+            ++lastValue.integer;
+        }
+        else
+        {
+            lastValue = assoc->value;
+        }
+
+        type->enumValues.valueNames[i] = assoc->key.symbolReference;
+        type->enumValues.values[i] = lastValue;
+    }
+    return type;
+}
+
+bool sysmelb_findEnumValueWithName(sysmelb_Type_t *type, sysmelb_symbol_t *name, sysmelb_Value_t *outValue)
+{
+    if(!type->enumValues.valueNames || !type->enumValues.values)
+        return false;
+
+    for(uint32_t i = 0; i < type->enumValues.valueCount; ++i)
+    {
+        if(type->enumValues.valueNames[i] == name)
+        {
+            *outValue = type->enumValues.values[i];
+            return true;
+        }
+    }
+
+    return false;
 }
 
 int sysmelb_findIndexOfFieldNamed(sysmelb_Type_t *type, sysmelb_symbol_t *name)
@@ -154,6 +211,7 @@ static void sysmelb_createBasicTypes(void)
     sysmelb_BasicTypesData.record         = sysmelb_allocateValueType(SysmelTypeKindRecord, sysmelb_internSymbolC("Record"), pointerSize, pointerAlignment);
     sysmelb_BasicTypesData.record->supertype = sysmelb_BasicTypesData.tuple;
     sysmelb_BasicTypesData.sum            = sysmelb_allocateValueType(SysmelTypeKindSum, sysmelb_internSymbolC("Sum"), pointerSize, pointerAlignment);
+    sysmelb_BasicTypesData.enumType       = sysmelb_allocateValueType(SysmelTypeKindEnum, sysmelb_internSymbolC("Enum"), 4, 4);
     sysmelb_BasicTypesData.association    = sysmelb_allocateValueType(SysmelTypeKindAssociation, sysmelb_internSymbolC("Association"), pointerSize, pointerAlignment);
     sysmelb_BasicTypesData.dictionary     = sysmelb_allocateValueType(SysmelTypeKindDictionary, sysmelb_internSymbolC("ImmutableDictionary"), pointerSize, pointerAlignment);
     sysmelb_BasicTypesData.parseTreeNode  = sysmelb_allocateValueType(SysmelTypeKindParseTreeNode, sysmelb_internSymbolC("ParseTreeNode"), pointerSize, pointerAlignment);

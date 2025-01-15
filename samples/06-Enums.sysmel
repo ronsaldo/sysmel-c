@@ -1,0 +1,11 @@
+Enum: TestEnum withBaseType: UInt8 values: #{
+    First: 1u8.
+    Second: 2u8.
+    Third:.
+}.
+
+printLine(TestEnum).
+printLine(TestEnum First).
+printLine(TestEnum Second).
+printLine(TestEnum Third).
+

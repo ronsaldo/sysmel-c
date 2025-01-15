@@ -8,6 +8,7 @@
 #include "hashtable.h"
 #include <stddef.h>
 #include <stdint.h>
+#include <stdbool.h>
 
 typedef struct sysmelb_Type_s sysmelb_Type_t;
 typedef struct sysmelb_Dictionary_s sysmelb_Dictionary_t;
@@ -28,6 +29,7 @@ typedef enum sysmelb_TypeKind_e {
     SysmelTypeKindTuple,
     SysmelTypeKindRecord,
     SysmelTypeKindSum,
+    SysmelTypeKindEnum,
     SysmelTypeKindInteger,
     SysmelTypeKindFloat,
     SysmelTypeKindUniverse,
@@ -59,6 +61,13 @@ struct sysmelb_Type_s {
         }tupleAndRecords;
 
         struct {
+            sysmelb_Type_t *baseType;
+            uint32_t valueCount;
+            sysmelb_Value_t *values;
+            sysmelb_symbol_t **valueNames;
+        } enumValues;
+
+        struct {
             uint32_t alternativeCount;
             sysmelb_Type_t **alternatives;
         } sumType;
@@ -82,6 +91,7 @@ typedef struct sysmelb_BasicTypes_s {
     sysmelb_Type_t *byteArray;
     sysmelb_Type_t *tuple;
     sysmelb_Type_t *record;
+    sysmelb_Type_t *enumType;
     sysmelb_Type_t *sum;
     sysmelb_Type_t *association;
     sysmelb_Type_t *dictionary;
@@ -113,7 +123,11 @@ sysmelb_function_t *sysmelb_type_lookupSelector(sysmelb_Type_t *type, sysmelb_sy
 
 sysmelb_Type_t *sysmelb_allocateValueType(sysmelb_TypeKind_t kind, sysmelb_symbol_t *name, uint32_t size, uint32_t alignment);
 sysmelb_Type_t *sysmelb_allocateRecordType(sysmelb_symbol_t *name, sysmelb_Dictionary_t *fieldsAndTypes);
+sysmelb_Type_t *sysmelb_allocateEnumType(sysmelb_symbol_t *name, sysmelb_Type_t *baseType, sysmelb_Dictionary_t *namesAndValues);
+
 int sysmelb_findIndexOfFieldNamed(sysmelb_Type_t *type, sysmelb_symbol_t *name);
+bool sysmelb_findEnumValueWithName(sysmelb_Type_t *type, sysmelb_symbol_t *name, sysmelb_Value_t *outValue);
+
 sysmelb_Value_t sysmelb_instantiateTypeWithArguments(sysmelb_Type_t *type, size_t argumentCount, sysmelb_Value_t *arguments);
 const sysmelb_BasicTypes_t *sysmelb_getBasicTypes(void);
 

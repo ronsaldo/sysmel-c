@@ -162,6 +162,7 @@ static sysmelb_Value_t sysmelb_printLine(size_t argumentCount, sysmelb_Value_t *
     };
     return result;
 }
+
 static sysmelb_Value_t sysmelb_RecordWithFieldsMacro(sysmelb_MacroContext_t *macroContext, size_t argumentCount, sysmelb_Value_t *arguments)
 {
     assert(argumentCount == 2);
@@ -191,6 +192,53 @@ static sysmelb_Value_t sysmelb_RecordWithFieldsMacro(sysmelb_MacroContext_t *mac
         .kind = SysmelValueKindTypeReference,
         .type = sysmelb_getBasicTypes()->universe,
         .typeReference = recordType
+    };
+    
+    if(name)
+    {
+        sysmelb_SymbolBinding_t *resultBinding = sysmelb_createSymbolValueBinding(result);
+        sysmelb_Environment_setLocalSymbolBinding(macroContext->environment, name, resultBinding);
+    }
+    
+    return result;
+}
+
+static sysmelb_Value_t sysmelb_EnumWithBaseTypeAndValuesMacro(sysmelb_MacroContext_t *macroContext, size_t argumentCount, sysmelb_Value_t *arguments)
+{
+    assert(argumentCount == 3);
+    sysmelb_symbol_t *name = NULL;
+
+    if (arguments[0].parseTreeReference->kind == ParseTreeIdentifierReference)
+        name = arguments[0].parseTreeReference->identifierReference.identifier;
+    else if (arguments[0].parseTreeReference->kind == ParseTreeLiteralSymbolNode)
+        name = arguments[0].parseTreeReference->literalSymbol.internedSymbol;
+    else
+    {
+        sysmelb_Value_t nameValue = sysmelb_analyzeAndEvaluateScript(macroContext->environment, arguments[0].parseTreeReference);
+        if(nameValue.kind != SysmelValueKindSymbolReference)
+            sysmelb_errorPrintf(macroContext->sourcePosition, "A non-valid name object is being passed.");
+        name = nameValue.symbolReference;
+    }
+
+    sysmelb_Value_t baseTypeValue =  sysmelb_analyzeAndEvaluateScript(macroContext->environment, arguments[1].parseTreeReference);
+    if(baseTypeValue.kind != SysmelValueKindTypeReference)
+    {
+        sysmelb_errorPrintf(arguments[1].parseTreeReference->sourcePosition, "A base type specification is expected.");
+        abort();
+    }
+
+    sysmelb_Value_t dictionaryWithFieldAndType = sysmelb_analyzeAndEvaluateScript(macroContext->environment, arguments[2].parseTreeReference);
+    if(dictionaryWithFieldAndType.kind != SysmelValueKindDictionaryReference)
+    {
+        sysmelb_errorPrintf(arguments[2].parseTreeReference->sourcePosition, "An ImmutableDictionar with field names and types is expected.");
+        abort();
+    }
+
+    sysmelb_Type_t *enumType = sysmelb_allocateEnumType(name, baseTypeValue.typeReference, dictionaryWithFieldAndType.dictionaryReference);
+    sysmelb_Value_t result = {
+        .kind = SysmelValueKindTypeReference,
+        .type = sysmelb_getBasicTypes()->universe,
+        .typeReference = enumType
     };
     
     if(name)
@@ -322,6 +370,16 @@ sysmelb_Environment_t *sysmelb_getOrCreateIntrinsicsEnvironment()
         function->kind = SysmelFunctionKindPrimitiveMacro;
         function->name = sysmelb_internSymbolC("Record:withFields:");
         function->primitiveMacroFunction = sysmelb_RecordWithFieldsMacro;
+
+        sysmelb_Environment_setLocalSymbolBinding(&sysmelb_IntrinsicsEnvironment, function->name, sysmelb_createSymbolFunctionBinding(function));
+    }
+
+    // Enum type
+    {
+        sysmelb_function_t *function = sysmelb_allocate(sizeof(sysmelb_function_t));
+        function->kind = SysmelFunctionKindPrimitiveMacro;
+        function->name = sysmelb_internSymbolC("Enum:withBaseType:values:");
+        function->primitiveMacroFunction = sysmelb_EnumWithBaseTypeAndValuesMacro;
 
         sysmelb_Environment_setLocalSymbolBinding(&sysmelb_IntrinsicsEnvironment, function->name, sysmelb_createSymbolFunctionBinding(function));
     }
