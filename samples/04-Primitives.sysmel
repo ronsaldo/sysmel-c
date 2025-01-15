@@ -1,0 +1,20 @@
+printLine("Hello" -- " World").
+printLine("Hello World" size).
+printLine("Hello World" at: 0).
+
+printLine([1 . 2. 3. 4]).
+printLine([1 . 2. 3. 4] size).
+printLine([1 . 2. 3. 4] at: 2).
+printLine([1 . 2] -- [3. 4]).
+
+printLine(1, 2, 3).
+printLine((1, 2, 3) size).
+printLine((1, 2, 3) at: 1).
+
+printLine(1 : 2).
+printLine((1 : 2) key).
+printLine((1 : 2) value).
+
+printLine(#{First: 1. Second: 2. Third: 3}).
+printLine(#{First: 1. Second: 2. Third: 3} size).
+printLine(#{First: 1. Second: 2. Third: 3} associationAt: 1).
