@@ -4,6 +4,7 @@
 #include "main.c"
 #include "memory.c"
 #include "module.c"
+#include "value.c"
 #include "namespace.c"
 #include "parse-tree.c"
 #include "parser.c"
@@ -15,5 +16,4 @@
 #include "symbol.c"
 #include "token.c"
 #include "types.c"
-#include "value.c"
 #include "function.c"

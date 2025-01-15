@@ -4,7 +4,8 @@
 #include "types.h"
 #include <stdbool.h>
 
-typedef enum sysmelb_ValueKind_e {
+typedef enum sysmelb_ValueKind_e
+{
     SysmelValueKindNull,
     SysmelValueKindVoid,
     SysmelValueKindBoolean,
@@ -24,10 +25,12 @@ typedef enum sysmelb_ValueKind_e {
     SysmelValueKindAssociationReference,
     SysmelValueKindDictionaryReference,
     SysmelValueKindValueBoxReference,
+    SysmelValueKindNamespaceReference,
 } sysmelb_ValueKind_t;
 
 typedef struct sysmelb_Value_s sysmelb_Value_t;
 typedef struct sysmelb_function_s sysmelb_function_t;
+typedef struct sysmelb_Namespace_s sysmelb_Namespace_t;
 
 typedef int64_t sysmelb_IntegerLiteralType_t;
 typedef uint64_t sysmelb_UnsignedIntegerLiteralType_t;
@@ -47,7 +50,8 @@ struct sysmelb_Value_s
 {
     sysmelb_ValueKind_t kind;
     sysmelb_Type_t *type;
-    union {
+    union
+    {
         bool boolean;
         sysmelb_IntegerLiteralType_t integer;
         sysmelb_UnsignedIntegerLiteralType_t unsignedInteger;
@@ -64,6 +68,8 @@ struct sysmelb_Value_s
         sysmelb_Dictionary_t *dictionaryReference;
 
         sysmelb_ValueBox_t *valueBoxReference;
+
+        sysmelb_Namespace_t *namespaceReference;
 
         struct
         {
@@ -108,8 +114,9 @@ struct sysmelb_ValueBox_s
     sysmelb_Value_t currentValue;
 };
 
+sysmelb_Value_t *sysmelb_allocateValue(void);
 sysmelb_Value_t sysmelb_decayValue(sysmelb_Value_t value);
 bool sysmelb_value_equals(sysmelb_Value_t a, sysmelb_Value_t b);
 void sysmelb_printValue(sysmelb_Value_t value);
 
-#endif //SYSMELB_VALUE_H
+#endif // SYSMELB_VALUE_H

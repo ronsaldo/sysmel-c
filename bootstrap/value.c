@@ -1,5 +1,11 @@
 #include "value.h"
+#include "memory.h"
 #include <stdio.h>
+
+sysmelb_Value_t *sysmelb_allocateValue(void)
+{
+    return sysmelb_allocate(sizeof(sysmelb_Value_t));
+}
 
 sysmelb_Value_t sysmelb_decayValue(sysmelb_Value_t value)
 {

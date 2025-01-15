@@ -1,12 +1,15 @@
 namespace: TestNamespace definition: {
-public: ().
+public: [
+    Record: TestPair withFields: #{
+        first: Int32.
+        second: Int32
+    }.
+    
+    $sum($(Integer)x $(Integer)y :: Integer) := x + y.
+    $id($(Integer)x :: Integer) := x.
+].
 }.
 
-
-#*
-    $factorial($(Integer)n :: Integer) := {
-        if: n <= 0
-        then: 1
-        else: factorial(n-1) * n
-    }.
-*#
+printLine(TestNamespace TestPair).
+printLine(TestNamespace TestPair(1i32, 2i32)).
+printLine(TestNamespace sum(5 . 8)).

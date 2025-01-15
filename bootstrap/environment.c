@@ -295,7 +295,49 @@ static sysmelb_Value_t sysmelb_NamespaceDefinitionMacro(sysmelb_MacroContext_t *
 
 static sysmelb_Value_t sysmelb_PublicMacro(sysmelb_MacroContext_t *macroContext, size_t argumentCount, sysmelb_Value_t *arguments)
 {
-    abort();
+    assert(argumentCount == 1);
+    sysmelb_Value_t argument = arguments[0];
+    if(argument.parseTreeReference->kind != ParseTreeArray)
+    {
+        sysmelb_errorPrintf(macroContext->sourcePosition, "Expected an array to public objects.");
+        abort();
+    }
+
+    sysmelb_Namespace_t *ownerNamespace = sysmelb_lookEnvironmentForNamespace(macroContext->environment);
+    uint32_t elementCount = argument.parseTreeReference->array.elements.size;
+    sysmelb_Value_t lastElement = {
+        .kind = SysmelValueKindVoid,
+        .type = sysmelb_getBasicTypes()->voidType,
+    };
+    
+    for(uint32_t i = 0; i < elementCount; ++i)
+    {
+        sysmelb_ParseTreeNode_t *elementToExport = argument.parseTreeReference->array.elements.elements[i];
+        sysmelb_Value_t valueToExport = sysmelb_analyzeAndEvaluateScript(macroContext->environment, elementToExport);
+        switch(valueToExport.kind)
+        {
+        case SysmelValueKindTypeReference:
+        {
+            if(valueToExport.typeReference->name)
+                sysmelb_namespace_exportValueWithName(ownerNamespace, valueToExport.typeReference->name, &valueToExport);
+        }
+            break;
+        case SysmelValueKindFunctionReference:
+        {
+            if(!valueToExport.functionReference->name)
+                sysmelb_errorPrintf(elementToExport->sourcePosition, "Cannot export function without a name.");
+            else
+                sysmelb_namespace_exportValueWithName(ownerNamespace, valueToExport.functionReference->name, &valueToExport);
+        }
+            break;
+        default:
+            abort();
+        }
+        
+    }
+
+    return lastElement;
+
 }
 
 

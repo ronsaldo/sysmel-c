@@ -35,6 +35,7 @@ sysmelb_Value_t sysmelb_analyzeAndCompileClosure(sysmelb_Environment_t *environm
 {
     assert(ast->kind == ParseTreeFunction);
     sysmelb_function_t *function = sysmelb_allocate(sizeof(sysmelb_function_t));
+    function->name = ast->function.name;
     function->kind = SysmelFunctionKindInterpreted;
     sysmelb_FunctionBytecode_t *bytecode = &function->bytecode;
     

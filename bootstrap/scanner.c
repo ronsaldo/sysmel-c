@@ -204,11 +204,15 @@ sysmelb_ScannerToken_t skipWhite(sysmelb_scannerState_t *state)
                 bool hasCommentEnd = false;
                 while (!scannerState_atEnd(state))
                 {
-                    hasCommentEnd = scannerState_peek(state, 0) == '*' &&  scannerState_peek(state, 0) == '#';
+                    hasCommentEnd = scannerState_peek(state, 0) == '*' &&  scannerState_peek(state, 1) == '#';
                     if (hasCommentEnd)
                     {
                         scannerState_advance(state, 2);
                         break;
+                    }
+                    else
+                    {
+                        scannerState_advance(state, 1); 
                     }
                 }
                 if (!hasCommentEnd)

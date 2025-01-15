@@ -2,6 +2,7 @@
 #include "function.h"
 #include "types.h"
 #include "error.h"
+#include "namespace.h"
 #include "memory.h"
 #include <stdio.h>
 
@@ -213,6 +214,13 @@ sysmelb_Value_t sysmelb_analyzeAndEvaluateScript(sysmelb_Environment_t *environm
                     if(sysmelb_findEnumValueWithName(receiver.typeReference, selector.symbolReference, &enumValue))
                         return enumValue;
                 }
+            }
+
+            if(receiver.kind == SysmelValueKindNamespaceReference)
+            {
+                sysmelb_SymbolBinding_t *binding = sysmelb_namespace_lookupExportedObject(receiver.namespaceReference, selector.symbolReference);
+                if (binding && binding->kind == SysmelSymbolValueBinding)
+                    return binding->value;
             }
 
             if(!method)
