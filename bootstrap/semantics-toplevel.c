@@ -265,9 +265,44 @@ sysmelb_Value_t sysmelb_analyzeAndEvaluateScript(sysmelb_Environment_t *environm
             return method->primitiveFunction(1 + argumentCount, messageArguments);
         }
         case SysmelFunctionKindPrimitiveMacro:
-            sysmelb_errorPrintf(ast->sourcePosition, "TODO: Support macro message sends");
-            abort();
-            break;
+        {
+            assert(ast->messageSend.arguments.size <= SYSMEL_MAX_ARGUMENT_COUNT);
+            sysmelb_Value_t messageArguments[SYSMEL_MAX_ARGUMENT_COUNT + 1];
+
+            sysmelb_ParseTreeNode_t *receiverLiteralNode = sysmelb_newParseTreeNode(ParseTreeLiteralValueNode, ast->sourcePosition);
+            receiverLiteralNode->literalValue.value = receiver;
+
+            sysmelb_Value_t receiverLiteralNodeValue = {
+                .kind = SysmelValueKindParseTreeReference,
+                .type = sysmelb_getBasicTypes()->parseTreeNode,
+                .parseTreeReference = receiverLiteralNode
+            };
+
+            messageArguments[0] = receiverLiteralNodeValue;
+            size_t argumentCount = ast->messageSend.arguments.size;
+            for(size_t i = 0; i < argumentCount; ++i)
+            {
+                sysmelb_ParseTreeNode_t *argumentNode = ast->messageSend.arguments.elements[i];
+                sysmelb_Value_t argumentValue = {
+                    .kind = SysmelValueKindParseTreeReference,
+                    .type = sysmelb_getBasicTypes()->parseTreeNode,
+                    .parseTreeReference = argumentNode
+                };
+
+                messageArguments[1 + i] = argumentValue;
+            }
+
+            sysmelb_MacroContext_t macroContext = {
+                .environment = environment,
+                .sourcePosition = ast->sourcePosition,
+            };
+            sysmelb_Value_t macroResult = method->primitiveMacroFunction(&macroContext, 1 + argumentCount, messageArguments);
+            if(macroResult.kind == SysmelValueKindParseTreeReference)
+                return sysmelb_analyzeAndEvaluateScript(environment, macroResult.parseTreeReference);
+            else
+                return macroResult;
+            return method->primitiveFunction(1 + argumentCount, messageArguments);
+        }
         case SysmelFunctionKindInterpreted:
         {
             assert(ast->messageSend.arguments.size <= SYSMEL_MAX_ARGUMENT_COUNT);

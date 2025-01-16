@@ -142,7 +142,10 @@ static void sysmelb_analyzeAndCompileClosureBody(sysmelb_Environment_t *environm
             {
                 sysmelb_SymbolBinding_t *functionalBinding = sysmelb_environmentLookRecursively(environment, ast->functionApplication.functional->identifierReference.identifier);
                 if(!functionalBinding)
+                {
                     sysmelb_errorPrintf(ast->functionApplication.functional->sourcePosition, "Failed to find identifier.");
+                    abort();
+                }
 
                 if(functionalBinding->kind == SysmelSymbolValueBinding && functionalBinding->value.kind == SysmelValueKindFunctionReference)
                 {
@@ -195,9 +198,48 @@ static void sysmelb_analyzeAndCompileClosureBody(sysmelb_Environment_t *environm
         }
     case ParseTreeMessageSend:
         {
-            sysmelb_analyzeAndCompileClosureBody(environment, function, ast->messageSend.receiver);
             sysmelb_Value_t selectorValue = sysmelb_analyzeAndEvaluateScript(environment, ast->messageSend.selector);
             assert(selectorValue.kind == SysmelValueKindSymbolReference);
+            if(ast->messageSend.arguments.size == 1)
+            {
+                if(selectorValue.symbolReference == sysmelb_internSymbolC("&&"))
+                {
+                    sysmelb_Value_t falseValue = {
+                        .kind = SysmelValueKindBoolean,
+                        .type = sysmelb_getBasicTypes()->boolean,
+                        .boolean = false,
+                    };
+
+                    sysmelb_ParseTreeNode_t *falseLiteralResult = sysmelb_newParseTreeNode(ParseTreeLiteralValueNode, ast->sourcePosition);
+                    falseLiteralResult->literalValue.value = falseValue;
+
+                    sysmelb_ParseTreeNode_t *ifNode = sysmelb_newParseTreeNode(ParseTreeIfSelection, ast->sourcePosition);
+                    ifNode->ifSelection.condition = ast->messageSend.receiver;
+                    ifNode->ifSelection.trueExpression = ast->messageSend.arguments.elements[0];
+                    ifNode->ifSelection.falseExpression = falseLiteralResult;
+                    return sysmelb_analyzeAndCompileClosureBody(environment, function, ifNode);
+
+                }
+                else if(selectorValue.symbolReference == sysmelb_internSymbolC("||"))
+                {
+                    sysmelb_Value_t trueValue = {
+                        .kind = SysmelValueKindBoolean,
+                        .type = sysmelb_getBasicTypes()->boolean,
+                        .boolean = true,
+                    };
+
+                    sysmelb_ParseTreeNode_t *trueLiteralResult = sysmelb_newParseTreeNode(ParseTreeLiteralValueNode, ast->sourcePosition);
+                    trueLiteralResult->literalValue.value = trueValue;
+
+                    sysmelb_ParseTreeNode_t *ifNode = sysmelb_newParseTreeNode(ParseTreeIfSelection, ast->sourcePosition);
+                    ifNode->ifSelection.condition = ast->messageSend.receiver;
+                    ifNode->ifSelection.trueExpression = trueLiteralResult;
+                    ifNode->ifSelection.falseExpression = ast->messageSend.arguments.elements[0];
+                    return sysmelb_analyzeAndCompileClosureBody(environment, function, ifNode);
+                }
+            }
+
+            sysmelb_analyzeAndCompileClosureBody(environment, function, ast->messageSend.receiver);
             
             size_t argumentCount = ast->messageSend.arguments.size;
             for(size_t i = 0; i < argumentCount; ++i)
@@ -311,6 +353,11 @@ static void sysmelb_analyzeAndCompileClosureBody(sysmelb_Environment_t *environm
         if(store->kind == ParseTreeIdentifierReference)
         {
             sysmelb_SymbolBinding_t *binding = sysmelb_environmentLookRecursively(environment, store->identifierReference.identifier);
+            if(!binding)
+            {
+                sysmelb_errorPrintf(store->sourcePosition, "Failed to find binding for %.*s", store->identifierReference.identifier->size, store->identifierReference.identifier->size);
+                abort();
+            }
             if(binding->kind == SysmelSymbolTemporaryBinding)
             {
                 sysmelb_analyzeAndCompileClosureBody(environment, function, value);

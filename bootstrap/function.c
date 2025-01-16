@@ -46,6 +46,7 @@ void sysmelb_bytecode_ensureCapacity(sysmelb_FunctionBytecode_t*bytecode)
         memcpy(newStorage, bytecode->instructions, sizeof(sysmelb_FunctionInstruction_t)*bytecode->instructionSize);
 
     sysmelb_freeAllocation(bytecode->instructions);
+    bytecode->instructionCapacity = newCapacity;
     bytecode->instructions = newStorage;
 }
 uint16_t sysmelb_bytecode_addInstruction(sysmelb_FunctionBytecode_t*bytecode, sysmelb_FunctionInstruction_t instructionToAdd)
@@ -483,10 +484,23 @@ sysmelb_Value_t sysmelb_interpretBytecodeFunction(sysmelb_function_t *function, 
                             }
                         }
                     }
+
+                    if(receiver.kind == SysmelValueKindTypeReference)
+                    {
+                        if(receiver.typeReference->kind == SysmelTypeKindEnum)
+                        {
+                            sysmelb_Value_t enumValue;
+                            if(sysmelb_findEnumValueWithName(receiver.typeReference, currentInstruction->messageSendSelector, &enumValue))
+                            {
+                                sysmelb_bytecodeActivationContext_push(&context, enumValue);
+                                isSynthetic = true;
+                            }
+                        }
+                    }
                     if(!isSynthetic)
                     {
                         sysmelb_SourcePosition_t noPosition = {0};
-                        sysmelb_errorPrintf(noPosition, "Message not understood");
+                        sysmelb_errorPrintf(noPosition, "Message not understood. #%.*s", currentInstruction->messageSendSelector->size, currentInstruction->messageSendSelector->string);
                         abort();
                     }
                 }

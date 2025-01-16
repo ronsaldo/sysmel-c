@@ -47,9 +47,10 @@ Enum: TokenKind withBaseType: UInt8 values: #{
     LiteralArrayStart:.    
 }.
 
-Record: ScannerToken withFields: #{
+Record: ScannedToken withFields: #{
     kind: TokenKind.
     sourcePosition: SourcePosition.
+    errorMessage: String
 }.
 
 Record: ScannerState withFields: #{
@@ -96,17 +97,31 @@ ScannerState
         void
     }.
 
+$skipWhite($(ScannerState)state :: Void) := {
+    void
+}.
+
+$scanSingleToken($(ScannerState)state :: ScannerToken) := {
+    skipWhite(state).
+
+    ScannedToken(TokenKind EndOfSource)
+}.
+
 public: [
     $scanSourceCode($(SourceCode)sourceCode :: OrderedCollection) := {
         $list := OrderedCollection().
         $state := makeScannerStateForSourceCode(sourceCode).
+        $!scannedToken := ScannedToken(TokenKind NullToken).
+        do: {
+            scannedToken := scanSingleToken(state).
+            list add: scannedToken
+        } while: (scannedToken kind ~= TokenKind EndOfSource).
 
         list
     }
-    ##sysmelb_TokenDynarray_t sysmelb_scanSourceCode(sysmelb_SourceCode_t *sourceCode);
 ]
 
-$sourceCode := makeSourceCodeForString("Testing").
+$sourceCode := makeSourceCodeForString("  ").
 printLine(sourceCode).
 $scanResult := scanSourceCode(sourceCode).
 printLine(scanResult).

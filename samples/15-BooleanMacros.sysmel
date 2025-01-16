@@ -1,0 +1,25 @@
+printLine("Top-level &&").
+printLine(false && false).
+printLine(false && true).
+printLine(true  && false).
+printLine(true  && true).
+
+printLine("Top-level ||").
+printLine(false || false).
+printLine(false || true).
+printLine(true  || false).
+printLine(true  || true).
+
+printLine("Function &&").
+$myAnd($(Boolean)l $(Boolean)r :: Boolean) := l && r.
+printLine(myAnd(false . false)).
+printLine(myAnd(false . true)).
+printLine(myAnd(true  . false)).
+printLine(myAnd(true  . true)).
+
+printLine("Function ||").
+$myOr($(Boolean)l $(Boolean)r :: Boolean) := l || r.
+printLine(myOr(false . false)).
+printLine(myOr(false . true)).
+printLine(myOr(true  . false)).
+printLine(myOr(true  . true)).

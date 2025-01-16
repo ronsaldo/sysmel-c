@@ -1,6 +1,7 @@
 #include "types.h"
 #include "error.h"
 #include "memory.h"
+#include "parse-tree.h"
 #include "value.h"
 #include <stdbool.h>
 
@@ -977,8 +978,63 @@ static void sysmelb_createBasicOrderedCollectionPrimitives(void)
     sysmelb_type_addPrimitiveMethod(sysmelb_BasicTypesData.orderedCollection, sysmelb_internSymbolC("at:put:"), sysmelb_primitive_OrderedCollection_atPut);
 }
 
+static sysmelb_Value_t sysmelb_primitive_Boolean_And(sysmelb_MacroContext_t *context, size_t argumentCount, sysmelb_Value_t *arguments)
+{
+    assert(argumentCount == 2);
+    assert(arguments[0].kind == SysmelValueKindParseTreeReference);
+    assert(arguments[1].kind == SysmelValueKindParseTreeReference);
+
+    sysmelb_ParseTreeNode_t *falseResult = sysmelb_newParseTreeNode(ParseTreeLiteralValueNode, context->sourcePosition);
+    falseResult->literalValue.value.kind = SysmelValueKindBoolean;
+    falseResult->literalValue.value.type = sysmelb_getBasicTypes()->boolean;
+    falseResult->literalValue.value.boolean = false;
+
+    sysmelb_ParseTreeNode_t *ifNode = sysmelb_newParseTreeNode(ParseTreeIfSelection, context->sourcePosition);
+    ifNode->ifSelection.condition = arguments[0].parseTreeReference;
+    ifNode->ifSelection.trueExpression = arguments[1].parseTreeReference;
+    ifNode->ifSelection.falseExpression = falseResult;
+
+    sysmelb_Value_t nodeValue = {
+        .kind = SysmelValueKindParseTreeReference,
+        .type = sysmelb_getBasicTypes()->parseTreeNode,
+        .parseTreeReference = ifNode
+    };
+    return nodeValue;
+}
+
+static sysmelb_Value_t sysmelb_primitive_Boolean_Or(sysmelb_MacroContext_t *context, size_t argumentCount, sysmelb_Value_t *arguments)
+{
+    assert(argumentCount == 2);
+    assert(arguments[0].kind == SysmelValueKindParseTreeReference);
+    assert(arguments[1].kind == SysmelValueKindParseTreeReference);
+
+    sysmelb_ParseTreeNode_t *trueResult = sysmelb_newParseTreeNode(ParseTreeLiteralValueNode, context->sourcePosition);
+    trueResult->literalValue.value.kind = SysmelValueKindBoolean;
+    trueResult->literalValue.value.type = sysmelb_getBasicTypes()->boolean;
+    trueResult->literalValue.value.boolean = true;
+
+    sysmelb_ParseTreeNode_t *ifNode = sysmelb_newParseTreeNode(ParseTreeIfSelection, context->sourcePosition);
+    ifNode->ifSelection.condition = arguments[0].parseTreeReference;
+    ifNode->ifSelection.trueExpression = trueResult;
+    ifNode->ifSelection.falseExpression = arguments[1].parseTreeReference;
+
+    sysmelb_Value_t nodeValue = {
+        .kind = SysmelValueKindParseTreeReference,
+        .type = sysmelb_getBasicTypes()->parseTreeNode,
+        .parseTreeReference = ifNode
+    };
+    return nodeValue;
+}
+
+static void sysmelb_createBasicBooleanPrimitives(void)
+{
+    sysmelb_type_addPrimitiveMacroMethod(sysmelb_BasicTypesData.boolean, sysmelb_internSymbolC("&&"), sysmelb_primitive_Boolean_And);
+    sysmelb_type_addPrimitiveMacroMethod(sysmelb_BasicTypesData.boolean, sysmelb_internSymbolC("||"), sysmelb_primitive_Boolean_Or);
+}
+
 static void sysmelb_createBasicTypesPrimitives(void)
 {
+    sysmelb_createBasicBooleanPrimitives();
     sysmelb_createBasicIntegersPrimitives();
     sysmelb_createBasicArrayPrimitives();
     sysmelb_createBasicStringPrimitives();
