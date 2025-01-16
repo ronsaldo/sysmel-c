@@ -227,6 +227,28 @@ static void sysmelb_analyzeAndCompileClosureBody(sysmelb_Environment_t *environm
             }
             return;
         }
+    case ParseTreeArray:
+        for(size_t i = 0; i < ast->array.elements.size; ++i)
+            sysmelb_analyzeAndCompileClosureBody(environment, function, ast->array.elements.elements[i]);
+        return sysmelb_bytecode_makeArray(&function->bytecode, ast->array.elements.size);
+    case ParseTreeTuple:
+        for(size_t i = 0; i < ast->tuple.elements.size; ++i)
+            sysmelb_analyzeAndCompileClosureBody(environment, function, ast->tuple.elements.elements[i]);
+        return sysmelb_bytecode_makeArray(&function->bytecode, ast->tuple.elements.size);
+        
+    // Association, dictionary
+    case ParseTreeAssociation:
+    {
+        sysmelb_analyzeAndCompileClosureBody(environment, function, ast->association.key);
+        sysmelb_analyzeAndCompileClosureBody(environment, function, ast->association.value);
+        return sysmelb_bytecode_makeAssociation(&function->bytecode);
+    }
+    case ParseTreeDictionary:
+    {
+        for(size_t i = 0; i < ast->dictionary.elements.size; ++i)
+            sysmelb_analyzeAndCompileClosureBody(environment, function, ast->dictionary.elements.elements[i]);
+        return sysmelb_bytecode_makeDictionary(&function->bytecode, ast->dictionary.elements.size);
+    }
 
     // Lexical block
     case ParseTreeLexicalBlock:
@@ -251,6 +273,7 @@ static void sysmelb_analyzeAndCompileClosureBody(sysmelb_Environment_t *environm
         sysmelb_bytecode_patchJumpToHere(&function->bytecode, mergeJump);
         return;
     }
+
     default:
         abort();
     }

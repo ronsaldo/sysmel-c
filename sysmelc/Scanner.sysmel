@@ -49,13 +49,29 @@ Enum: TokenKinds withBaseType: UInt8 values: #{
 
 Record: ScannerState withFields: #{
     sourceCode: SourceCode.
-    position: Int32.
-    line: Int32.
-    column: Int32.
+    text: String.
+    textSize: UInt32.
+    position: UInt32.
+    line: UInt32.
+    column: UInt32.
     isPreviousCR: Boolean
 }.
 ].
 
+$makeScannerStateForSourceCode($(SourceCode)sourceCode :: ScannerState) 
+    := ScannerState#{
+        sourceCode: sourceCode.
+        text: sourceCode text.
+        textSize: sourceCode text size.
+        position: 0.
+        line: 1.
+        column: 1.
+        isPreviousCR: false}.
+
+ScannerState
+    withSelector: #atEnd addMethod: ($$($(ScannerState)self :: Boolean) := {
+        self position >= self textSize 
+    }).
 
 }.
 

@@ -23,6 +23,10 @@ typedef struct sysmelb_FunctionInstruction_s {
 
         uint16_t temporaryIndex;
         int16_t jumpOffset;
+
+        uint16_t arraySize;
+        uint16_t dictionarySize;
+        uint16_t tupleSize;
     };
 } sysmelb_FunctionInstruction_t;
 
@@ -141,6 +145,44 @@ void sysmelb_bytecode_sendMessage(sysmelb_FunctionBytecode_t *bytecode, sysmelb_
         .opcode = SysmelFunctionOpcodeSendMessage,
         .messageSendSelector = selector,
         .messageSendArguments = argumentCount
+    };
+
+    sysmelb_bytecode_addInstruction(bytecode, inst);
+}
+
+void sysmelb_bytecode_makeAssociation(sysmelb_FunctionBytecode_t *bytecode)
+{
+    sysmelb_FunctionInstruction_t inst ={
+        .opcode = SysmelFunctionOpcodeMakeAssociation,
+    };
+
+    sysmelb_bytecode_addInstruction(bytecode, inst);
+}
+void sysmelb_bytecode_makeArray(sysmelb_FunctionBytecode_t *bytecode, uint16_t size)
+{
+    sysmelb_FunctionInstruction_t inst ={
+        .opcode = SysmelFunctionOpcodeMakeArray,
+        .arraySize = size,
+    };
+
+    sysmelb_bytecode_addInstruction(bytecode, inst);
+}
+
+void sysmelb_bytecode_makeDictionary(sysmelb_FunctionBytecode_t *bytecode, uint16_t size)
+{
+    sysmelb_FunctionInstruction_t inst ={
+        .opcode = SysmelFunctionOpcodeMakeDictionary,
+        .dictionarySize = size,
+    };
+
+    sysmelb_bytecode_addInstruction(bytecode, inst);
+}
+
+void sysmelb_bytecode_makeTuple(sysmelb_FunctionBytecode_t *bytecode, uint16_t size)
+{
+    sysmelb_FunctionInstruction_t inst ={
+        .opcode = SysmelFunctionOpcodeMakeTuple,
+        .tupleSize = size,
     };
 
     sysmelb_bytecode_addInstruction(bytecode, inst);
