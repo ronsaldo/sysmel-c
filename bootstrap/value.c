@@ -1,6 +1,7 @@
 #include "value.h"
 #include "memory.h"
 #include <stdio.h>
+#include <string.h>
 
 sysmelb_Value_t *sysmelb_allocateValue(void)
 {
@@ -184,8 +185,39 @@ void sysmelb_printValue(sysmelb_Value_t value)
             printf("%.*s", value.functionReference->name->size, value.functionReference->name->string);
         printf(")");
         break;
+    case SysmelValueKindOrderedCollectionReference:
+        printf("OrderedCollection with: [");
+        for(size_t i = 0; i < value.orderedCollectionReference->size; ++i)
+        {
+            if(i != 0) printf(" . ");
+            sysmelb_printValue(value.orderedCollectionReference->elements[i]);
+        }
+        printf("]");
+        break;
     default: abort();
     }
+}
 
+void sysmelb_OrderedCollection_increaseCapacity(sysmelb_OrderedCollection_t *collection)
+{
+    size_t newCapacity = collection->capacity*2;
+    if(newCapacity < 32) newCapacity = 32;
 
+    sysmelb_Value_t *newStorage = sysmelb_allocate(sizeof(sysmelb_Value_t) * newCapacity);
+    if(collection->size != 0)
+    {
+        memcpy(newStorage, collection->elements, collection->size*sizeof(sysmelb_Value_t));
+        sysmelb_freeAllocation(collection->elements);
+    }
+
+    collection->capacity = newCapacity;
+    collection->elements = newStorage;
+
+}
+
+void sysmelb_OrderedCollection_add(sysmelb_OrderedCollection_t *collection, sysmelb_Value_t value)
+{
+    if(collection->size >= collection->capacity)
+        sysmelb_OrderedCollection_increaseCapacity(collection);
+    collection->elements[collection->size++] = value;
 }

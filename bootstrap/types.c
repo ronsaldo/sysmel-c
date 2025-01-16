@@ -191,6 +191,16 @@ sysmelb_Value_t sysmelb_instantiateTypeWithArguments(sysmelb_Type_t *type, size_
 
         return result;
     }
+    if(type->kind == SysmelTypeKindOrderedCollection)
+    {
+        sysmelb_OrderedCollection_t *collection = sysmelb_allocate(sizeof(sysmelb_OrderedCollection_t));
+        sysmelb_Value_t result = {
+            .kind = SysmelValueKindOrderedCollectionReference,
+            .type = sysmelb_getBasicTypes()->orderedCollection,
+            .orderedCollectionReference = collection
+        };
+        return result;
+    }
 
 
     abort();
@@ -227,6 +237,8 @@ static void sysmelb_createBasicTypes(void)
     sysmelb_BasicTypesData.valueReference = sysmelb_allocateValueType(SysmelTypeKindValueReference, sysmelb_internSymbolC("ValueReference"), pointerSize, pointerAlignment);
     sysmelb_BasicTypesData.function       = sysmelb_allocateValueType(SysmelTypeKindSimpleFunction, sysmelb_internSymbolC("Function"), pointerSize, pointerAlignment);
     sysmelb_BasicTypesData.namespace      = sysmelb_allocateValueType(SysmelTypeKindNamespace, sysmelb_internSymbolC("Namespace"), pointerSize, pointerAlignment);
+    
+    sysmelb_BasicTypesData.orderedCollection = sysmelb_allocateValueType(SysmelTypeKindOrderedCollection, sysmelb_internSymbolC("OrderedCollection"), pointerSize, pointerAlignment);
 
     sysmelb_BasicTypesData.char8    = sysmelb_allocateValueType(SysmelTypeKindPrimitiveCharacter, sysmelb_internSymbolC("Int8"), 1, 1);
     sysmelb_BasicTypesData.char16   = sysmelb_allocateValueType(SysmelTypeKindPrimitiveCharacter, sysmelb_internSymbolC("Int16"), 2, 2);
@@ -901,6 +913,70 @@ static void sysmelb_createBasicTypeUniversePrimitives(void)
     sysmelb_type_addPrimitiveMethod(sysmelb_BasicTypesData.universe, sysmelb_internSymbolC("withSelector:addMethod:"), sysmelb_primitive_withSelectorAddMethod);
 }
 
+static sysmelb_Value_t sysmelb_primitive_OrderedCollection_add(size_t argumentCount, sysmelb_Value_t *arguments)
+{
+    assert(argumentCount == 2);
+    assert(arguments[0].kind == SysmelValueKindOrderedCollectionReference);
+    sysmelb_OrderedCollection_add(arguments[0].orderedCollectionReference, arguments[1]);
+    return arguments[1];
+}
+
+static sysmelb_Value_t sysmelb_primitive_OrderedCollection_size(size_t argumentCount, sysmelb_Value_t *arguments)
+{
+    assert(argumentCount == 1);
+    assert(arguments[0].kind == SysmelValueKindOrderedCollectionReference);
+    sysmelb_Value_t result = {
+        .kind = SysmelValueKindUnsignedInteger,
+        .type = sysmelb_getBasicTypes()->integer,
+        .unsignedInteger = arguments[0].orderedCollectionReference->size,
+    };
+    return result;
+}
+
+static sysmelb_Value_t sysmelb_primitive_OrderedCollection_at(size_t argumentCount, sysmelb_Value_t *arguments)
+{
+    assert(argumentCount == 2);
+    assert(arguments[0].kind == SysmelValueKindOrderedCollectionReference);
+    assert(arguments[1].kind == SysmelValueKindInteger ||
+        arguments[1].kind == SysmelValueKindUnsignedInteger);
+    size_t size = arguments[0].orderedCollectionReference->size;
+    size_t index = arguments[1].unsignedInteger;
+    if(index >= size)
+    {
+        sysmelb_SourcePosition_t pos = {};
+        sysmelb_errorPrintf(pos, "Index %d is out of bounds (size %d).\n", (int)index, (int)size);
+        abort();
+    }
+
+    return arguments[0].orderedCollectionReference->elements[index];
+}
+
+static sysmelb_Value_t sysmelb_primitive_OrderedCollection_atPut(size_t argumentCount, sysmelb_Value_t *arguments)
+{
+    assert(argumentCount == 3);
+    assert(arguments[0].kind == SysmelValueKindOrderedCollectionReference);
+    assert(arguments[1].kind == SysmelValueKindInteger ||
+        arguments[1].kind == SysmelValueKindUnsignedInteger);
+    size_t size = arguments[0].orderedCollectionReference->size;
+    size_t index = arguments[1].unsignedInteger;
+    if(index >= size)
+    {
+        sysmelb_SourcePosition_t pos = {};
+        sysmelb_errorPrintf(pos, "Index %d is out of bounds (size %d).\n", (int)index, (int)size);
+        abort();
+    }
+
+    return arguments[0].orderedCollectionReference->elements[index] = arguments[2];
+}
+
+static void sysmelb_createBasicOrderedCollectionPrimitives(void)
+{
+    sysmelb_type_addPrimitiveMethod(sysmelb_BasicTypesData.orderedCollection, sysmelb_internSymbolC("add:"), sysmelb_primitive_OrderedCollection_add);
+    sysmelb_type_addPrimitiveMethod(sysmelb_BasicTypesData.orderedCollection, sysmelb_internSymbolC("size"), sysmelb_primitive_OrderedCollection_size);
+    sysmelb_type_addPrimitiveMethod(sysmelb_BasicTypesData.orderedCollection, sysmelb_internSymbolC("at:"), sysmelb_primitive_OrderedCollection_at);
+    sysmelb_type_addPrimitiveMethod(sysmelb_BasicTypesData.orderedCollection, sysmelb_internSymbolC("at:put:"), sysmelb_primitive_OrderedCollection_atPut);
+}
+
 static void sysmelb_createBasicTypesPrimitives(void)
 {
     sysmelb_createBasicIntegersPrimitives();
@@ -909,6 +985,7 @@ static void sysmelb_createBasicTypesPrimitives(void)
     sysmelb_createBasicTuplePrimitives();
     sysmelb_createBasicAssociationPrimitives();
     sysmelb_createBasicDictionaryPrimitives();
+    sysmelb_createBasicOrderedCollectionPrimitives();
     sysmelb_createBasicTypeUniversePrimitives();
 }
 

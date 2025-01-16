@@ -85,12 +85,16 @@ ScannerState
     withSelector: #peek addMethod: {|$(ScannerState)self $(UInt32)offset :: Int32 |
         self peekAt: 0u32
     };
-    withSelector: #advance addMethod: {|$(ScannerState)self :: Int32 |
+    withSelector: #advance addMethod: {|$(ScannerState)self :: Void |
+        $c := (self text at: self position) asChar32.
         self position: self position + 1i32.
+
+        
+        void
     }.
 
-$state = makeScannerStateForString("Testing").
-
+$state := makeScannerStateForString("Testing").
+printLine(state).
 
 }.
 

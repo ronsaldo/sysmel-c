@@ -1,0 +1,10 @@
+$collection := OrderedCollection().
+printLine(collection. " " . collection size).
+collection add: "Test".
+printLine(collection. " " . collection size).
+collection add: 42.
+printLine(collection. " " . collection size).
+
+printLine(collection at: 0).
+collection at: 0 put: #symbol.
+printLine(collection).

@@ -26,6 +26,7 @@ typedef enum sysmelb_ValueKind_e
     SysmelValueKindDictionaryReference,
     SysmelValueKindValueBoxReference,
     SysmelValueKindNamespaceReference,
+    SysmelValueKindOrderedCollectionReference,
 } sysmelb_ValueKind_t;
 
 typedef struct sysmelb_Value_s sysmelb_Value_t;
@@ -45,6 +46,8 @@ typedef struct sysmelb_Association_s sysmelb_Association_t;
 typedef struct sysmelb_Dictionary_s sysmelb_Dictionary_t;
 
 typedef struct sysmelb_ValueBox_s sysmelb_ValueBox_t;
+
+typedef struct sysmelb_OrderedCollection_s sysmelb_OrderedCollection_t;
 
 struct sysmelb_Value_s
 {
@@ -70,6 +73,8 @@ struct sysmelb_Value_s
         sysmelb_ValueBox_t *valueBoxReference;
 
         sysmelb_Namespace_t *namespaceReference;
+
+        sysmelb_OrderedCollection_t *orderedCollectionReference;
 
         struct
         {
@@ -113,6 +118,15 @@ struct sysmelb_ValueBox_s
 {
     sysmelb_Value_t currentValue;
 };
+
+struct sysmelb_OrderedCollection_s
+{
+    size_t capacity;
+    size_t size;
+    sysmelb_Value_t *elements;
+};
+
+void sysmelb_OrderedCollection_add(sysmelb_OrderedCollection_t *collection, sysmelb_Value_t value);
 
 sysmelb_Value_t *sysmelb_allocateValue(void);
 sysmelb_Value_t sysmelb_decayValue(sysmelb_Value_t value);
