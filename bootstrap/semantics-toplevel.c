@@ -13,6 +13,25 @@ sysmelb_Value_t sysmelb_analyzeAndEvaluateScript(sysmelb_Environment_t *environm
     case ParseTreeErrorNode:
         sysmelb_errorPrintf(ast->sourcePosition, "%s", ast->errorNode.errorMessage);
         abort();
+    case ParseTreeAssertNode:
+        {
+            sysmelb_Value_t expressionValue = sysmelb_analyzeAndEvaluateScript(environment, ast->assertNode.condition);
+            if(expressionValue.kind != SysmelValueKindBoolean)
+            {
+                sysmelb_errorPrintf(ast->sourcePosition, "Assertion does not have a boolean expression.");
+                abort();
+            }
+            else if(!expressionValue.boolean)
+            {
+                sysmelb_errorPrintf(ast->sourcePosition, "Assertion failure.");
+                abort();
+            }
+            sysmelb_Value_t value = {
+                .kind = SysmelValueKindNull,
+                .type = sysmelb_getBasicTypes()->null
+            };
+            return value;
+        }
     // Literals
     case ParseTreeLiteralIntegerNode:
         {

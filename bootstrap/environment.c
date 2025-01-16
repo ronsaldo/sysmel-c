@@ -391,7 +391,19 @@ static sysmelb_Value_t sysmelb_loadFileOnceMacro(sysmelb_MacroContext_t *macroCo
     return sysmelb_analyzeAndEvaluateScript(environment, parseTree);
 }
 
+static sysmelb_Value_t sysmelb_assertMacro(sysmelb_MacroContext_t *macroContext, size_t argumentCount, sysmelb_Value_t *arguments)
+{   assert(argumentCount == 1);
+    sysmelb_ParseTreeNode_t *assertionNode = sysmelb_newParseTreeNode(ParseTreeAssertNode, macroContext->sourcePosition);
+    assert(arguments[0].kind == SysmelValueKindParseTreeReference);
+    assertionNode->assertNode.condition = arguments[0].parseTreeReference;
 
+    sysmelb_Value_t resultValue = {
+        .kind = SysmelValueKindParseTreeReference,
+        .type = sysmelb_getBasicTypes()->parseTreeNode,
+        .parseTreeReference = assertionNode,
+    };
+    return resultValue;
+}
 
 
 sysmelb_Environment_t *sysmelb_getOrCreateIntrinsicsEnvironment()
@@ -554,6 +566,16 @@ sysmelb_Environment_t *sysmelb_getOrCreateIntrinsicsEnvironment()
         function->kind = SysmelFunctionKindPrimitiveMacro;
         function->name = sysmelb_internSymbolC("loadFileOnce:");
         function->primitiveMacroFunction = sysmelb_loadFileOnceMacro;
+
+        sysmelb_Environment_setLocalSymbolBinding(&sysmelb_IntrinsicsEnvironment, function->name, sysmelb_createSymbolFunctionBinding(function));
+    }
+
+    // assert:
+    {
+        sysmelb_function_t *function = sysmelb_allocate(sizeof(sysmelb_function_t));
+        function->kind = SysmelFunctionKindPrimitiveMacro;
+        function->name = sysmelb_internSymbolC("assert:");
+        function->primitiveMacroFunction = sysmelb_assertMacro;
 
         sysmelb_Environment_setLocalSymbolBinding(&sysmelb_IntrinsicsEnvironment, function->name, sysmelb_createSymbolFunctionBinding(function));
     }

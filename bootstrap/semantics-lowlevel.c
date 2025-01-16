@@ -60,6 +60,12 @@ static void sysmelb_analyzeAndCompileClosureBody(sysmelb_Environment_t *environm
 {
     switch(ast->kind)
     {
+    case ParseTreeErrorNode:
+        sysmelb_errorPrintf(ast->sourcePosition, "%s", ast->errorNode.errorMessage);
+        abort();
+    case ParseTreeAssertNode:
+        sysmelb_analyzeAndCompileClosureBody(environment, function, ast->assertNode.condition);
+        return sysmelb_bytecode_assert(&function->bytecode, ast->sourcePosition);
     case ParseTreeLiteralIntegerNode:
         {
             sysmelb_Value_t value = {

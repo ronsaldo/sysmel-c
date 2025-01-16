@@ -40,6 +40,7 @@ typedef enum sysmelb_FunctionOpcode_e
     SysmelFunctionOpcodeMakeAssociation,
     SysmelFunctionOpcodeMakeDictionary,
     SysmelFunctionOpcodeMakeTuple,
+    SysmelFunctionOpcodeAssert,
 } sysmelb_FunctionOpcode_t;
 
 typedef struct sysmelb_FunctionInstruction_s sysmelb_FunctionInstruction_t;
@@ -97,6 +98,8 @@ void sysmelb_bytecode_makeAssociation(sysmelb_FunctionBytecode_t *bytecode);
 void sysmelb_bytecode_makeArray(sysmelb_FunctionBytecode_t *bytecode, uint16_t size);
 void sysmelb_bytecode_makeDictionary(sysmelb_FunctionBytecode_t *bytecode, uint16_t size);
 void sysmelb_bytecode_makeTuple(sysmelb_FunctionBytecode_t *bytecode, uint16_t size);
+
+void sysmelb_bytecode_assert(sysmelb_FunctionBytecode_t *bytecode, sysmelb_SourcePosition_t);
 
 sysmelb_Value_t sysmelb_callFunctionWithArguments(sysmelb_function_t *function, size_t argumentCount, sysmelb_Value_t *arguments);
 sysmelb_Value_t sysmelb_interpretBytecodeFunction(sysmelb_function_t *function, size_t argumentCount, sysmelb_Value_t *arguments);

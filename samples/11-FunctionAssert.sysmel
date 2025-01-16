@@ -1,0 +1,4 @@
+$testFunction($(Boolean)trigger :: Void) := {
+    assert: trigger.
+}.
+testFunction(true).

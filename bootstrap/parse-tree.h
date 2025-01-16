@@ -15,6 +15,7 @@ typedef int64_t sysmelb_IntegerLiteralType_t;
 typedef enum sysmelb_ParseTreeNodeKind_e {
     // Error
     ParseTreeErrorNode,
+    ParseTreeAssertNode,
     
     // Literals
     ParseTreeLiteralIntegerNode,
@@ -85,6 +86,10 @@ typedef struct sysmelb_ParseTreeErrorNode_s {
     const char *errorMessage;
     sysmelb_ParseTreeNode_t *innerNode;
 } sysmelb_ParseTreeErrorNode_t;
+
+typedef struct sysmelb_ParseTreeAssertNode_s {
+    sysmelb_ParseTreeNode_t *condition;
+} sysmelb_ParseTreeAssertNode_t;
 
 // Literals
 typedef struct sysmelb_ParseTreeLiteralIntegerNode_s {
@@ -252,6 +257,7 @@ typedef struct sysmelb_ParseTreeNode_s {
     {
         // Error
         sysmelb_ParseTreeErrorNode_t errorNode;
+        sysmelb_ParseTreeAssertNode_t assertNode;
         
         // Literals
         sysmelb_ParseTreeLiteralIntegerNode_t literalInteger;

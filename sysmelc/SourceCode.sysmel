@@ -6,6 +6,10 @@ public: [
         text: String.
     }.
 
-
+$makeSourceCodeForString($(String)text :: SourceCode)
+    := SourceCode#{
+        name: "Text String".
+        text: text.
+    }.
 ].
 }.

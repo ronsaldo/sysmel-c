@@ -27,6 +27,8 @@ typedef struct sysmelb_FunctionInstruction_s {
         uint16_t arraySize;
         uint16_t dictionarySize;
         uint16_t tupleSize;
+
+        sysmelb_SourcePosition_t assertPosition;
     };
 } sysmelb_FunctionInstruction_t;
 
@@ -188,6 +190,16 @@ void sysmelb_bytecode_makeTuple(sysmelb_FunctionBytecode_t *bytecode, uint16_t s
     sysmelb_bytecode_addInstruction(bytecode, inst);
 }
 
+void sysmelb_bytecode_assert(sysmelb_FunctionBytecode_t *bytecode, sysmelb_SourcePosition_t sourcePosition)
+{
+    sysmelb_FunctionInstruction_t inst ={
+        .opcode = SysmelFunctionOpcodeAssert,
+        .assertPosition = sourcePosition
+    };
+
+    sysmelb_bytecode_addInstruction(bytecode, inst);
+}
+
 void sysmelb_bytecode_pop(sysmelb_FunctionBytecode_t *bytecode)
 {
     sysmelb_FunctionInstruction_t inst ={
@@ -307,6 +319,9 @@ void sysmelb_disassemblyBytecodeFunction(sysmelb_function_t *function)
             break;
         case SysmelFunctionOpcodeMakeDictionary:
             printf("%04d MakeDictionary %d\n", pc, currentInstruction->dictionarySize);
+            break;
+        case SysmelFunctionOpcodeAssert:
+            printf("%04d Assert\n", pc);
             break;
         default: abort();
         }
@@ -510,8 +525,26 @@ sysmelb_Value_t sysmelb_interpretBytecodeFunction(sysmelb_function_t *function, 
             };
             sysmelb_bytecodeActivationContext_push(&context, dictionaryValue);
         }
-        ++pc;
-        break;
+            ++pc;
+            break;
+
+        case SysmelFunctionOpcodeAssert:
+        {
+            sysmelb_Value_t condition = sysmelb_bytecodeActivationContext_pop(&context);
+            assert(condition.kind == SysmelValueKindBoolean);
+            if(!condition.boolean)
+            {
+                sysmelb_errorPrintf(currentInstruction->assertPosition, "Assertion failure.");
+            }
+
+            sysmelb_Value_t voidValue = {
+                .kind = SysmelValueKindVoid,
+                .type = sysmelb_getBasicTypes()->voidType
+            };
+            sysmelb_bytecodeActivationContext_push(&context, voidValue);
+        }
+            ++pc;
+            break;
         default:
             abort();
         }

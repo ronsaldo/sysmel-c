@@ -553,7 +553,7 @@ static sysmelb_Value_t sysmelb_primitive_integerAsFloat64(size_t argumentCount, 
 static void sysmelb_createBasicIntegersPrimitives(void)
 {
     sysmelb_Type_t *integerTypes[] = {
-        sysmelb_BasicTypesData.integer,
+        sysmelb_BasicTypesData.integer, sysmelb_BasicTypesData.character,
 
         sysmelb_BasicTypesData.char8, sysmelb_BasicTypesData.char16, sysmelb_BasicTypesData.char32,
         sysmelb_BasicTypesData.int8, sysmelb_BasicTypesData.int16, sysmelb_BasicTypesData.int32, sysmelb_BasicTypesData.int64,
