@@ -404,6 +404,13 @@ sysmelb_Value_t sysmelb_analyzeAndEvaluateScript(sysmelb_Environment_t *environm
         }
 
     // Lexical block
+    case ParseTreeBlockClosure:
+    {
+        sysmelb_ParseTreeNode_t *functionNode = sysmelb_newParseTreeNode(ParseTreeFunction, ast->sourcePosition);
+        functionNode->function.functionDependentType = ast->blockClosure.functionType;
+        functionNode->function.bodyExpression = ast->blockClosure.body;
+        return sysmelb_analyzeAndCompileClosure(environment, functionNode);
+    }
     case ParseTreeLexicalBlock:
     {
         sysmelb_Environment_t *blockEnvironment = sysmelb_createLexicalEnvironment(environment);

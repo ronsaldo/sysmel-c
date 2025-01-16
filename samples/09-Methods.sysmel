@@ -4,10 +4,10 @@ Record: TestPair withFields: #{
 }.
 
 TestPair
-    withSelector: #increment addMethod: ($$($(TestPair)self :: TestPair) := {
+    withSelector: #increment addMethod: {|$(TestPair)self :: TestPair |
         self first: self first + 1i32.
         self
-    }).
+    }.
 
 printLine(TestPair(1i32. 2i32) increment).
 

@@ -178,6 +178,12 @@ void sysmelb_printValue(sysmelb_Value_t value)
         sysmelb_printValue(value.valueBoxReference->currentValue);
         printf("]");
         break;
+    case SysmelValueKindFunctionReference:
+        printf("function(");
+        if(value.functionReference->name)
+            printf("%.*s", value.functionReference->name->size, value.functionReference->name->string);
+        printf(")");
+        break;
     default: abort();
     }
 

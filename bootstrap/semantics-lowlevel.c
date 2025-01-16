@@ -219,6 +219,13 @@ static void sysmelb_analyzeAndCompileClosureBody(sysmelb_Environment_t *environm
     case ParseTreeSequence:
         {
             size_t elementCount = ast->sequence.elements.size;
+            if(elementCount == 0)
+            {
+                sysmelb_Value_t null = {
+                    .type = sysmelb_getBasicTypes()->null
+                };
+                sysmelb_bytecode_pushLiteral(&function->bytecode, &null);
+            }
             for(size_t i = 0; i < elementCount; ++i)
             {
                 sysmelb_analyzeAndCompileClosureBody(environment, function, ast->sequence.elements.elements[i]);

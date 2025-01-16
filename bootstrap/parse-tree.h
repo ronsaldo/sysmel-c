@@ -211,14 +211,12 @@ typedef struct sysmelb_ParseTreeBindableName_s {
     bool isVariadic;
     bool isMutable;
     bool hasPostTypeExpression;
-    bool isPublic;
 } sysmelb_ParseTreeBindableName_t;
 
 typedef struct sysmelb_ParseTreeFunction_s {
     sysmelb_ParseTreeNode_t *functionDependentType;
     sysmelb_ParseTreeNode_t *bodyExpression;
     sysmelb_symbol_t *name;
-    bool isPublic;
 } sysmelb_ParseTreeFunction_t;
 
 // Assignment

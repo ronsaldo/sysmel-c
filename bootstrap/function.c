@@ -245,8 +245,78 @@ sysmelb_Value_t sysmelb_callFunctionWithArguments(sysmelb_function_t *function, 
     }
 }
 
+void sysmelb_disassemblyBytecodeFunction(sysmelb_function_t *function)
+{
+    uint32_t instructionCount = function->bytecode.instructionSize;
+    sysmelb_FunctionInstruction_t *instructions = function->bytecode.instructions;
+    for(uint32_t pc = 0; pc < instructionCount; ++pc)
+    {
+        sysmelb_FunctionInstruction_t *currentInstruction = instructions + pc;
+        switch(currentInstruction->opcode)
+        {
+        case SysmelFunctionOpcodeNop:
+            printf("%04d Nop\n", pc);
+            break;
+        case SysmelFunctionOpcodePushLiteral:
+            printf("%04d PushLiteral\n", pc);
+            break;
+        case SysmelFunctionOpcodePushArgument:
+            printf("%04d PushArgument %d\n", pc, currentInstruction->argumentIndex);
+            break;
+        case SysmelFunctionOpcodePushCapture:
+            printf("%04d PushCapture\n", pc);
+            break;
+        case SysmelFunctionOpcodePushTemporary:
+            printf("%04d PushTemporary %d\n", pc, currentInstruction->temporaryIndex);
+            break;
+        case SysmelFunctionOpcodeStoreTemporary:
+            printf("%04d StoreTemporary %d\n", pc, currentInstruction->temporaryIndex);
+            break;
+        case SysmelFunctionOpcodePopAndStoreTemporary:
+            printf("%04d PopAndStoreTemporary %d\n", pc, currentInstruction->temporaryIndex);
+            break;
+        case SysmelFunctionOpcodePop:
+            printf("%04d Pop\n", pc);
+            break;
+        case SysmelFunctionOpcodeReturn:
+            printf("%04d Return\n", pc);
+            break;
+        case SysmelFunctionOpcodeApplyFunction:
+            printf("%04d ApplyFunction %d\n", pc, currentInstruction->applicationArgumentCount);
+            break;
+        case SysmelFunctionOpcodeSendMessage:
+            printf("%04d SendMessage %.*s %d\n", pc, currentInstruction->messageSendSelector->size, currentInstruction->messageSendSelector->string , currentInstruction->messageSendArguments);
+            break;
+        case SysmelFunctionOpcodeJump:
+            printf("%04d Jump %03d:%03d\n", pc, currentInstruction->jumpOffset,pc + currentInstruction->jumpOffset);
+            break;
+        case SysmelFunctionOpcodeJumpIfFalse:
+            printf("%04d JumpIfFalse %03d:%03d\n", pc, currentInstruction->jumpOffset,pc + currentInstruction->jumpOffset);
+            break;
+        case SysmelFunctionOpcodeJumpIfTrue:
+            printf("%04d JumpIfTrue %03d:%03d\n", pc, currentInstruction->jumpOffset,pc + currentInstruction->jumpOffset);
+            break;
+        case SysmelFunctionOpcodeMakeArray:
+            printf("%04d MakeArray %d\n", pc, currentInstruction->arraySize);
+            break;
+        case SysmelFunctionOpcodeMakeTuple:
+            printf("%04d MakeTuple %d\n", pc, currentInstruction->tupleSize);
+            break;
+        case SysmelFunctionOpcodeMakeAssociation:
+            printf("%04d MakeAssociation\n", pc);
+            break;
+        case SysmelFunctionOpcodeMakeDictionary:
+            printf("%04d MakeDictionary %d\n", pc, currentInstruction->dictionarySize);
+            break;
+        default: abort();
+        }
+    }
+}
+
 sysmelb_Value_t sysmelb_interpretBytecodeFunction(sysmelb_function_t *function, size_t argumentCount, sysmelb_Value_t *arguments)
 {
+    sysmelb_disassemblyBytecodeFunction(function);
+
     sysmelb_Value_t result = {
         .kind = SysmelValueKindNull,
         .type = sysmelb_getBasicTypes()->null,

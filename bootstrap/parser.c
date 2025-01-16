@@ -853,7 +853,7 @@ sysmelb_ParseTreeNode_t *parser_parseFunctionalType(sysmelb_parserState_t *state
     if (parserState_peekKind(state, 0) == SysmelTokenColonColon)
     {
         parserState_advance(state);
-        resultTypeExpression = parser_parseExpression(state);
+        resultTypeExpression = parser_parseUnaryPrefixExpression(state);
     }
 
     sysmelb_ParseTreeNode_t *functionalType = sysmelb_newParseTreeNode(ParseTreeFunctionalDependentType, parserState_sourcePositionFrom(state, startPosition));

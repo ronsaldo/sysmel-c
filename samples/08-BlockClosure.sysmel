@@ -1,0 +1,3 @@
+$block := {|$(Integer)x :: Integer | x + 1}.
+printLine(block).
+printLine(block(42)).
