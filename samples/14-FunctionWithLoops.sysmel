@@ -1,0 +1,30 @@
+$whileCountTo($(Integer)n :: Void) := {
+    $!x := 0.
+    while: (x < n) do: {
+        printLine("While: " . x)
+    } continueWith: (x := x + 1).
+}.
+
+whileCountTo(10).
+
+
+$doContinueWhileCountTo($(Integer)n :: Void) := {
+    $!x := 0.
+
+    do: {
+        printLine("Do continue while: " . x)
+    } continueWith: (x := x + 1) while: (x < n)
+}.
+
+doContinueWhileCountTo(10).
+
+$doWhileCountTo($(Integer)n :: Void) := {
+    $!x := 0.
+
+    do: {
+        printLine("Do while: " . x).
+        x := x + 1.
+    } while: (x < n)
+}.
+
+doWhileCountTo(10)

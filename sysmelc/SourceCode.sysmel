@@ -6,6 +6,16 @@ public: [
         text: String.
     }.
 
+    Record: SourcePosition withFields: #{
+        sourceCode: SourceCode.
+        startIndex: Int32.
+        endIndex: Int32.
+        startLine: Int32.
+        endLine: Int32.
+        startColumn: Int32.
+        endColumn: Int32.
+    }.
+
 $makeSourceCodeForString($(String)text :: SourceCode)
     := SourceCode#{
         name: "Text String".

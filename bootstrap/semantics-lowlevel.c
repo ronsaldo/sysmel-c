@@ -273,6 +273,55 @@ static void sysmelb_analyzeAndCompileClosureBody(sysmelb_Environment_t *environm
         return sysmelb_analyzeAndCompileClosureBody(blockEnvironment, function, ast->lexicalBlock.expression);
     }
 
+    // Assignment.
+    case ParseTreeAssignment:
+        sysmelb_ParseTreeNode_t *store = ast->assignment.store;
+        sysmelb_ParseTreeNode_t *value = ast->assignment.value;
+        if(store->kind == ParseTreeBindableName)
+        {   
+            bool isAnonymous = !store->bindableName.nameExpression;
+            sysmelb_Value_t nameValue = {};
+            
+            if(!isAnonymous)
+            {
+                nameValue = sysmelb_analyzeAndEvaluateScript(environment, store->bindableName.nameExpression);
+                if(nameValue.kind != SysmelValueKindSymbolReference)
+                    sysmelb_errorPrintf(store->bindableName.nameExpression->sourcePosition, "Expected a name");
+            }
+
+            /*if(store->bindableName.hasPostTypeExpression && store->bindableName.typeExpression->kind == ParseTreeFunctionalDependentType)
+            {
+                // TODO: Support closure captures.
+                abort();
+                sysmelb_ParseTreeNode_t *functionNode = sysmelb_newParseTreeNode(ParseTreeFunction, ast->sourcePosition);
+                functionNode->function.functionDependentType = store->bindableName.typeExpression;
+                functionNode->function.bodyExpression = value;
+                if(!isAnonymous)
+                    functionNode->function.name = nameValue.symbolReference;
+                return sysmelb_analyzeAndCompileClosure(environment, functionNode);
+            }*/
+
+            // Store the initial value.
+            sysmelb_analyzeAndCompileClosureBody(environment, function, value);
+            uint16_t temporaryIndex = sysmelb_bytecode_allocateTemporary(&function->bytecode);
+            sysmelb_bytecode_storeTemporary(&function->bytecode, temporaryIndex);
+            sysmelb_Environment_setLocalSymbolBinding(environment, nameValue.symbolReference, sysmelb_createSymbolTemporaryBinding(temporaryIndex, sysmelb_getBasicTypes()->gradual));
+            return;
+        }
+        if(store->kind == ParseTreeIdentifierReference)
+        {
+            sysmelb_SymbolBinding_t *binding = sysmelb_environmentLookRecursively(environment, store->identifierReference.identifier);
+            if(binding->kind == SysmelSymbolTemporaryBinding)
+            {
+                sysmelb_analyzeAndCompileClosureBody(environment, function, value);
+                sysmelb_bytecode_storeTemporary(&function->bytecode, binding->temporaryIndex);
+                return;
+            }
+        }
+
+
+        abort();
+
     // Control flow
     case ParseTreeIfSelection:
     {
@@ -288,6 +337,67 @@ static void sysmelb_analyzeAndCompileClosureBody(sysmelb_Environment_t *environm
             sysmelb_analyzeAndCompileClosureBody(environment, function, ast->ifSelection.falseExpression);        
         sysmelb_bytecode_patchJumpToHere(&function->bytecode, mergeJump);
         return;
+    }
+    case ParseTreeWhileLoop:
+    {
+        // Header
+        uint16_t loopHeader = sysmelb_bytecode_label(&function->bytecode);
+        sysmelb_analyzeAndCompileClosureBody(environment, function, ast->whileLoop.condition);
+        uint16_t conditionFalseJump = sysmelb_bytecode_jumpIfFalse(&function->bytecode);
+    
+        // Body
+        if(ast->whileLoop.body)
+        {
+            sysmelb_analyzeAndCompileClosureBody(environment, function, ast->whileLoop.body);
+            sysmelb_bytecode_pop(&function->bytecode);
+        }
+        
+        // Continue with
+        if(ast->whileLoop.continueExpression)
+        {
+            sysmelb_analyzeAndCompileClosureBody(environment, function, ast->whileLoop.continueExpression);
+            sysmelb_bytecode_pop(&function->bytecode);
+        }
+        
+        uint16_t backJump = sysmelb_bytecode_jump(&function->bytecode);
+        sysmelb_bytecode_patchJumpToLabel(&function->bytecode, backJump, loopHeader);
+        sysmelb_bytecode_patchJumpToHere(&function->bytecode, conditionFalseJump);
+        
+        sysmelb_Value_t voidValue = {
+            .kind = SysmelValueKindVoid,
+            .type = sysmelb_getBasicTypes()->voidType
+        };
+        return sysmelb_bytecode_pushLiteral(&function->bytecode, &voidValue);
+    }
+
+case ParseTreeDoWhileLoop:
+    {
+        // Header
+        uint16_t loopHeader = sysmelb_bytecode_label(&function->bytecode);
+    
+        // Body
+        if(ast->doWhileLoop.body)
+        {
+            sysmelb_analyzeAndCompileClosureBody(environment, function, ast->doWhileLoop.body);
+            sysmelb_bytecode_pop(&function->bytecode);
+        }
+        
+        // Continue with
+        if(ast->doWhileLoop.continueExpression)
+        {
+            sysmelb_analyzeAndCompileClosureBody(environment, function, ast->doWhileLoop.continueExpression);
+            sysmelb_bytecode_pop(&function->bytecode);
+        }
+
+        sysmelb_analyzeAndCompileClosureBody(environment, function, ast->doWhileLoop.condition);
+        uint16_t conditionBackJump = sysmelb_bytecode_jumpIfTrue(&function->bytecode);
+        sysmelb_bytecode_patchJumpToLabel(&function->bytecode, conditionBackJump, loopHeader);
+        
+        sysmelb_Value_t voidValue = {
+            .kind = SysmelValueKindVoid,
+            .type = sysmelb_getBasicTypes()->voidType
+        };
+        return sysmelb_bytecode_pushLiteral(&function->bytecode, &voidValue);
     }
 
     default:

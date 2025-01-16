@@ -84,12 +84,18 @@ void sysmelb_bytecode_pushCapture(sysmelb_FunctionBytecode_t *bytecode, uint16_t
 void sysmelb_bytecode_pushTemporary(sysmelb_FunctionBytecode_t *bytecode, uint16_t captureIndex);
 void sysmelb_bytecode_pop(sysmelb_FunctionBytecode_t *bytecode);
 void sysmelb_bytecode_return(sysmelb_FunctionBytecode_t *bytecode);
+
 uint16_t sysmelb_bytecode_allocateTemporary(sysmelb_FunctionBytecode_t *bytecode);
+void sysmelb_bytecode_storeTemporary(sysmelb_FunctionBytecode_t *bytecode, uint16_t tempIndex);
+void sysmelb_bytecode_popAndStoreTemporary(sysmelb_FunctionBytecode_t *bytecode, uint16_t tempIndex);
 
 uint16_t sysmelb_bytecode_jump(sysmelb_FunctionBytecode_t *bytecode);
 uint16_t sysmelb_bytecode_jumpIfFalse(sysmelb_FunctionBytecode_t *bytecode);
 uint16_t sysmelb_bytecode_jumpIfTrue(sysmelb_FunctionBytecode_t *bytecode);
 void sysmelb_bytecode_patchJumpToHere(sysmelb_FunctionBytecode_t *bytecode, uint16_t jumpInstructionIndex);
+
+uint16_t sysmelb_bytecode_label(sysmelb_FunctionBytecode_t *bytecode);
+void sysmelb_bytecode_patchJumpToLabel(sysmelb_FunctionBytecode_t *bytecode, uint16_t jumpInstructionIndex, uint16_t labelTarget);
 
 void sysmelb_bytecode_applyFunction(sysmelb_FunctionBytecode_t *bytecode, uint16_t argumentCount);
 void sysmelb_bytecode_sendMessage(sysmelb_FunctionBytecode_t *bytecode, sysmelb_symbol_t *selector, uint16_t argumentCount);

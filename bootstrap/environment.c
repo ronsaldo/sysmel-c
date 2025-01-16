@@ -34,6 +34,15 @@ sysmelb_SymbolBinding_t *sysmelb_createSymbolArgumentBinding(uint16_t argumentIn
     return binding;
 }
 
+sysmelb_SymbolBinding_t *sysmelb_createSymbolTemporaryBinding(uint16_t temporaryIndex, sysmelb_Type_t *type)
+{
+    sysmelb_SymbolBinding_t *binding = sysmelb_allocate(sizeof(sysmelb_SymbolBinding_t));
+    binding->kind = SysmelSymbolTemporaryBinding;
+    binding->temporaryIndex = temporaryIndex;
+    binding->temporaryType = type;
+    return binding;
+}
+
 sysmelb_SymbolBinding_t *sysmelb_createSymbolValueBinding(sysmelb_Value_t value)
 {
     sysmelb_SymbolBinding_t *binding = sysmelb_allocate(sizeof(sysmelb_SymbolBinding_t));
@@ -163,6 +172,35 @@ static sysmelb_Value_t sysmelb_WhileDoPrimitiveMacro(sysmelb_MacroContext_t *mac
     sysmelb_ParseTreeNode_t *node = sysmelb_newParseTreeNode(ParseTreeWhileLoop, macroContext->sourcePosition);
     node->whileLoop.condition = arguments[0].parseTreeReference;
     node->whileLoop.body = arguments[1].parseTreeReference;
+
+    sysmelb_Value_t result = {
+        .kind = SysmelValueKindParseTreeReference,
+        .parseTreeReference = node
+    };
+    return result;
+}
+
+static sysmelb_Value_t sysmelb_DoContinueWithWhileWithPrimitiveMacro(sysmelb_MacroContext_t *macroContext, size_t argumentCount, sysmelb_Value_t *arguments)
+{
+    assert(argumentCount == 3);
+    sysmelb_ParseTreeNode_t *node = sysmelb_newParseTreeNode(ParseTreeDoWhileLoop, macroContext->sourcePosition);
+    node->doWhileLoop.body = arguments[0].parseTreeReference;
+    node->doWhileLoop.continueExpression = arguments[1].parseTreeReference;
+    node->doWhileLoop.condition = arguments[2].parseTreeReference;
+
+    sysmelb_Value_t result = {
+        .kind = SysmelValueKindParseTreeReference,
+        .parseTreeReference = node
+    };
+    return result;
+}
+
+static sysmelb_Value_t sysmelb_DoWhilePrimitiveMacro(sysmelb_MacroContext_t *macroContext, size_t argumentCount, sysmelb_Value_t *arguments)
+{
+    assert(argumentCount == 2);
+    sysmelb_ParseTreeNode_t *node = sysmelb_newParseTreeNode(ParseTreeDoWhileLoop, macroContext->sourcePosition);
+    node->doWhileLoop.body = arguments[0].parseTreeReference;
+    node->doWhileLoop.condition = arguments[1].parseTreeReference;
 
     sysmelb_Value_t result = {
         .kind = SysmelValueKindParseTreeReference,
@@ -506,6 +544,24 @@ sysmelb_Environment_t *sysmelb_getOrCreateIntrinsicsEnvironment()
         function->kind = SysmelFunctionKindPrimitiveMacro;
         function->name = sysmelb_internSymbolC("while:do:");
         function->primitiveMacroFunction = sysmelb_WhileDoPrimitiveMacro;
+
+        sysmelb_Environment_setLocalSymbolBinding(&sysmelb_IntrinsicsEnvironment, function->name, sysmelb_createSymbolFunctionBinding(function));
+    }
+    // DoWhile control flow macro
+    {
+        sysmelb_function_t *function = sysmelb_allocate(sizeof(sysmelb_function_t));
+        function->kind = SysmelFunctionKindPrimitiveMacro;
+        function->name = sysmelb_internSymbolC("do:continueWith:while:");
+        function->primitiveMacroFunction = sysmelb_DoContinueWithWhileWithPrimitiveMacro;
+
+        sysmelb_Environment_setLocalSymbolBinding(&sysmelb_IntrinsicsEnvironment, function->name, sysmelb_createSymbolFunctionBinding(function));
+    }
+
+    {
+        sysmelb_function_t *function = sysmelb_allocate(sizeof(sysmelb_function_t));
+        function->kind = SysmelFunctionKindPrimitiveMacro;
+        function->name = sysmelb_internSymbolC("do:while:");
+        function->primitiveMacroFunction = sysmelb_DoWhilePrimitiveMacro;
 
         sysmelb_Environment_setLocalSymbolBinding(&sysmelb_IntrinsicsEnvironment, function->name, sysmelb_createSymbolFunctionBinding(function));
     }

@@ -1,0 +1,15 @@
+$!x := 0.
+while: (x < 10) do: {
+    printLine("While: " . x)
+} continueWith: (x := x + 1).
+
+x := 0.
+do: {
+    printLine("Do continue while: " . x)
+} continueWith: (x := x + 1) while: (x < 10).
+
+x := 0.
+do: {
+    printLine("Do while: " . x).
+    x := x + 1.
+} while: (x < 10).

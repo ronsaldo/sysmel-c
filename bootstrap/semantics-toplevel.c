@@ -582,7 +582,27 @@ sysmelb_Value_t sysmelb_analyzeAndEvaluateScript(sysmelb_Environment_t *environm
         }
 
         sysmelb_Value_t voidValue = {
-            .kind = SysmelValueKindVoid
+            .kind = SysmelValueKindVoid,
+            .type = sysmelb_getBasicTypes()->voidType
+        };
+        return voidValue;
+    }
+    case ParseTreeDoWhileLoop:
+    {
+        sysmelb_Value_t conditionValue = {
+            .kind = SysmelValueKindBoolean,
+            .boolean = false,
+        };
+        do {
+            sysmelb_analyzeAndEvaluateScript(environment, ast->doWhileLoop.body);
+            if(ast->doWhileLoop.continueExpression)
+                sysmelb_analyzeAndEvaluateScript(environment, ast->doWhileLoop.continueExpression);
+            conditionValue = sysmelb_analyzeAndEvaluateScript(environment, ast->doWhileLoop.condition);
+        } while (conditionValue.boolean);
+
+        sysmelb_Value_t voidValue = {
+            .kind = SysmelValueKindVoid,
+            .type = sysmelb_getBasicTypes()->voidType
         };
         return voidValue;
     }

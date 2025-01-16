@@ -92,11 +92,29 @@ void sysmelb_bytecode_pushTemporary(sysmelb_FunctionBytecode_t *bytecode, uint16
     sysmelb_bytecode_addInstruction(bytecode, inst);
 }
 
+void sysmelb_bytecode_storeTemporary(sysmelb_FunctionBytecode_t *bytecode, uint16_t tempIndex)
+{
+    sysmelb_FunctionInstruction_t inst = {
+        .opcode = SysmelFunctionOpcodeStoreTemporary,
+        .temporaryIndex = tempIndex
+    };
+    sysmelb_bytecode_addInstruction(bytecode, inst);
+}
+void sysmelb_bytecode_popAndStoreTemporary(sysmelb_FunctionBytecode_t *bytecode, uint16_t tempIndex)
+{
+    sysmelb_FunctionInstruction_t inst = {
+        .opcode = SysmelFunctionOpcodePopAndStoreTemporary,
+        .temporaryIndex = tempIndex
+    };
+    sysmelb_bytecode_addInstruction(bytecode, inst);
+}
+
 uint16_t sysmelb_bytecode_allocateTemporary(sysmelb_FunctionBytecode_t *bytecode)
 {
     assert(bytecode->temporaryZoneSize < SYSMEL_BYTECODE_MAX_TEMPORARY_COUNT);
     return bytecode->temporaryZoneSize++;
 }
+
 
 uint16_t sysmelb_bytecode_jump(sysmelb_FunctionBytecode_t *bytecode)
 {
@@ -128,6 +146,17 @@ uint16_t sysmelb_bytecode_jumpIfTrue(sysmelb_FunctionBytecode_t *bytecode)
 void sysmelb_bytecode_patchJumpToHere(sysmelb_FunctionBytecode_t *bytecode, uint16_t jumpInstructionIndex)
 {
     int16_t offset = bytecode->instructionSize - jumpInstructionIndex;
+    bytecode->instructions[jumpInstructionIndex].jumpOffset = offset;
+}
+
+uint16_t sysmelb_bytecode_label(sysmelb_FunctionBytecode_t *bytecode)
+{
+    return bytecode->instructionSize;
+}
+
+void sysmelb_bytecode_patchJumpToLabel(sysmelb_FunctionBytecode_t *bytecode, uint16_t jumpInstructionIndex, uint16_t labelTarget)
+{
+    int16_t offset = labelTarget - jumpInstructionIndex;
     bytecode->instructions[jumpInstructionIndex].jumpOffset = offset;
 }
 
@@ -368,10 +397,14 @@ sysmelb_Value_t sysmelb_interpretBytecodeFunction(sysmelb_function_t *function, 
             break;
         case SysmelFunctionOpcodeStoreTemporary:
             assert(currentInstruction->temporaryIndex < SYSMEL_BYTECODE_MAX_TEMPORARY_COUNT);
-            abort();
+            context.temporaryZone[currentInstruction->temporaryIndex] = sysmelb_bytecodeActivationContext_top(&context);
+            ++pc;
+            break;
         case SysmelFunctionOpcodePopAndStoreTemporary:
             assert(currentInstruction->temporaryIndex < SYSMEL_BYTECODE_MAX_TEMPORARY_COUNT);
-            abort();
+            context.temporaryZone[currentInstruction->temporaryIndex] = sysmelb_bytecodeActivationContext_pop(&context);
+            ++pc;
+            break;
         case SysmelFunctionOpcodePop:
             sysmelb_bytecodeActivationContext_pop(&context);
             ++pc;

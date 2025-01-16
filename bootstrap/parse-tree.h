@@ -68,6 +68,7 @@ typedef enum sysmelb_ParseTreeNodeKind_e {
     // Control flow. Exposed via macros
     ParseTreeIfSelection,
     ParseTreeWhileLoop,
+    ParseTreeDoWhileLoop,
     
     /// Namespaces
     ParseTreeNamespaceDefinition,
@@ -243,6 +244,12 @@ typedef struct sysmelb_ParseTreeWhileLoop_s {
     sysmelb_ParseTreeNode_t *continueExpression;
 } sysmelb_ParseTreeWhileLoop_t;
 
+typedef struct sysmelb_ParseTreeDoWhileLoop_s {
+    sysmelb_ParseTreeNode_t *body;
+    sysmelb_ParseTreeNode_t *continueExpression;
+    sysmelb_ParseTreeNode_t *condition;
+} sysmelb_ParseTreeDoWhileLoop_t;
+
 typedef struct sysmelb_ParseTreeNamespaceDefinition_s {
     sysmelb_Namespace_t *namespace;
     sysmelb_ParseTreeNode_t *definition;
@@ -308,6 +315,7 @@ typedef struct sysmelb_ParseTreeNode_s {
         // Control flow
         sysmelb_ParseTreeIfSelection_t ifSelection;
         sysmelb_ParseTreeWhileLoop_t whileLoop;
+        sysmelb_ParseTreeDoWhileLoop_t doWhileLoop;
 
         // Namespace
         sysmelb_ParseTreeNamespaceDefinition_t namespaceDefinition;

@@ -1,6 +1,6 @@
 namespace: SysmelC definition: {
 public: [
-Enum: TokenKinds withBaseType: UInt8 values: #{
+Enum: TokenKind withBaseType: UInt8 values: #{
     NullToken: 0u8.
     EndOfSource:.
     Error:.
@@ -47,6 +47,11 @@ Enum: TokenKinds withBaseType: UInt8 values: #{
     LiteralArrayStart:.    
 }.
 
+Record: ScannerToken withFields: #{
+    kind: TokenKind.
+    sourcePosition: SourcePosition.
+}.
+
 Record: ScannerState withFields: #{
     sourceCode: SourceCode.
     text: String.
@@ -67,9 +72,6 @@ $makeScannerStateForSourceCode($(SourceCode)sourceCode :: ScannerState)
         column: 1.
         isPreviousCR: false
     }.
-
-$makeScannerStateForString($(String)string :: ScannerState) 
-    := makeScannerStateForSourceCode(makeSourceCodeForString(string)).
 ].
 
 ScannerState
@@ -86,6 +88,7 @@ ScannerState
         self peekAt: 0u32
     };
     withSelector: #advance addMethod: {|$(ScannerState)self :: Void |
+        assert: self atEnd not.
         $c := (self text at: self position) asChar32.
         self position: self position + 1i32.
 
@@ -93,8 +96,20 @@ ScannerState
         void
     }.
 
-$state := makeScannerStateForString("Testing").
-printLine(state).
+public: [
+    $scanSourceCode($(SourceCode)sourceCode :: OrderedCollection) := {
+        $list := OrderedCollection().
+        $state := makeScannerStateForSourceCode(sourceCode).
 
+        list
+    }
+    ##sysmelb_TokenDynarray_t sysmelb_scanSourceCode(sysmelb_SourceCode_t *sourceCode);
+]
+
+$sourceCode := makeSourceCodeForString("Testing").
+printLine(sourceCode).
+$scanResult := scanSourceCode(sourceCode).
+printLine(scanResult).
 }.
+
 
