@@ -209,6 +209,21 @@ static sysmelb_Value_t sysmelb_DoWhilePrimitiveMacro(sysmelb_MacroContext_t *mac
     return result;
 }
 
+static sysmelb_Value_t sysmelb_ReturnPrimitiveMacro(sysmelb_MacroContext_t *macroContext, size_t argumentCount, sysmelb_Value_t *arguments)
+{
+    assert(argumentCount == 1);
+    assert(arguments[0].kind == SysmelValueKindParseTreeReference);
+    
+    sysmelb_ParseTreeNode_t *node = sysmelb_newParseTreeNode(ParseTreeReturnValue, macroContext->sourcePosition);
+    node->returnExpression.valueExpression = arguments[0].parseTreeReference;
+
+    sysmelb_Value_t result = {
+        .kind = SysmelValueKindParseTreeReference,
+        .parseTreeReference = node
+    };
+    return result;
+}
+
 static sysmelb_Value_t sysmelb_printLine(size_t argumentCount, sysmelb_Value_t *arguments)
 {
     for(size_t i = 0; i < argumentCount; ++i)
@@ -562,6 +577,15 @@ sysmelb_Environment_t *sysmelb_getOrCreateIntrinsicsEnvironment()
         function->kind = SysmelFunctionKindPrimitiveMacro;
         function->name = sysmelb_internSymbolC("do:while:");
         function->primitiveMacroFunction = sysmelb_DoWhilePrimitiveMacro;
+
+        sysmelb_Environment_setLocalSymbolBinding(&sysmelb_IntrinsicsEnvironment, function->name, sysmelb_createSymbolFunctionBinding(function));
+    }
+
+    {
+        sysmelb_function_t *function = sysmelb_allocate(sizeof(sysmelb_function_t));
+        function->kind = SysmelFunctionKindPrimitiveMacro;
+        function->name = sysmelb_internSymbolC("return:");
+        function->primitiveMacroFunction = sysmelb_ReturnPrimitiveMacro;
 
         sysmelb_Environment_setLocalSymbolBinding(&sysmelb_IntrinsicsEnvironment, function->name, sysmelb_createSymbolFunctionBinding(function));
     }

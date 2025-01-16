@@ -257,7 +257,11 @@ void sysmelb_dumpParseTree(sysmelb_ParseTreeNode_t *node)
         sysmelb_dumpParseTree(node->whileLoop.continueExpression);
         printf(")");
         break;
-
+    case ParseTreeReturnValue:
+        printf("ParseTreeReturnValue(");
+        sysmelb_dumpParseTree(node->returnExpression.valueExpression);
+        printf(")");
+        break;
     default:
         abort();
     }
@@ -433,6 +437,10 @@ int sysmelb_visitForDisplayingAndCountingErrors(sysmelb_ParseTreeNode_t *node)
         errorCount += sysmelb_visitForDisplayingAndCountingErrors(node->whileLoop.body);
         errorCount += sysmelb_visitForDisplayingAndCountingErrors(node->whileLoop.continueExpression);
         return errorCount;
+    }
+    case ParseTreeReturnValue:
+    {
+        return sysmelb_visitForDisplayingAndCountingErrors(node->returnExpression.valueExpression);
     }
     
     /// Namespaces

@@ -355,7 +355,7 @@ static void sysmelb_analyzeAndCompileClosureBody(sysmelb_Environment_t *environm
             sysmelb_SymbolBinding_t *binding = sysmelb_environmentLookRecursively(environment, store->identifierReference.identifier);
             if(!binding)
             {
-                sysmelb_errorPrintf(store->sourcePosition, "Failed to find binding for %.*s", store->identifierReference.identifier->size, store->identifierReference.identifier->size);
+                sysmelb_errorPrintf(store->sourcePosition, "Failed to find binding for %.*s", store->identifierReference.identifier->size, store->identifierReference.identifier->string);
                 abort();
             }
             if(binding->kind == SysmelSymbolTemporaryBinding)
@@ -372,16 +372,25 @@ static void sysmelb_analyzeAndCompileClosureBody(sysmelb_Environment_t *environm
     // Control flow
     case ParseTreeIfSelection:
     {
+        sysmelb_Value_t voidValue = {
+            .kind = SysmelValueKindVoid,
+            .type = sysmelb_getBasicTypes()->voidType
+        };
         sysmelb_analyzeAndCompileClosureBody(environment, function, ast->ifSelection.condition);
         uint16_t ifFalseJump = sysmelb_bytecode_jumpIfFalse(&function->bytecode);
 
         if(ast->ifSelection.trueExpression)
             sysmelb_analyzeAndCompileClosureBody(environment, function, ast->ifSelection.trueExpression);
+        else
+            sysmelb_bytecode_pushLiteral(&function->bytecode, &voidValue);
         uint16_t mergeJump = sysmelb_bytecode_jump(&function->bytecode);
 
         sysmelb_bytecode_patchJumpToHere(&function->bytecode, ifFalseJump);
         if(ast->ifSelection.falseExpression)
             sysmelb_analyzeAndCompileClosureBody(environment, function, ast->ifSelection.falseExpression);        
+        else
+            sysmelb_bytecode_pushLiteral(&function->bytecode, &voidValue);
+
         sysmelb_bytecode_patchJumpToHere(&function->bytecode, mergeJump);
         return;
     }
@@ -446,7 +455,11 @@ case ParseTreeDoWhileLoop:
         };
         return sysmelb_bytecode_pushLiteral(&function->bytecode, &voidValue);
     }
-
+case ParseTreeReturnValue:
+    {
+        sysmelb_analyzeAndCompileClosureBody(environment, function, ast->returnExpression.valueExpression);
+        return sysmelb_bytecode_return(&function->bytecode);
+    }
     default:
         abort();
     }

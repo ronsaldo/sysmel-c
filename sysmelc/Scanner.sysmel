@@ -91,32 +91,77 @@ ScannerState
     withSelector: #advance addMethod: {|$(ScannerState)self :: Void |
         assert: self atEnd not.
         $c := (self text at: self position) asInt32.
-        #*
-        if: c = '\t'i32 then: {
-
-        }.
-        if: c = '\n'i32 then: {
-
-        }.
         if: c = '\r'i32 then: {
-
+            self line: self line + 1u32.
+            self column: 1u32.
+            self isPreviousCR: true
+        } else: {
+            if: c = '\n'i32 then: {
+                if: self isPreviousCR not then: {
+                    self line: self line + 1u32.
+                    self column: 1u32
+                }.
+                self isPreviousCR: false
+            } else: {
+                if: c = '\t'i32 then: {
+                    self column: (self column + 4)%4 * 4 + 1.
+                    self isPreviousCR: false
+                }
+                else: {
+                    self column: self column + 1.
+                    self isPreviousCR: false
+                }
+            }
         }.
-        *#
 
         self position: self position + 1i32.
         void
+    };
+    withSelector: #advance: addMethod: {|$(ScannerState)self $(UInt32) count :: Void |
+        $!i := 0u32.
+        while: (i < count) do: {
+            self advance
+        } continueWith: (i := i + 1u32)
     }.
 
-$skipWhite($(ScannerState)state :: Void) := {
-    while: (state atEnd not && (state peek <= ' 'u32)) do: {
-        state advance
-    }.
-    void
+$skipWhite($(ScannerState)state :: ScannedToken) := {
+    $!hasSeenComments := false.
+    do: {
+        ## Skip whitespaces.
+        while: (state atEnd not && (state peek <= ' 'u32)) do: {
+            state advance
+        }.
+
+        if: (state peek = '#'u32) then: {
+            ## Singleline
+            if:((state peekAt: 1u32) = '#'u32) then: {
+                state advance: 2u32.
+                while: (state atEnd not && state peek ~= '\n' && state peek ~= '\r' ) do: {
+                    state advance
+                }.
+
+                hasSeenComments := true.
+            }
+            else: {
+                ## Multiline
+                if: ((state peekAt: 1) = '*'u32) then: {
+
+                }
+            }
+            
+        }
+
+    } while: (hasSeenComments).
+
+    ScannedToken(TokenKind NullToken)
 }.
 
 $scanSingleToken($(ScannerState)state :: ScannerToken) := {
-    skipWhite(state).
-
+    $whiteErrorToken := skipWhite(state).
+    if: whiteErrorToken kind ~= TokenKind NullToken then: {
+        return: whiteErrorToken
+    }.
+    printLine("TODO: Beyond white").
     ScannedToken(TokenKind EndOfSource)
 }.
 
