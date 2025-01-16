@@ -56,7 +56,6 @@ Record: ScannerState withFields: #{
     column: UInt32.
     isPreviousCR: Boolean
 }.
-].
 
 $makeScannerStateForSourceCode($(SourceCode)sourceCode :: ScannerState) 
     := ScannerState#{
@@ -68,6 +67,10 @@ $makeScannerStateForSourceCode($(SourceCode)sourceCode :: ScannerState)
         column: 1.
         isPreviousCR: false
     }.
+
+$makeScannerStateForString($(String)string :: ScannerState) 
+    := makeScannerStateForSourceCode(makeSourceCodeForString(string)).
+].
 
 ScannerState
     withSelector: #atEnd addMethod: {|$(ScannerState)self :: Boolean |
@@ -85,6 +88,8 @@ ScannerState
     withSelector: #advance addMethod: {|$(ScannerState)self :: Int32 |
         self position: self position + 1i32.
     }.
+
+$state = makeScannerStateForString("Testing").
 
 
 }.
