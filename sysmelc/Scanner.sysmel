@@ -90,14 +90,27 @@ ScannerState
     };
     withSelector: #advance addMethod: {|$(ScannerState)self :: Void |
         assert: self atEnd not.
-        $c := (self text at: self position) asChar32.
-        self position: self position + 1i32.
+        $c := (self text at: self position) asInt32.
+        #*
+        if: c = '\t'i32 then: {
 
-        
+        }.
+        if: c = '\n'i32 then: {
+
+        }.
+        if: c = '\r'i32 then: {
+
+        }.
+        *#
+
+        self position: self position + 1i32.
         void
     }.
 
 $skipWhite($(ScannerState)state :: Void) := {
+    while: (state atEnd not && (state peek <= ' 'u32)) do: {
+        state advance
+    }.
     void
 }.
 
@@ -121,7 +134,7 @@ public: [
     }
 ]
 
-$sourceCode := makeSourceCodeForString("  ").
+$sourceCode := makeSourceCodeForString("  testing. testing").
 printLine(sourceCode).
 $scanResult := scanSourceCode(sourceCode).
 printLine(scanResult).

@@ -366,6 +366,7 @@ static sysmelb_Value_t sysmelb_primitive_integerEquals(size_t argumentCount, sys
     sysmelb_Value_t rightValue = sysmelb_decayValue(arguments[1]);
     sysmelb_Value_t result = {
         .kind = SysmelValueKindBoolean,
+        .type = sysmelb_getBasicTypes()->boolean,
         .boolean = leftValue.integer == rightValue.integer
     };
     return result;
@@ -378,6 +379,7 @@ static sysmelb_Value_t sysmelb_primitive_integerNotEquals(size_t argumentCount, 
     sysmelb_Value_t rightValue = sysmelb_decayValue(arguments[1]);
     sysmelb_Value_t result = {
         .kind = SysmelValueKindBoolean,
+        .type = sysmelb_getBasicTypes()->boolean,
         .boolean = leftValue.integer != rightValue.integer
     };
     return result;
@@ -390,6 +392,7 @@ static sysmelb_Value_t sysmelb_primitive_integerLessThan(size_t argumentCount, s
     sysmelb_Value_t rightValue = sysmelb_decayValue(arguments[1]);
     sysmelb_Value_t result = {
         .kind = SysmelValueKindBoolean,
+        .type = sysmelb_getBasicTypes()->boolean,
         .boolean = (leftValue.kind == SysmelValueKindUnsignedInteger)
                     ? leftValue.unsignedInteger < rightValue.unsignedInteger
                     : leftValue.integer < rightValue.integer
@@ -404,6 +407,7 @@ static sysmelb_Value_t sysmelb_primitive_integerLessOrEquals(size_t argumentCoun
     sysmelb_Value_t rightValue = sysmelb_decayValue(arguments[1]);
     sysmelb_Value_t result = {
         .kind = SysmelValueKindBoolean,
+        .type = sysmelb_getBasicTypes()->boolean,
         .boolean = (leftValue.kind == SysmelValueKindUnsignedInteger)
                     ? leftValue.unsignedInteger <= rightValue.unsignedInteger
                     : leftValue.integer <= rightValue.integer
@@ -418,6 +422,7 @@ static sysmelb_Value_t sysmelb_primitive_integerGreaterThan(size_t argumentCount
     sysmelb_Value_t rightValue = sysmelb_decayValue(arguments[1]);
     sysmelb_Value_t result = {
         .kind = SysmelValueKindBoolean,
+        .type = sysmelb_getBasicTypes()->boolean,
         .boolean = (leftValue.kind == SysmelValueKindUnsignedInteger)
                     ? leftValue.unsignedInteger > rightValue.unsignedInteger
                     : leftValue.integer > rightValue.integer
@@ -432,6 +437,7 @@ static sysmelb_Value_t sysmelb_primitive_integerGreaterOrEquals(size_t argumentC
     sysmelb_Value_t rightValue = sysmelb_decayValue(arguments[1]);
     sysmelb_Value_t result = {
         .kind = SysmelValueKindBoolean,
+        .type = sysmelb_getBasicTypes()->boolean,
         .boolean = (leftValue.kind == SysmelValueKindUnsignedInteger)
                     ? leftValue.unsignedInteger >= rightValue.unsignedInteger
                     : leftValue.integer >= rightValue.integer
@@ -616,6 +622,16 @@ static void sysmelb_createBasicIntegersPrimitives(void)
 
     sysmelb_type_addPrimitiveMethod(sysmelb_BasicTypesData.integer, sysmelb_internSymbolC("f32"), sysmelb_primitive_integerAsFloat32);
     sysmelb_type_addPrimitiveMethod(sysmelb_BasicTypesData.integer, sysmelb_internSymbolC("f64"), sysmelb_primitive_integerAsFloat64);
+
+    sysmelb_type_addPrimitiveMethod(sysmelb_BasicTypesData.character, sysmelb_internSymbolC("i8"),  sysmelb_primitive_integerAsInt8);
+    sysmelb_type_addPrimitiveMethod(sysmelb_BasicTypesData.character, sysmelb_internSymbolC("i16"), sysmelb_primitive_integerAsInt16);
+    sysmelb_type_addPrimitiveMethod(sysmelb_BasicTypesData.character, sysmelb_internSymbolC("i32"), sysmelb_primitive_integerAsInt32);
+    sysmelb_type_addPrimitiveMethod(sysmelb_BasicTypesData.character, sysmelb_internSymbolC("i64"), sysmelb_primitive_integerAsInt64);
+
+    sysmelb_type_addPrimitiveMethod(sysmelb_BasicTypesData.character, sysmelb_internSymbolC("u8"),  sysmelb_primitive_integerAsUInt8);
+    sysmelb_type_addPrimitiveMethod(sysmelb_BasicTypesData.character, sysmelb_internSymbolC("u16"), sysmelb_primitive_integerAsUInt16);
+    sysmelb_type_addPrimitiveMethod(sysmelb_BasicTypesData.character, sysmelb_internSymbolC("u32"), sysmelb_primitive_integerAsUInt32);
+    sysmelb_type_addPrimitiveMethod(sysmelb_BasicTypesData.character, sysmelb_internSymbolC("u64"), sysmelb_primitive_integerAsUInt64);
 
 }
 
@@ -978,6 +994,19 @@ static void sysmelb_createBasicOrderedCollectionPrimitives(void)
     sysmelb_type_addPrimitiveMethod(sysmelb_BasicTypesData.orderedCollection, sysmelb_internSymbolC("at:put:"), sysmelb_primitive_OrderedCollection_atPut);
 }
 
+static sysmelb_Value_t sysmelb_primitive_Boolean_Not(size_t argumentCount, sysmelb_Value_t *arguments)
+{
+    assert(argumentCount == 1);
+    assert(arguments[0].kind == SysmelValueKindBoolean);
+
+    sysmelb_Value_t result = {
+        .kind = SysmelValueKindBoolean,
+        .type = sysmelb_getBasicTypes()->boolean,
+        .boolean = !arguments[0].boolean
+    };
+    return result;
+}
+
 static sysmelb_Value_t sysmelb_primitive_Boolean_And(sysmelb_MacroContext_t *context, size_t argumentCount, sysmelb_Value_t *arguments)
 {
     assert(argumentCount == 2);
@@ -1028,6 +1057,7 @@ static sysmelb_Value_t sysmelb_primitive_Boolean_Or(sysmelb_MacroContext_t *cont
 
 static void sysmelb_createBasicBooleanPrimitives(void)
 {
+    sysmelb_type_addPrimitiveMethod(sysmelb_BasicTypesData.boolean, sysmelb_internSymbolC("not"), sysmelb_primitive_Boolean_Not);
     sysmelb_type_addPrimitiveMacroMethod(sysmelb_BasicTypesData.boolean, sysmelb_internSymbolC("&&"), sysmelb_primitive_Boolean_And);
     sysmelb_type_addPrimitiveMacroMethod(sysmelb_BasicTypesData.boolean, sysmelb_internSymbolC("||"), sysmelb_primitive_Boolean_Or);
 }

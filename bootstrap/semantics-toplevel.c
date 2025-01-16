@@ -626,6 +626,7 @@ sysmelb_Value_t sysmelb_analyzeAndEvaluateScript(sysmelb_Environment_t *environm
     {
         sysmelb_Value_t conditionValue = {
             .kind = SysmelValueKindBoolean,
+            .type = sysmelb_getBasicTypes()->boolean,
             .boolean = false,
         };
         do {
