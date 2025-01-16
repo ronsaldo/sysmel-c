@@ -76,6 +76,17 @@ $makeScannerStateForSourceCode($(SourceCode)sourceCode :: ScannerState)
 ].
 
 ScannerState
+    withSelector: #copy addMethod: {|$(ScannerState)self :: ScannerState |
+        ScannerState#{
+            sourceCode:   self sourceCode.
+            text:         self text.
+            textSize:     self textSize.
+            position:     self position.
+            line:         self line.
+            column:       self column.
+            isPreviousCR: self isPreviousCR.
+        }
+    };
     withSelector: #atEnd addMethod: {|$(ScannerState)self :: Boolean |
         self position >= self textSize 
     };
@@ -122,7 +133,49 @@ ScannerState
         while: (i < count) do: {
             self advance
         } continueWith: (i := i + 1u32)
+    };
+    withSelector: #currentSourcePosition addMethod: {|$(ScannerState)self :: SourcePosition |
+        SourcePosition #{
+            sourceCode: self sourceCode.
+            startIndex: self position.
+            endIndex: self position.
+            startLine: self line.
+            endLine: self line.
+            startColumn: self column.
+            endColumn: self column.
+        }
+    };
+    withSelector: #makeToken: addMethod: {|$(ScannerState)self $(TokenKind)kind :: Void |
+        ScannedToken #{
+            kind: kind.
+            sourcePosition: self currentSourcePosition.
+        }
+    };
+    withSelector: #makeToken:startingFrom: addMethod: {|$(ScannerState)self $(TokenKind)kind $(ScannerState)previousState :: Void |
+        ScannedToken #{
+            kind: kind.
+            sourcePosition: SourcePosition #{
+                sourceCode: self sourceCode.
+                startIndex: previousState position.
+                endIndex: self position.
+                startLine: previousState line.
+                endLine: self line.
+                startColumn: previousState column.
+                endColumn: self column.
+            }.
+        }
     }.
+
+$isDigit($(UInt32)character :: Boolean)
+    := (('0'u32 <= character) && (character <= '9'u32)).
+
+$isIdentifierStart($(UInt32)character :: Boolean)
+    := (('A'u32 <= character) && (character <= 'Z'u32)) ||
+       (('a'u32 <= character) && (character <= 'z'u32)) ||
+       character = '_'u32.
+
+$isIdentifierMiddle($(UInt32)character :: Boolean)
+    := isDigit(character) || isIdentifierStart(character).
 
 $skipWhite($(ScannerState)state :: ScannedToken) := {
     $!hasSeenComments := false.
@@ -145,7 +198,7 @@ $skipWhite($(ScannerState)state :: ScannedToken) := {
             else: {
                 ## Multiline
                 if: ((state peekAt: 1) = '*'u32) then: {
-
+                    ## TODO: Implement this case.
                 }
             }
             
@@ -161,7 +214,23 @@ $scanSingleToken($(ScannerState)state :: ScannerToken) := {
     if: whiteErrorToken kind ~= TokenKind NullToken then: {
         return: whiteErrorToken
     }.
-    printLine("TODO: Beyond white").
+
+    if: state atEnd then: {
+        return: state makeToken(TokenKind EndOfSource)
+    }.
+
+    $initialState := state copy.
+    $c := state peek.
+
+    if: isIdentifierStart(c) then: {
+        state advance.
+        while: (isIdentifierMiddle(state peek)) do: {
+            state advance
+        }.
+
+        return: (state makeToken: TokenKind Identifier startingFrom: initialState)
+    }.
+
     ScannedToken(TokenKind EndOfSource)
 }.
 
@@ -179,7 +248,7 @@ public: [
     }
 ]
 
-$sourceCode := makeSourceCodeForString("  testing. testing").
+$sourceCode := makeSourceCodeForString("  testing testing").
 printLine(sourceCode).
 $scanResult := scanSourceCode(sourceCode).
 printLine(scanResult).

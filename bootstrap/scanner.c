@@ -238,12 +238,16 @@ bool scanAdvanceKeyword(sysmelb_scannerState_t *state)
     while (scanner_isIdentifierMiddle(scannerState_peek(state, 0)))
         scannerState_advance(state, 1);
 
-    if(scannerState_peek(state, 0) != ':')
+    if(scannerState_peek(state, 0) == ':')
+    {
+        scannerState_advance(state, 1);
+    }
+    else
     {
         *state = initialState;
         return false;
     }
-
+    
     return true;
 }
 
