@@ -164,15 +164,29 @@ ScannerState
                 endColumn: self column.
             }.
         }
+    };
+    withSelector: #makeErrorToken:startingFrom: addMethod: {|$(ScannerState)self $(String)errorMessage $(ScannerState)previousState :: Void |
+        ScannedToken #{
+            kind: TokenKind Error.
+            sourcePosition: SourcePosition #{
+                sourceCode: self sourceCode.
+                startIndex: previousState position.
+                endIndex: self position.
+                startLine: previousState line.
+                endLine: self line.
+                startColumn: previousState column.
+                endColumn: self column.
+            }.
+            errorMessage: errorMessage.
+        }
     }.
-
 $isDigit($(UInt32)character :: Boolean)
     := (('0'u32 <= character) && (character <= '9'u32)).
 
 $isIdentifierStart($(UInt32)character :: Boolean)
     := (('A'u32 <= character) && (character <= 'Z'u32)) ||
        (('a'u32 <= character) && (character <= 'z'u32)) ||
-       character = '_'u32.
+       (character = '_'u32).
 
 $isIdentifierMiddle($(UInt32)character :: Boolean)
     := isDigit(character) || isIdentifierStart(character).
@@ -216,7 +230,7 @@ $scanSingleToken($(ScannerState)state :: ScannerToken) := {
     }.
 
     if: state atEnd then: {
-        return: state makeToken(TokenKind EndOfSource)
+        return: (state makeToken: TokenKind EndOfSource)
     }.
 
     $initialState := state copy.
@@ -248,7 +262,7 @@ public: [
     }
 ]
 
-$sourceCode := makeSourceCodeForString("  testing testing").
+$sourceCode := makeSourceCodeForString("  testing test").
 printLine(sourceCode).
 $scanResult := scanSourceCode(sourceCode).
 printLine(scanResult).
