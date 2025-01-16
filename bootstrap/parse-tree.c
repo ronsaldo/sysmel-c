@@ -1,4 +1,5 @@
 #include "parse-tree.h"
+#include "error.h"
 #include "memory.h"
 #include <stdio.h>
 
@@ -264,6 +265,179 @@ void sysmelb_dumpParseTree(sysmelb_ParseTreeNode_t *node)
 
 int sysmelb_visitForDisplayingAndCountingErrors(sysmelb_ParseTreeNode_t *node)
 {
-    // TODO: Implement this
-    return 0;
+    if(node)
+        return 0;
+    int errorCount = 0;
+    switch(node->kind)
+    {
+        // Error
+    case ParseTreeErrorNode:
+        sysmelb_errorPrintf(node->sourcePosition, "Parse error: %s\n", node->errorNode.errorMessage);
+        return 1;
+    
+    // Literals
+    case ParseTreeLiteralIntegerNode:
+    case ParseTreeLiteralCharacterNode:
+    case ParseTreeLiteralFloatNode:
+    case ParseTreeLiteralStringNode:
+    case ParseTreeLiteralSymbolNode:
+    case ParseTreeLiteralValueNode:
+        return 0;
+
+    // Identifiers
+    case ParseTreeIdentifierReference: return 0;
+
+    // Functions and message send
+    case ParseTreeFunctionApplication:
+    {
+        errorCount += sysmelb_visitForDisplayingAndCountingErrors(node->functionApplication.functional);
+        for(size_t i = 0; i <node->functionApplication.arguments.size; ++i)
+            errorCount += sysmelb_visitForDisplayingAndCountingErrors(node->functionApplication.arguments.elements[i]);
+        return errorCount;
+    }
+    
+    case ParseTreeMessageSend:
+    {
+        errorCount += sysmelb_visitForDisplayingAndCountingErrors(node->messageSend.receiver);
+        errorCount += sysmelb_visitForDisplayingAndCountingErrors(node->messageSend.selector);
+        for(size_t i = 0; i <node->messageSend.arguments.size; ++i)
+            errorCount += sysmelb_visitForDisplayingAndCountingErrors(node->messageSend.arguments.elements[i]);
+        return errorCount;
+    }   
+    case ParseTreeMessageCascade:
+    {
+        errorCount += sysmelb_visitForDisplayingAndCountingErrors(node->messageCascade.receiver);
+    
+        for(size_t i = 0; i < node->messageCascade.cascadedMessages.size; ++i)
+            errorCount += sysmelb_visitForDisplayingAndCountingErrors(node->messageCascade.cascadedMessages.elements[i]);
+        return errorCount;        
+    }
+    case ParseTreeCascadedMessage:
+    {
+        errorCount += sysmelb_visitForDisplayingAndCountingErrors(node->cascadedMessage.selector);
+        for(size_t i = 0; i <node->cascadedMessage.arguments.size; ++i)
+            errorCount += sysmelb_visitForDisplayingAndCountingErrors(node->cascadedMessage.arguments.elements[i]);
+        return errorCount;        
+    }
+    case ParseTreeBinaryOperatorSequence:
+    {
+        for(size_t i = 0; i <node->binaryOperatorSequence.elements.size; ++i)
+            errorCount += sysmelb_visitForDisplayingAndCountingErrors(node->binaryOperatorSequence.elements.elements[i]);
+        return errorCount;
+    }
+
+    // Sequences, array, tuples
+    case ParseTreeSequence:
+    {
+        for(size_t i = 0; i <node->sequence.elements.size; ++i)
+            errorCount += sysmelb_visitForDisplayingAndCountingErrors(node->sequence.elements.elements[i]);
+        return errorCount;
+    }
+    case ParseTreeTuple:
+    {
+        for(size_t i = 0; i <node->tuple.elements.size; ++i)
+            errorCount += sysmelb_visitForDisplayingAndCountingErrors(node->tuple.elements.elements[i]);
+        return errorCount;
+    }
+    case ParseTreeArray:
+    {
+        for(size_t i = 0; i <node->array.elements.size; ++i)
+            errorCount += sysmelb_visitForDisplayingAndCountingErrors(node->array.elements.elements[i]);
+        return errorCount;
+    }
+    case ParseTreeByteArray:
+    {
+        for(size_t i = 0; i <node->byteArray.elements.size; ++i)
+            errorCount += sysmelb_visitForDisplayingAndCountingErrors(node->byteArray.elements.elements[i]);
+        return errorCount;
+    }
+
+    // Dictionary
+    case ParseTreeAssociation:
+    {
+        errorCount += sysmelb_visitForDisplayingAndCountingErrors(node->association.key);
+        errorCount += sysmelb_visitForDisplayingAndCountingErrors(node->association.value);
+        return errorCount;
+    }
+    case ParseTreeDictionary:
+    {
+        for(size_t i = 0; i <node->dictionary.elements.size; ++i)
+            errorCount += sysmelb_visitForDisplayingAndCountingErrors(node->dictionary.elements.elements[i]);
+        return errorCount;
+    }
+
+    // Blocks
+    case ParseTreeBlockClosure:
+    {
+        errorCount += sysmelb_visitForDisplayingAndCountingErrors(node->blockClosure.functionType);
+        errorCount += sysmelb_visitForDisplayingAndCountingErrors(node->blockClosure.body);
+        return errorCount;
+    }
+    case ParseTreeLexicalBlock:
+    {
+        return sysmelb_visitForDisplayingAndCountingErrors(node->lexicalBlock.expression);
+    }
+
+    // Macro operators
+    case ParseTreeQuote:
+        return sysmelb_visitForDisplayingAndCountingErrors(node->quote.expression);
+    case ParseTreeQuasiQuote:
+        return sysmelb_visitForDisplayingAndCountingErrors(node->quasiQuote.expression);
+    case ParseTreeQuasiUnquote:
+        return sysmelb_visitForDisplayingAndCountingErrors(node->quasiUnquote.expression);
+    case ParseTreeSplice:
+        return sysmelb_visitForDisplayingAndCountingErrors(node->splice.expression);
+
+    // Binding and pattern matching
+    case ParseTreeFunctionalDependentType:
+    {
+        for(size_t i = 0; i < node->functionalDependentType.argumentDefinition.size; ++i)
+            errorCount += sysmelb_visitForDisplayingAndCountingErrors(node->functionalDependentType.argumentDefinition.elements[i]);
+        errorCount += sysmelb_visitForDisplayingAndCountingErrors(node->functionalDependentType.resultTypeExpression);
+        return errorCount;
+    }
+    case ParseTreeBindableName:
+    {
+        errorCount += sysmelb_visitForDisplayingAndCountingErrors(node->bindableName.nameExpression);
+        errorCount += sysmelb_visitForDisplayingAndCountingErrors(node->bindableName.typeExpression);
+        return errorCount;
+    }
+
+    // Assignment
+    case ParseTreeAssignment:
+    {
+        errorCount += sysmelb_visitForDisplayingAndCountingErrors(node->assignment.store);
+        errorCount += sysmelb_visitForDisplayingAndCountingErrors(node->assignment.value);
+        return errorCount;
+    }
+
+    // Closure and functions
+    case ParseTreeFunction:
+    {
+        errorCount += sysmelb_visitForDisplayingAndCountingErrors(node->function.functionDependentType);
+        errorCount += sysmelb_visitForDisplayingAndCountingErrors(node->function.bodyExpression);
+        return errorCount;
+    }
+
+    // Control flow. Exposed via macros
+    case ParseTreeIfSelection:
+    {
+        errorCount += sysmelb_visitForDisplayingAndCountingErrors(node->ifSelection.condition);
+        errorCount += sysmelb_visitForDisplayingAndCountingErrors(node->ifSelection.trueExpression);
+        errorCount += sysmelb_visitForDisplayingAndCountingErrors(node->ifSelection.falseExpression);
+        return errorCount;
+    }
+    case ParseTreeWhileLoop:
+    {
+        errorCount += sysmelb_visitForDisplayingAndCountingErrors(node->whileLoop.condition);
+        errorCount += sysmelb_visitForDisplayingAndCountingErrors(node->whileLoop.body);
+        errorCount += sysmelb_visitForDisplayingAndCountingErrors(node->whileLoop.continueExpression);
+        return errorCount;
+    }
+    
+    /// Namespaces
+    case ParseTreeNamespaceDefinition:
+        return sysmelb_visitForDisplayingAndCountingErrors(node->namespaceDefinition.definition);
+    default: abort();
+    }
 }

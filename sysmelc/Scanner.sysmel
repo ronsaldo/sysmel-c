@@ -69,10 +69,16 @@ $makeScannerStateForSourceCode($(SourceCode)sourceCode :: ScannerState)
         isPreviousCR: false}.
 
 ScannerState
-    withSelector: #atEnd addMethod: ($$($(ScannerState)self :: Boolean) := {
+    withSelector: #atEnd addMethod: {|$(ScannerState)self :: Boolean |
         self position >= self textSize 
-    }).
-
+    };
+    withSelector: #peekAt: addMethod: {|$(ScannerState)self $(UInt32)offset :: Int32 |
+        ##assert: (self position + offset) < self textSize.
+        (self text at: self position + offset) asInt32
+    };
+    withSelector: #peek addMethod: {|$(ScannerState)self $(UInt32)offset :: Int32 |
+        self peekAt: 0u32
+    }
 }.
 
 printLine(SysmelC ScannerState)

@@ -315,7 +315,7 @@ void sysmelb_disassemblyBytecodeFunction(sysmelb_function_t *function)
 
 sysmelb_Value_t sysmelb_interpretBytecodeFunction(sysmelb_function_t *function, size_t argumentCount, sysmelb_Value_t *arguments)
 {
-    sysmelb_disassemblyBytecodeFunction(function);
+    //sysmelb_disassemblyBytecodeFunction(function);
 
     sysmelb_Value_t result = {
         .kind = SysmelValueKindNull,

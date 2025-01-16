@@ -219,6 +219,7 @@ sysmelb_ScannerToken_t skipWhite(sysmelb_scannerState_t *state)
                 {
                     return scannerState_makeErrorTokenStartingFrom(state, "Incomplete multiline comment.", &commentInitialState);
                 }
+                hasSeenComment = true;
             }
         }
     } while (hasSeenComment);

@@ -10,7 +10,7 @@ void sysmelb_errorPrintf(sysmelb_SourcePosition_t sourcePosition, const char *fo
     if(sourcePosition.sourceCode)
     {
         if(sourcePosition.sourceCode->directory)
-            fprintf(stderr, "%s/%s", sourcePosition.sourceCode->directory, sourcePosition.sourceCode->name);
+            fprintf(stderr, "%s%s", sourcePosition.sourceCode->directory, sourcePosition.sourceCode->name);
         else
             fprintf(stderr, "%s", sourcePosition.sourceCode->name);
     }

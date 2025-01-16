@@ -10,6 +10,9 @@ sysmelb_Value_t sysmelb_analyzeAndEvaluateScript(sysmelb_Environment_t *environm
 {
     switch(ast->kind)
     {
+    case ParseTreeErrorNode:
+        sysmelb_errorPrintf(ast->sourcePosition, "%s", ast->errorNode.errorMessage);
+        abort();
     // Literals
     case ParseTreeLiteralIntegerNode:
         {

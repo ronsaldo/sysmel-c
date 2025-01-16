@@ -113,7 +113,10 @@ static void sysmelb_analyzeAndCompileClosureBody(sysmelb_Environment_t *environm
         {
             sysmelb_SymbolBinding_t *binding = sysmelb_environmentLookRecursively(environment, ast->identifierReference.identifier);
             if(!binding)
-                sysmelb_errorPrintf(ast->sourcePosition, "Failed to find binding.");
+            {
+                sysmelb_errorPrintf(ast->sourcePosition, "Failed to find binding for #%.*s .", ast->identifierReference.identifier->size, ast->identifierReference.identifier->string);
+                abort();
+            }
             switch(binding->kind)
             {
             case SysmelSymbolValueBinding:
