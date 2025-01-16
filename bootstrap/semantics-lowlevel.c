@@ -215,6 +215,18 @@ static void sysmelb_analyzeAndCompileClosureBody(sysmelb_Environment_t *environm
             }
             return sysmelb_analyzeAndCompileClosureBody(environment, function, receiver);
         }
+    // Sequences, array, tuples
+    case ParseTreeSequence:
+        {
+            size_t elementCount = ast->sequence.elements.size;
+            for(size_t i = 0; i < elementCount; ++i)
+            {
+                sysmelb_analyzeAndCompileClosureBody(environment, function, ast->sequence.elements.elements[i]);
+                if(i + 1 < elementCount)
+                    sysmelb_bytecode_pop(&function->bytecode);
+            }
+            return;
+        }
 
     // Lexical block
     case ParseTreeLexicalBlock:

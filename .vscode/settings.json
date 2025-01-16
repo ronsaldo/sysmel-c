@@ -81,6 +81,9 @@
         "__tuple": "c",
         "hashtable.h": "c",
         "parse-tree.h": "c",
-        "locale": "c"
+        "locale": "c",
+        "__functional_03": "c",
+        "queue": "c",
+        "unordered_set": "c"
     }
 }

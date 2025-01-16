@@ -3,6 +3,11 @@ Record: TestPair withFields: #{
     second: Int32
 }.
 
-##TestPair withSelector: #increment addMethod: $sum($(Integer)x $(Integer)y :: Integer) := x + y"
+TestPair
+    withSelector: #increment addMethod: ($$($(TestPair)self :: TestPair) := {
+        self first: self first + 1i32.
+        self
+    }).
 
+printLine(TestPair(1i32. 2i32) increment).
 ##$$($(Integer)x $(Integer)y :: Integer) := x + y

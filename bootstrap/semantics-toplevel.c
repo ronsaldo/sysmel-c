@@ -246,6 +246,17 @@ sysmelb_Value_t sysmelb_analyzeAndEvaluateScript(sysmelb_Environment_t *environm
             sysmelb_errorPrintf(ast->sourcePosition, "TODO: Support macro message sends");
             abort();
             break;
+        case SysmelFunctionKindInterpreted:
+        {
+            assert(ast->messageSend.arguments.size <= SYSMEL_MAX_ARGUMENT_COUNT);
+            sysmelb_Value_t messageArguments[SYSMEL_MAX_ARGUMENT_COUNT + 1];
+            messageArguments[0] = receiver;
+            size_t argumentCount = ast->messageSend.arguments.size;
+            for(size_t i = 0; i < argumentCount; ++i)
+                messageArguments[i + 1] = sysmelb_analyzeAndEvaluateScript(environment, ast->messageSend.arguments.elements[i]);
+            return sysmelb_interpretBytecodeFunction(method, 1 + argumentCount, messageArguments);
+        }
+            
         default:
             abort();
         }

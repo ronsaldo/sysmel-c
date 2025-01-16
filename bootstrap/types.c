@@ -149,6 +149,15 @@ sysmelb_Value_t sysmelb_instantiateTypeWithArguments(sysmelb_Type_t *type, size_
         assert(argumentCount <= type->tupleAndRecords.fieldCount);
         sysmelb_TupleHeader_t *tupleOrRecord = sysmelb_allocate(sizeof(sysmelb_TupleHeader_t) + sizeof(sysmelb_Value_t)*type->tupleAndRecords.fieldCount);
         tupleOrRecord->size = type->tupleAndRecords.fieldCount;
+        
+        // Prefill with null values.
+        sysmelb_Value_t nullValue = {
+            .kind = SysmelValueKindNull,
+            .type = sysmelb_getBasicTypes()->null
+        };
+        for(size_t i = 0; i < tupleOrRecord->size; ++i)
+            tupleOrRecord->elements[i] = nullValue;
+
         if(argumentCount == 1 && arguments[0].kind == SysmelValueKindDictionaryReference)
         {
             sysmelb_Dictionary_t *dict = arguments[0].dictionaryReference;
@@ -866,7 +875,17 @@ static sysmelb_Value_t sysmelb_primitive_dictionaryAt(size_t argumentCount, sysm
 
 static sysmelb_Value_t sysmelb_primitive_withSelectorAddMethod(size_t argumentCount, sysmelb_Value_t *arguments)
 {
-    abort();
+    assert(argumentCount == 3);
+    assert(arguments[0].kind == SysmelValueKindTypeReference);
+    assert(arguments[1].kind == SysmelValueKindSymbolReference);
+    assert(arguments[2].kind == SysmelValueKindFunctionReference);
+    
+    sysmelb_Type_t *type = arguments[0].typeReference;
+    sysmelb_symbol_t *selector = arguments[1].symbolReference;
+    sysmelb_function_t *function = arguments[2].functionReference;
+
+    sysmelb_SymbolHashtable_addSymbolWithValue(&type->methodDict, selector, function);
+    return arguments[0];
 }
 
 static void sysmelb_createBasicDictionaryPrimitives(void)

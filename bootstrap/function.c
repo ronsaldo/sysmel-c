@@ -277,14 +277,51 @@ sysmelb_Value_t sysmelb_interpretBytecodeFunction(sysmelb_function_t *function, 
                 sysmelb_Value_t receiver = context.calloutArguments[0];
                 assert(receiver.type != NULL);
                 sysmelb_function_t *method = sysmelb_type_lookupSelector(receiver.type, currentInstruction->messageSendSelector);
+                bool isSynthetic = false;
                 if(!method)
                 {
-                    sysmelb_SourcePosition_t noPosition = {0};
-                    sysmelb_errorPrintf(noPosition, "Message not understood");
+                    if(receiver.kind == SysmelValueKindTupleReference && receiver.type->kind == SysmelTypeKindRecord)
+                    {
+                        if (messageArgumentCount == 0)
+                        {
+                            int recordFieldIndex = sysmelb_findIndexOfFieldNamed(receiver.type, currentInstruction->messageSendSelector);
+                            if(recordFieldIndex >= 0)
+                            {
+                                sysmelb_Value_t fieldValue = receiver.tupleReference->elements[recordFieldIndex];
+                                sysmelb_bytecodeActivationContext_push(&context, fieldValue);
+                                isSynthetic = true;
+                            }
+                        }
+                        else if(messageArgumentCount == 1)
+                        {
+                            // Remove the trailing:
+                            sysmelb_symbol_t *fieldName = currentInstruction->messageSendSelector;
+                            if(fieldName->size > 0 && fieldName->string[fieldName->size -1] == ':')
+                                fieldName = sysmelb_internSymbol(fieldName->size - 1, fieldName->string);
+
+                            int recordFieldIndex = sysmelb_findIndexOfFieldNamed(receiver.type, fieldName);
+                            if(recordFieldIndex >= 0)
+                            {
+                                sysmelb_Value_t newFieldValue = context.calloutArguments[1];
+                                receiver.tupleReference->elements[recordFieldIndex] = newFieldValue;
+                                sysmelb_bytecodeActivationContext_push(&context, receiver);
+                                isSynthetic = true;
+                            }
+                        }
+                    }
+                    if(!isSynthetic)
+                    {
+                        sysmelb_SourcePosition_t noPosition = {0};
+                        sysmelb_errorPrintf(noPosition, "Message not understood");
+                        abort();
+                    }
                 }
 
-                sysmelb_Value_t value = sysmelb_callFunctionWithArguments(method, popCount, context.calloutArguments);
-                sysmelb_bytecodeActivationContext_push(&context, value);
+                if(!isSynthetic)
+                {
+                    sysmelb_Value_t value = sysmelb_callFunctionWithArguments(method, popCount, context.calloutArguments);
+                    sysmelb_bytecodeActivationContext_push(&context, value);
+                }
                 ++pc;
                 break;
             }
