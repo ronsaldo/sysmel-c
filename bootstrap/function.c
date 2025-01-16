@@ -302,10 +302,24 @@ sysmelb_Value_t sysmelb_interpretBytecodeFunction(sysmelb_function_t *function, 
                     context.calloutArguments[popCount - 1 - i] = sysmelb_bytecodeActivationContext_pop(&context);
 
                 sysmelb_Value_t function = sysmelb_bytecodeActivationContext_pop(&context);
-                assert(function.kind == SysmelValueKindFunctionReference);
+                switch(function.kind)
+                {
+                case SysmelValueKindFunctionReference:
+                    {
+                        sysmelb_Value_t value = sysmelb_callFunctionWithArguments(function.functionReference, popCount, context.calloutArguments);
+                        sysmelb_bytecodeActivationContext_push(&context, value);
+                    }
+                    break;
+                case SysmelValueKindTypeReference:
+                {
+                    sysmelb_Value_t instance = sysmelb_instantiateTypeWithArguments(function.typeReference, popCount, context.calloutArguments);
+                    sysmelb_bytecodeActivationContext_push(&context, instance);
+                }
+                break;
+                default:
+                    abort();
+                }
 
-                sysmelb_Value_t value = sysmelb_callFunctionWithArguments(function.functionReference, popCount, context.calloutArguments);
-                sysmelb_bytecodeActivationContext_push(&context, value);
                 ++pc;
                 break;
             }
@@ -388,6 +402,46 @@ sysmelb_Value_t sysmelb_interpretBytecodeFunction(sysmelb_function_t *function, 
         case SysmelFunctionOpcodeJump:
             pc += currentInstruction->jumpOffset;
             break;
+        case SysmelFunctionOpcodeMakeAssociation:
+        {
+            sysmelb_Value_t value = sysmelb_bytecodeActivationContext_pop(&context);
+            sysmelb_Value_t key = sysmelb_bytecodeActivationContext_pop(&context);
+
+            sysmelb_Association_t *assoc =  sysmelb_allocate(sizeof(sysmelb_Association_t));
+            assoc->key = key;
+            assoc->value = value;
+
+            sysmelb_Value_t assocReference =  {
+                .kind = SysmelValueKindAssociationReference,
+                .type = sysmelb_getBasicTypes()->association,
+                .associationReference = assoc
+            };
+
+            sysmelb_bytecodeActivationContext_push(&context, assocReference);
+            ++pc;
+        }
+            break;
+        case SysmelFunctionOpcodeMakeDictionary:
+        {
+            uint16_t dictionarySize = currentInstruction->dictionarySize;
+            sysmelb_Dictionary_t *dictionary = sysmelb_allocate(sizeof(sysmelb_Dictionary_t) + dictionarySize*sizeof(sysmelb_Association_t));
+            dictionary->size = dictionarySize;
+            for(uint16_t i = 0; i < dictionarySize; ++i)
+            {
+                sysmelb_Value_t assoc = sysmelb_bytecodeActivationContext_pop(&context);
+                assert(assoc.kind == SysmelValueKindAssociationReference);
+                dictionary->elements[dictionarySize - 1 - i] = assoc.associationReference;
+            }
+
+            sysmelb_Value_t dictionaryValue = {
+                .kind = SysmelValueKindDictionaryReference,
+                .type = sysmelb_getBasicTypes()->dictionary,
+                .dictionaryReference = dictionary
+            };
+            sysmelb_bytecodeActivationContext_push(&context, dictionaryValue);
+        }
+        ++pc;
+        break;
         default:
             abort();
         }
