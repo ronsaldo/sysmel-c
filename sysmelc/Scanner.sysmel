@@ -456,7 +456,7 @@ $scanSingleToken($(ScannerState)state :: ScannerToken) := {
     ## Characters
     if: c = '\''u32 then: {
         state advance.
-        while: (state atEnd not && (state peek ~= '"'u32)) do: {
+        while: (state atEnd not && (state peek ~= '\''u32)) do: {
             if: (state peek = '\\') && ((state peekAt: 1) > 0u32) then: {
                 state advance: 2.
             }

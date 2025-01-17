@@ -157,6 +157,45 @@ public: [
                 value: token getText asFloat
             })
         };
+        withSelector: #parseCharacter addMethod: {|$(Parser)self :: ParseTreeNode |
+            $token := self state next.
+            $characterRawText := token getText.
+            $characterTrimmedText := (characterRawText substringFrom: 1 until: characterRawText size - 1) parseCEscapeSequences.
+
+            ParseTreeNode(ParseTreeLiteralCharacterNode#{
+                sourcePosition: token sourcePosition.
+                value: (characterTrimmedText at: 0)
+            })
+        };
+        withSelector: #parseString addMethod: {|$(Parser)self :: ParseTreeNode |
+            $token := self state next.
+            $stringRawText := token getText.
+            $stringTrimmedText := (stringRawText substringFrom: 1 until: stringRawText size - 1) parseCEscapeSequences.
+
+            ParseTreeNode(ParseTreeLiteralStringNode#{
+                sourcePosition: token sourcePosition.
+                value: stringTrimmedText
+            })
+        };
+        withSelector: #parseSymbol addMethod: {|$(Parser)self :: ParseTreeNode |
+            $token := self state next.
+            $symbolRawText := token getText.
+
+            if: (symbolRawText size >= 2) && (symbolRawText at: 1) = '"' then: {
+                $trimmedSymbolString := (symbolRawText substringFrom: 2 until: symbolRawText size - 1) parseCEscapeSequences.
+                ParseTreeNode(ParseTreeLiteralSymbolNode#{
+                    sourcePosition: token sourcePosition.
+                    value: trimmedSymbolString asSymbol
+                })
+            }
+            else: {
+                $trimmedSymbolString := symbolRawText substringFrom: 1 until: symbolRawText size.
+                ParseTreeNode(ParseTreeLiteralSymbolNode#{
+                    sourcePosition: token sourcePosition.
+                    value: trimmedSymbolString asSymbol
+                })
+            }
+        };
         withSelector: #parseLiteral addMethod: {|$(Parser)self :: ParseTreeNode |
             $kind := self state peekKind.
             if: kind = TokenKind Nat then: {
@@ -164,6 +203,15 @@ public: [
             }.
             if: kind = TokenKind Float then: {
                 return: self parseFloat
+            }.
+            if: kind = TokenKind Character then: {
+                return: self parseCharacter
+            }.
+            if: kind = TokenKind String then: {
+                return: self parseString
+            }.
+            if: kind = TokenKind Symbol then: {
+                return: self parseSymbol
             }.
 
             self state advanceWithExpectedError: "Expected a literal."
@@ -204,7 +252,6 @@ public: [
         withSelector: #parseSequenceUntilEndOrDelimiter: addMethod: {|$(Parser)self $(TokenKind)delimiter :: ParseTreeNode |
             $startingPosition := self state position.
             $expressions := self parseExpressionListUntilEndOrDelimiter: delimiter.
-            printLine("expressions ". expressions size).
 
             if: expressions size = 1 then: {
                 return: (expressions at: 0)
@@ -238,5 +285,7 @@ $parseString($(String)text :: ParseTreeNode) := {
 
 ].
 
-printLine(parseString("42 . 42.5 ")).
+##printLine(parseString("42 . 42.5 'A' ")).
+printLine(parseString("'A' . \"Hello\\n World\"")).
+##printLine(parseString("#symbol . #\"Test Symbol\"")).
 }.

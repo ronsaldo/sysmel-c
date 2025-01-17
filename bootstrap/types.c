@@ -816,6 +816,70 @@ static sysmelb_Value_t sysmelb_primitive_stringAsFloat(size_t argumentCount, sys
     return result;
 }
 
+static sysmelb_Value_t sysmelb_primitive_stringAsSymbol(size_t argumentCount, sysmelb_Value_t *arguments)
+{
+    assert(argumentCount == 1);
+    assert(arguments[0].kind == SysmelValueKindStringReference);
+
+    sysmelb_symbol_t *internedString = sysmelb_internSymbol(arguments[0].stringSize, arguments[0].string);
+
+    sysmelb_Value_t result = {
+        .kind = SysmelValueKindSymbolReference,
+        .type = sysmelb_BasicTypesData.symbol,
+        .symbolReference = internedString
+    };
+    return result;
+}
+
+static sysmelb_Value_t sysmelb_primitive_parseCEscapeSequences(size_t argumentCount, sysmelb_Value_t *arguments)
+{
+    assert(argumentCount == 1);
+    assert(arguments[0].kind == SysmelValueKindStringReference);
+
+    size_t stringSize = arguments[0].stringSize;
+    char *parsedString = sysmelb_allocate(stringSize);
+    size_t parsedStringSize = 0;
+
+    for(size_t i = 0; i < stringSize; ++i)
+    {
+        char c = arguments[0].string[i];
+        if(c == '\\' && i + 1 < stringSize)
+        {
+            char escape = arguments[0].string[++i];
+            char resultingChar = escape;
+            switch(escape)
+            {
+            case 'n':
+                resultingChar = '\n';
+                break;
+            case 'r':
+                resultingChar = '\r';
+                break;
+            case 't':
+                resultingChar = '\t';
+                break;
+            default:
+                resultingChar = escape;
+                break;
+            }
+            
+            parsedString[parsedStringSize++] = resultingChar;
+        }
+        else
+        {
+            parsedString[parsedStringSize++] = c;
+        }
+    }
+
+    sysmelb_Value_t result = {
+        .kind = SysmelValueKindStringReference,
+        .type = sysmelb_getBasicTypes()->string,
+        .string = parsedString,
+        .stringSize = parsedStringSize,
+    };
+    return result;
+}
+
 static void sysmelb_createBasicStringPrimitives(void)
 {
     sysmelb_type_addPrimitiveMethod(sysmelb_BasicTypesData.string, sysmelb_internSymbolC("--"), sysmelb_primitive_concatenateString);
@@ -823,6 +887,9 @@ static void sysmelb_createBasicStringPrimitives(void)
     sysmelb_type_addPrimitiveMethod(sysmelb_BasicTypesData.string, sysmelb_internSymbolC("at:"), sysmelb_primitive_stringAt);
     sysmelb_type_addPrimitiveMethod(sysmelb_BasicTypesData.string, sysmelb_internSymbolC("substringFrom:until:"), sysmelb_primitive_substringFromUntil);
     sysmelb_type_addPrimitiveMethod(sysmelb_BasicTypesData.string, sysmelb_internSymbolC("asFloat"), sysmelb_primitive_stringAsFloat);
+    sysmelb_type_addPrimitiveMethod(sysmelb_BasicTypesData.string, sysmelb_internSymbolC("asSymbol"), sysmelb_primitive_stringAsSymbol);
+    sysmelb_type_addPrimitiveMethod(sysmelb_BasicTypesData.string, sysmelb_internSymbolC("parseCEscapeSequences"), sysmelb_primitive_parseCEscapeSequences);
+    
 }
 
 static sysmelb_Value_t sysmelb_primitive_concatenateArrays(size_t argumentCount, sysmelb_Value_t *arguments)

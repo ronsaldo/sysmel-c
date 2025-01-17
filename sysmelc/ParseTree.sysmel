@@ -32,6 +32,10 @@ public: [
             sourcePosition: SourcePosition.
             value: String.
         }.
+        Record: ParseTreeLiteralSymbolNode withFields: #{
+            sourcePosition: SourcePosition.
+            value: Symbol.
+        }.
         
         ## Identifiers
         Record: ParseTreeIdentifierReferenceNode withFields: #{
