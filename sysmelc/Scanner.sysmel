@@ -87,6 +87,16 @@ ScannerState
             isPreviousCR: self isPreviousCR.
         }
     };
+    withSelector: #restoreFromCopy: addMethod: {|$(ScannerState)self $(ScannerState)copy :: ScannerState |
+        self sourceCode:   copy sourceCode.
+        self text:         copy text.
+        self textSize:     copy textSize.
+        self position:     copy position.
+        self line:         copy line.
+        self column:       copy column.
+        self isPreviousCR: copy isPreviousCR.
+        self
+    };
     withSelector: #atEnd addMethod: {|$(ScannerState)self :: Boolean |
         self position >= self textSize 
     };
@@ -223,6 +233,25 @@ $skipWhite($(ScannerState)state :: ScannedToken) := {
     ScannedToken(TokenKind NullToken)
 }.
 
+$scanAdvanceKeyword($(ScannerState)state :: Boolean) := {
+    if: isIdentifierStart(state peek) not then: {
+        return: false
+    }.
+
+    $initialState := state copy.
+    while: (isIdentifierMiddle(state peek)) do: {
+        state advance
+    }.
+
+    if: (state peek = ':'i32) then: {
+        state advance.
+        true
+    } else: {
+        state restoreFromCopy: initialState.
+        false
+    }
+}.
+
 $scanSingleToken($(ScannerState)state :: ScannerToken) := {
     $whiteErrorToken := skipWhite(state).
     if: whiteErrorToken kind ~= TokenKind NullToken then: {
@@ -236,13 +265,49 @@ $scanSingleToken($(ScannerState)state :: ScannerToken) := {
     $initialState := state copy.
     $c := state peek.
 
+    ## Identifiers and keywords
     if: isIdentifierStart(c) then: {
         state advance.
         while: (isIdentifierMiddle(state peek)) do: {
             state advance
         }.
 
+        if: state peek = ':'u32 then: {
+            state advance.
+
+            $!isMultiKeyword := false.
+            $!hasAdvanced := true.
+            while: (hasAdvanced) do: {
+                hasAdvanced := scanAdvanceKeyword(state).
+                isMultiKeyword := isMultiKeyword || hasAdvanced
+            }.
+
+            if: isMultiKeyword then: {
+                return: (state makeToken: TokenKind MultiKeyword startingFrom: initialState)
+            }
+            else: {
+                return: (state makeToken: TokenKind Keyword startingFrom: initialState)
+            }
+        }.
         return: (state makeToken: TokenKind Identifier startingFrom: initialState)
+    }.
+
+    ## Numbers
+    if: isDigit(c) then: {
+        while: (isDigit(state peek)) do: {
+            state advance
+        }.
+
+        if: ((state peek = '.'u32) && (isDigit(state peekAt: 1))) then: {
+            state advance.
+            while: (isDigit(state peek)) do: {
+                state advance
+            }.
+
+            return: (state makeToken: TokenKind Float startingFrom: initialState)    
+        }.
+
+        return: (state makeToken: TokenKind Nat startingFrom: initialState)
     }.
 
     ScannedToken(TokenKind EndOfSource)
@@ -255,6 +320,7 @@ public: [
         $!scannedToken := ScannedToken(TokenKind NullToken).
         do: {
             scannedToken := scanSingleToken(state).
+            printLine(scannedToken).
             list add: scannedToken
         } while: (scannedToken kind ~= TokenKind EndOfSource).
 
@@ -262,10 +328,10 @@ public: [
     }
 ]
 
-$sourceCode := makeSourceCodeForString("  testing test").
-printLine(sourceCode).
+$sourceCode := makeSourceCodeForString(" multi:keyword: keyword: identifier 42 42.5 ").
+##printLine(sourceCode).
 $scanResult := scanSourceCode(sourceCode).
-printLine(scanResult).
+##printLine(scanResult size . " " .  scanResult).
 }.
 
 
