@@ -335,6 +335,132 @@ public: [
                 })
             }
         };
+        withSelector: #parseArray addMethod: {|$(Parser)self :: ParseTreeNode |
+            $startingPosition := self state position.
+            ## [
+            assert: self state peekKind = TokenKind LeftBracket.
+            self state advance.
+
+            $expressions := self parseExpressionListUntilEndOrDelimiter: TokenKind RightBracket.
+
+            
+            if: self state peekKind = TokenKind RightBracket then: {
+                self state advance.
+
+                return: ParseTreeNode(ParseTreeArrayNode#{
+                    sourcePosition: (self state sourcePositionFrom: startingPosition).
+                    elements: expressions                
+                })
+            } else: {
+                return: ParseTreeNode(ParseTreeErrorNode#{
+                    sourcePosition: (self state sourcePositionFrom: startingPosition).
+                    errorMessage: "Expected a ] do delimit the array."
+                })
+            }
+            ## ]
+        };
+        withSelector: #parseByteArray addMethod: {|$(Parser)self :: ParseTreeNode |
+            $startingPosition := self state position.
+            ## #[
+            assert: self state peekKind = TokenKind ByteArrayStart.
+            self state advance.
+
+            $expressions := self parseExpressionListUntilEndOrDelimiter: TokenKind RightBracket.
+
+            
+            if: self state peekKind = TokenKind RightBracket then: {
+                self state advance.
+
+                return: ParseTreeNode(ParseTreeByteArrayNode#{
+                    sourcePosition: (self state sourcePositionFrom: startingPosition).
+                    elements: expressions                
+                })
+            } else: {
+                return: ParseTreeNode(ParseTreeErrorNode#{
+                    sourcePosition: (self state sourcePositionFrom: startingPosition).
+                    errorMessage: "Expected a ] do delimit the byte array."
+                })
+            }
+            ## ]
+        };
+        withSelector: #parseDictionaryAssociation addMethod: {|$(Parser)self :: ParseTreeNode |
+            $startingPosition := self state position.
+            $!key := ParseTreeNode(ParseTreeNullNode()). 
+            $!value := ParseTreeNode(ParseTreeNullNode()).
+
+            if: self state peekKind = TokenKind Keyword then: {
+                $keyToken := self state next.
+                $keyTokenString := keyToken getText.
+                $keyTokenSymbolString := keyTokenString substringFrom: 0 until: keyTokenString size - 1.
+                $keySymbol := keyTokenSymbolString asSymbol.
+
+                key := ParseTreeNode(ParseTreeLiteralSymbolNode#{
+                    sourcePosition: keyToken sourcePosition.
+                    value: keySymbol
+                }).
+
+                if: (self state peekKind ~= TokenKind Dot) && (self state peekKind ~= TokenKind RightCurlyBracket) then: {
+                    value := self parseAssociationExpression
+                }
+            }
+            else:
+            {
+                key := self parseBinaryExpressionSequence.
+                if: (self state peekKind = TokenKind Colon) then: {
+                    self state advance.
+                    value := self parseAssociationExpression
+                }
+            }.
+
+            ParseTreeNode(ParseTreeAssociationNode#{
+                sourcePosition: (self state sourcePositionFrom: startingPosition).
+                key: key.
+                value: value.
+            })
+        };
+        withSelector: #parseDictionary addMethod: {|$(Parser)self :: ParseTreeNode |
+            $startingPosition := self state position.
+            ## #{
+            assert: self state peekKind = TokenKind DictionaryStart.
+            self state advance.
+
+            ## Chop the initial dots
+            while: self state peekKind = TokenKind Dot do: {
+                self state advance.
+            }.
+
+            $!expectsExpression := true
+            $elements := OrderedCollection().
+
+            while: self state atEnd not && (self state peekKind ~= TokenKind RightCurlyBracket) do: {
+
+                if: expectsExpression not then: {
+                    elements add: (self state makeErrorAtCurrentSourcePosition: "Expected a dot before the association.")
+                }.
+
+                $expression := self parseDictionaryAssociation.
+                elements add: expression.
+
+                expectsExpression := false.
+                ## Chop trailing dots.
+                while: self state peekKind = TokenKind Dot do: {
+                    self state advance.
+                    expectsExpression := true.
+                }.
+            }.
+
+            ## }
+            if: self state peekKind = TokenKind RightCurlyBracket then: {
+                self state advance.
+            } else: {
+                elements add: (self state makeErrorAtCurrentSourcePosition: "Missing right bracket to close the dictionary.")
+            }.
+
+            ParseTreeNode(ParseTreeDictionaryNode#{
+                sourcePosition: (self state sourcePositionFrom: startingPosition).
+                elements: elements asArray
+            })
+        };
         withSelector: #parseOptionalBindableNameType addMethod: {|$(Parser)self :: ParseTreeNode |
             if: self state peekKind = TokenKind LeftBracket then: {
                 self state advance.
@@ -455,17 +581,19 @@ public: [
             if: kind = TokenKind LeftCurlyBracket then: {
                 return: self parseBlock
             }.
+            if: kind = TokenKind LeftBracket then: {
+                return: self parseArray
+            }.
+            if: kind = TokenKind ByteArrayStart then: {
+                return: self parseByteArray
+            }.
+            if: kind = TokenKind DictionaryStart then: {
+                return: self parseDictionary
+            }.
             if: kind = TokenKind Dollar then: {
                 return: self parseBindableName
             }.
-#*
-    case SysmelTokenLeftBracket:
-        return parser_parseArray(state);
-    case SysmelTokenByteArrayStart:
-        return parser_parseByteArray(state);
-    case SysmelTokenDictionaryStart:
-        return parser_parseDictionary(state);
-*#            
+
             self parseLiteral
         };
         withSelector: #isUnaryPostfixToken: addMethod: {|$(Parser)self $(TokenKind)kind :: Boolean |
@@ -805,4 +933,15 @@ $parseString($(String)text :: ParseTreeNode) := {
 ##printLine(parseString("{}")).
 ##printLine(parseString("{| |}")).}
 ##printLine(parseString("{|$x $y | x + y}")).
+
+##printLine(parseString("[]")).
+##printLine(parseString("[1]")).
+##printLine(parseString("[1 . 2]")).
+
+##printLine(parseString("#[]")).
+##printLine(parseString("#[1 . 2]")).
+
+##printLine(parseString("#{}")).
+##printLine(parseString("#{First: 1}")).
+
 }.
