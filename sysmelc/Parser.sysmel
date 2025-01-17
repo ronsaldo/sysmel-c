@@ -1,5 +1,61 @@
 namespace: SysmelC definition: {
 public: [
+    Record: ParserState withFields: #{
+        sourceCode: SourceCode.
+        tokenCount: UInt32.
+        tokens: Array.
+        position: UInt32.
+    }.
+
+    ParserState
+        withSelector: #atEnd addMethod: {|$(ParserState)self :: Boolean|
+            self position >= self tokenCount
+        };
+        withSelector: #peekKind: addMethod: {|$(ParserState)self $(UInt32)offset :: asUInt8 |
+            $peekPosition := self position + offset.
+            if: peekPosition < self tokenCount then: {
+                (self tokens at: peekPosition) kind asUInt8
+            }
+            else: {
+                TokenKind EndOfSource
+            }
+        };
+        withSelector: #peekKind addMethod: {|$(ParserState)self :: asUInt8 |
+            self peekKind: 0u32
+        };
+        withSelector: #peek: addMethod: {|$(ParserState)self $(UInt32)offset :: asUInt8 |
+            $peekPosition := self position + offset.
+            if: peekPosition < self tokenCount then: {
+                self tokens at: peekPosition
+            }
+            else: {
+                TokenKind EndOfSource
+            }
+        };
+        withSelector: #peek addMethod: {|$(ParserState)self :: asUInt8 |
+            self peek: 0u32
+        };
+        withSelector: #advance addMethod: {|$(ParserState)self :: Void |
+            assert: self position < self tokenCount.
+            self position: self position + 1u32.
+            void
+        };
+        withSelector: #next addMethod: {|$(ParserState)self :: ScannerToken |
+            assert: self position < self tokenCount.
+            $token := self tokens at: self position.
+            self position: self position + 1u32.
+            token
+        };
+        withSelector: #memento addMethod: {|$(ParserState)self :: UInt32 |
+            self position
+        };
+        withSelector: #restoreMemento addMethod: {|$(ParserState)self $(UInt32)memento :: UInt32 |
+            self position: memento
+        }.
+
+    Record: Parser withFields: #{
+        state: ParserState.
+    }.
 ].
-printLine(ParseTreeDictionaryNode)
+printLine(Parser)
 }.

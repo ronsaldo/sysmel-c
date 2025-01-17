@@ -1040,12 +1040,32 @@ static sysmelb_Value_t sysmelb_primitive_OrderedCollection_atPut(size_t argument
     return arguments[0].orderedCollectionReference->elements[index] = arguments[2];
 }
 
+static sysmelb_Value_t sysmelb_primitive_OrderedCollection_asArray(size_t argumentCount, sysmelb_Value_t *arguments)
+{
+    assert(argumentCount == 1);
+    assert(arguments[0].kind == SysmelValueKindOrderedCollectionReference);
+
+    size_t dataSize = arguments[0].orderedCollectionReference->size;
+    sysmelb_ArrayHeader_t *array = sysmelb_allocate(sizeof(sysmelb_ArrayHeader_t) + dataSize * sizeof(sysmelb_Value_t));
+    array->size = dataSize;
+    for(size_t i = 0; i < dataSize; ++i)
+        array->elements[i] = arguments[0].orderedCollectionReference->elements[i];
+
+    sysmelb_Value_t result = {
+        .kind = SysmelValueKindArrayReference,
+        .type = sysmelb_getBasicTypes()->array,
+        .arrayReference = array
+    };
+    return result;
+}
+
 static void sysmelb_createBasicOrderedCollectionPrimitives(void)
 {
     sysmelb_type_addPrimitiveMethod(sysmelb_BasicTypesData.orderedCollection, sysmelb_internSymbolC("add:"), sysmelb_primitive_OrderedCollection_add);
     sysmelb_type_addPrimitiveMethod(sysmelb_BasicTypesData.orderedCollection, sysmelb_internSymbolC("size"), sysmelb_primitive_OrderedCollection_size);
     sysmelb_type_addPrimitiveMethod(sysmelb_BasicTypesData.orderedCollection, sysmelb_internSymbolC("at:"), sysmelb_primitive_OrderedCollection_at);
     sysmelb_type_addPrimitiveMethod(sysmelb_BasicTypesData.orderedCollection, sysmelb_internSymbolC("at:put:"), sysmelb_primitive_OrderedCollection_atPut);
+    sysmelb_type_addPrimitiveMethod(sysmelb_BasicTypesData.orderedCollection, sysmelb_internSymbolC("asArray"), sysmelb_primitive_OrderedCollection_asArray);
 }
 
 static sysmelb_Value_t sysmelb_primitive_Boolean_Not(size_t argumentCount, sysmelb_Value_t *arguments)
