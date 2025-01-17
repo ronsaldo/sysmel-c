@@ -605,6 +605,7 @@ public: [
     }
 ]
 
+#*
 $sourceCode := makeSourceCodeForString("
      multi:keyword: keyword: identifier 42 42.5
      #symbol #symbol: #symbol:with: #+
@@ -614,6 +615,7 @@ $sourceCode := makeSourceCodeForString("
 ##printLine(sourceCode).
 $scanResult := scanSourceCode(sourceCode).
 ##printLine(scanResult size . " " .  scanResult).
+*#
 }.
 
 

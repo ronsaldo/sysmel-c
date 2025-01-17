@@ -282,6 +282,58 @@ static sysmelb_Value_t sysmelb_RecordWithFieldsMacro(sysmelb_MacroContext_t *mac
     return result;
 }
 
+static sysmelb_Value_t sysmelb_InductiveWithAlternativesMacro(sysmelb_MacroContext_t *macroContext, size_t argumentCount, sysmelb_Value_t *arguments)
+{
+    assert(argumentCount == 2);
+    sysmelb_symbol_t *name = NULL;
+
+    if (arguments[0].parseTreeReference->kind == ParseTreeIdentifierReference)
+        name = arguments[0].parseTreeReference->identifierReference.identifier;
+    else if (arguments[0].parseTreeReference->kind == ParseTreeLiteralSymbolNode)
+        name = arguments[0].parseTreeReference->literalSymbol.internedSymbol;
+    else
+    {
+        sysmelb_Value_t nameValue = sysmelb_analyzeAndEvaluateScript(macroContext->environment, arguments[0].parseTreeReference);
+        if(nameValue.kind != SysmelValueKindSymbolReference)
+            sysmelb_errorPrintf(macroContext->sourcePosition, "A non-valid name object is being passed.");
+        name = nameValue.symbolReference;
+    }
+
+    sysmelb_Value_t alternatives = arguments[1];
+    if(alternatives.parseTreeReference->kind != ParseTreeArray)
+    {
+        sysmelb_errorPrintf(macroContext->sourcePosition, "Expected an array of alternative types.");
+        abort();
+    }
+
+    sysmelb_ParseTreeNode_t *alternativesArray = alternatives.parseTreeReference;
+    uint32_t alternativeCount = alternativesArray->array.elements.size;
+    sysmelb_Type_t *sumType = sysmelb_allocateSumType(name, alternativeCount);
+
+    if(name)
+    {
+        sysmelb_SymbolBinding_t *resultBinding = sysmelb_createSymbolTypeBinding(sumType);
+        sysmelb_Environment_setLocalSymbolBinding(macroContext->environment, name, resultBinding);
+    }
+
+    for (uint32_t i = 0; i < alternativeCount; ++i)
+    {
+        sysmelb_ParseTreeNode_t *alternativeNode = alternativesArray->array.elements.elements[i];
+        sysmelb_Value_t alternativeValue = sysmelb_analyzeAndEvaluateScript(macroContext->environment, alternativeNode);
+        if (alternativeValue.kind != SysmelValueKindTypeReference)
+            sysmelb_errorPrintf(alternativeNode->sourcePosition, "Expected a type to be part of the sum type.");
+        sumType->sumType.alternatives[i] = alternativeValue.typeReference;
+    }
+
+    sysmelb_Value_t sumTypeValue = {
+        .kind = SysmelValueKindTypeReference,
+        .type = sysmelb_getBasicTypes()->universe,
+        .typeReference = sumType
+    };
+
+    return sumTypeValue;
+}
+
 static sysmelb_Value_t sysmelb_EnumWithBaseTypeAndValuesMacro(sysmelb_MacroContext_t *macroContext, size_t argumentCount, sysmelb_Value_t *arguments)
 {
     assert(argumentCount == 3);
@@ -606,6 +658,16 @@ sysmelb_Environment_t *sysmelb_getOrCreateIntrinsicsEnvironment()
         function->kind = SysmelFunctionKindPrimitiveMacro;
         function->name = sysmelb_internSymbolC("Record:withFields:");
         function->primitiveMacroFunction = sysmelb_RecordWithFieldsMacro;
+
+        sysmelb_Environment_setLocalSymbolBinding(&sysmelb_IntrinsicsEnvironment, function->name, sysmelb_createSymbolFunctionBinding(function));
+    }
+
+    // Inductive type
+    {
+        sysmelb_function_t *function = sysmelb_allocate(sizeof(sysmelb_function_t));
+        function->kind = SysmelFunctionKindPrimitiveMacro;
+        function->name = sysmelb_internSymbolC("Inductive:withAlternatives:");
+        function->primitiveMacroFunction = sysmelb_InductiveWithAlternativesMacro;
 
         sysmelb_Environment_setLocalSymbolBinding(&sysmelb_IntrinsicsEnvironment, function->name, sysmelb_createSymbolFunctionBinding(function));
     }

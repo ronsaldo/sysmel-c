@@ -73,6 +73,19 @@ sysmelb_Type_t *sysmelb_allocateRecordType(sysmelb_symbol_t *name, sysmelb_Dicti
     return type;
 }
 
+sysmelb_Type_t *sysmelb_allocateSumType(sysmelb_symbol_t *name, size_t alternativeCount)
+{
+    sysmelb_Type_t *type = sysmelb_allocate(sizeof(sysmelb_Type_t));
+    type->kind = SysmelTypeKindSum;
+    type->name = name;
+    type->valueAlignment = 1;
+    type->valueSize = 1;
+    type->supertype = sysmelb_getBasicTypes()->sum;
+    type->sumType.alternativeCount = alternativeCount;
+    type->sumType.alternatives = sysmelb_allocate(sizeof(sysmelb_Type_t*) * alternativeCount);
+    return type;
+}
+
 sysmelb_Type_t *sysmelb_allocateEnumType(sysmelb_symbol_t *name, sysmelb_Type_t *baseType, sysmelb_Dictionary_t *namesAndValues)
 {
     sysmelb_Type_t *type = sysmelb_allocate(sizeof(sysmelb_Type_t));

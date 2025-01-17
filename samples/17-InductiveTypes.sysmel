@@ -1,0 +1,6 @@
+Inductive: Arithmetic withAlternatives: [
+    Record: LiteralInteger withFields: #{value: Integer}.
+    Record: Plus withFields: #{leftOperand: Arithmetic. rightOperand: Arithmetic}
+].
+
+printLine(LiteralInteger)
