@@ -468,8 +468,126 @@ $scanSingleToken($(ScannerState)state :: ScannerToken) := {
         state advance.
         return: (state makeToken: TokenKind Character startingFrom: initialState)
     }.
+
+    if: c = '('u32 then: {
+        state advance.
+        return: (state makeToken: TokenKind LeftParent startingFrom: initialState)
+    }.
+    if: c = ')'u32 then: {
+        state advance.
+        return: (state makeToken: TokenKind RightParent startingFrom: initialState)
+    }.
+    if: c = '['u32 then: {
+        state advance.
+        return: (state makeToken: TokenKind LeftBracket startingFrom: initialState)
+    }.
+    if: c = ']'u32 then: {
+        state advance.
+        return: (state makeToken: TokenKind RightBracket startingFrom: initialState)
+    }.
+    if: c = '{'u32 then: {
+        state advance.
+        return: (state makeToken: TokenKind LeftCurlyBracket startingFrom: initialState)
+    }.
+    if: c = '}'u32 then: {
+        state advance.
+        return: (state makeToken: TokenKind RightCurlyBracket startingFrom: initialState)
+    }.
+    if: c = ';'u32 then: {
+        state advance.
+        return: (state makeToken: TokenKind Semicolon startingFrom: initialState)
+    }.
+    if: c = ','u32 then: {
+        state advance.
+        return: (state makeToken: TokenKind Comma startingFrom: initialState)
+    }.
+    if: c = '.'u32 then: {
+        state advance.
+        if: ((state peek = '.'u32) && ((state peekAt: 1) = '.'u32)) then: {
+            state advance: 2.
+            return: (state makeToken: TokenKind Ellipsis startingFrom: initialState)
+        }.
+        return: (state makeToken: TokenKind Dot startingFrom: initialState)
+    }.
+    if: c = ':'u32 then: {
+        state advance.
+        if: (state peek = ':'u32) then: {
+            state advance.
+            return: (state makeToken: TokenKind ColonColon startingFrom: initialState)
+        }.
+        if: (state peek = '='u32) then: {
+            state advance.
+            return: (state makeToken: TokenKind Assignment startingFrom: initialState)
+        }.
+        return: (state makeToken: TokenKind Colon startingFrom: initialState)
+    }.
+    if: c = '$'u32 then: {
+        state advance.
+        return: (state makeToken: TokenKind Dollar startingFrom: initialState)
+    }.
+    if: c = '`'u32 then: {
+        if: (state peekAt: 1) = '\''u32 then: {
+            state advance: 2.
+            return: (state makeToken: TokenKind Quote startingFrom: initialState)
+        }.
+        if: (state peekAt: 1) = '`'u32 then: {
+            state advance: 2.
+            return: (state makeToken: TokenKind QuasiQuote startingFrom: initialState)
+        }.
+        if: (state peekAt: 1) = ','u32 then: {
+            state advance: 2.
+            return: (state makeToken: TokenKind QuasiUnquote startingFrom: initialState)
+        }.
+        if: (state peekAt: 1) = '@'u32 then: {
+            state advance: 2.
+            return: (state makeToken: TokenKind Splice startingFrom: initialState)
+        }.
+        if: (state peekAt: 1) = '|'u32 then: {
+            state advance.
+            if: isOperatorCharacter(state peek) then: {
+                while: isOperatorCharacter(state peek) do: {
+                    state advance
+                }.
+
+                return: (state makeToken: TokenKind Operator startingFrom: initialState)
+            }.
+            return: (state makeToken: TokenKind Bar startingFrom: initialState)
+        }.
+    }.
+
+    if: isOperatorCharacter(c) then: {
+        state advance.
+
+        if: isOperatorCharacter(state peek) not then: {
+            if: c = '<'u32 then: {
+                return: (state makeToken: TokenKind LessThan startingFrom: initialState)
+            }.
+            if: c = '>'u32 then: {
+                return: (state makeToken: TokenKind GreaterThan startingFrom: initialState)
+            }.
+            if: c = '*'u32 then: {
+                return: (state makeToken: TokenKind Star startingFrom: initialState)
+            }.
+            if: c = '!'u32 then: {
+                return: (state makeToken: TokenKind Bang startingFrom: initialState)
+            }.
+        }.
+
+        while: isOperatorCharacter(state peek) do: {
+            state advance
+        }.
+
+        return: (state makeToken: TokenKind Operator startingFrom: initialState)
+    }.
+
+    if: state atEnd then: {
+        return: ScannedToken(TokenKind EndOfSource)
+    }
+    else: {
+        state advance.
+        return: (state makeErrorToken: "Unknown character." startingFrom: initialState)
+    }
     
-    ScannedToken(TokenKind EndOfSource)
 }.
 
 public: [
@@ -490,8 +608,9 @@ public: [
 $sourceCode := makeSourceCodeForString("
      multi:keyword: keyword: identifier 42 42.5
      #symbol #symbol: #symbol:with: #+
-     #\"Hello World\" #[1 . 2] #{} \"Hello String\" 'A'
+     #\"Hello World\" #[1 . 2] #{} \"Hello String\" 'A' < $!a
 ").
+
 ##printLine(sourceCode).
 $scanResult := scanSourceCode(sourceCode).
 ##printLine(scanResult size . " " .  scanResult).

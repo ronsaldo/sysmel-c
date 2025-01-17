@@ -485,22 +485,22 @@ sysmelb_ScannerToken_t sysmelb_scanSingleToken(sysmelb_scannerState_t *state)
         scannerState_advance(state, 1);
         return scannerState_makeTokenStartingFrom(state, SysmelTokenDollar, &initialState);
     case '`':
-        if (scannerState_peek(state, 0) == '\'')
+        if (scannerState_peek(state, 1) == '\'')
         {
             scannerState_advance(state, 2);
             return scannerState_makeTokenStartingFrom(state, SysmelTokenQuote, &initialState);
         }
-        else if (scannerState_peek(state, 0) == '`')
+        else if (scannerState_peek(state, 1) == '`')
         {
             scannerState_advance(state, 2);
             return scannerState_makeTokenStartingFrom(state, SysmelTokenQuasiQuote, &initialState);
         }
-        else if (scannerState_peek(state, 0) == ',')
+        else if (scannerState_peek(state, 1) == ',')
         {
             scannerState_advance(state, 2);
             return scannerState_makeTokenStartingFrom(state, SysmelTokenQuasiUnquote, &initialState);
         }
-        else if (scannerState_peek(state, 0) == '@')
+        else if (scannerState_peek(state, 1) == '@')
         {
             scannerState_advance(state, 2);
             return scannerState_makeTokenStartingFrom(state, SysmelTokenSplice, &initialState);
