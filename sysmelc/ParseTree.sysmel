@@ -105,33 +105,41 @@ public: [
 
         ## Blocks
         Record: ParseTreeBlockClosureNode withFields: #{
+            sourcePosition: SourcePosition.
             functionType: ParseTreeNode.
             body: ParseTreeNode.
         }.
         Record: ParseTreeLexicalBlockNode withFields: #{
+            sourcePosition: SourcePosition.
             expression: ParseTreeNode
         }.
 
         ## Macro operators
         Record: ParseTreeQuoteNode withFields: #{
+            sourcePosition: SourcePosition.
             expression: ParseTreeNode
         }.
         Record: ParseTreeQuasiQuoteNode withFields: #{
+            sourcePosition: SourcePosition.
             expression: ParseTreeNode
         }.
         Record: ParseTreeQuasiUnquoteNode withFields: #{
+            sourcePosition: SourcePosition.
             expression: ParseTreeNode
         }.
         Record: ParseTreeSpliceNode withFields: #{
+            sourcePosition: SourcePosition.
             expression: ParseTreeNode
         }.
 
         ## Binding and pattern matching
         Record: ParseTreeFunctionalDependentTypeNode withFields: #{
+            sourcePosition: SourcePosition.
             arguments: Array.
             resultTypeExpression: ParseTreeNode
         }.
         Record: ParseTreeBindableNameNode withFields: #{
+            sourcePosition: SourcePosition.
             typeExpression: ParseTreeNode.
             nameExpression: ParseTreeNode.
             isImplicit: Boolean.
@@ -141,12 +149,14 @@ public: [
             hasPostTypeExpression: Boolean.
         }.
         Record: ParseTreeAssignmentNode withFields: #{
+            sourcePosition: SourcePosition.
             store: ParseTreeNode.
             value: ParseTreeNode.
         }.
 
         ## Closure and functions.
         Record: ParseTreeFunctionNode withFields: #{
+            sourcePosition: SourcePosition.
             functionDependentType: ParseTreeNode.
             bodyExpression: ParseTreeNode.
             name: Symbol
@@ -154,26 +164,31 @@ public: [
 
         ## Control flow. Exposed via macros
         Record: ParseTreeIfSelectionNode withFields: #{
+            sourcePosition: SourcePosition.
             condition: ParseTreeNode.
             trueExpression: ParseTreeNode.
             falseExpression: ParseTreeNode
         }.
         Record: ParseTreeWhileLoopNode withFields: #{
+            sourcePosition: SourcePosition.
             condition: ParseTreeNode.
             body: ParseTreeNode.
             continueExpression: ParseTreeNode
         }.
         Record: ParseTreeDoWhileLoopNode withFields: #{
+            sourcePosition: SourcePosition.
             body: ParseTreeNode.
             continueExpression: ParseTreeNode.
             condition: ParseTreeNode
         }.
         Record: ParseTreeReturnNode withFields: #{
+            sourcePosition: SourcePosition.
             valueExpression: ParseTreeNode.
         }.
 
         ## Namespaces
         Record: ParseTreeNamespaceDefinitionNode withFields: #{
+            sourcePosition: SourcePosition.
             namespace: Namespace.
             definition: ParseTreeNode.
         }.

@@ -216,11 +216,249 @@ public: [
 
             self state advanceWithExpectedError: "Expected a literal."
         };
+        withSelector: #parseIdentifier addMethod: {|$(Parser)self :: ParseTreeNode |
+            $token := self state next.
+            $symbol := token getText asSymbol.
+
+            ParseTreeNode(ParseTreeIdentifierReferenceNode#{
+                sourcePosition: token sourcePosition.
+                value: symbol
+            })
+        };
         withSelector: #parseTerm addMethod: {|$(Parser)self :: ParseTreeNode |
+            $kind := self state peekKind.
+            if: kind = TokenKind Identifier then: {
+                return: self parseIdentifier
+            }.
+            
             self parseLiteral
         };
+        withSelector: #parseUnaryPostfixExpression addMethod: {|$(Parser)self :: ParseTreeNode |
+            $!receiver := self parseTerm.
+
+            receiver
+        };
+        withSelector: #parseQuote addMethod: {|$(Parser)self :: ParseTreeNode |
+            $startingPosition := self state position.
+            assert: self state peekKind = TokenKind Quote.
+            self state advance.
+
+            $expression := self parseUnaryPrefixExpression.
+            
+            ParseTreeNode(ParseTreeQuoteNode#{
+                sourcePosition: (self state sourcePositionFrom: startingPosition).
+                expression: expression
+            })
+        };
+        withSelector: #parseQuasiQuote addMethod: {|$(Parser)self :: ParseTreeNode |
+            $startingPosition := self state position.
+            assert: self state peekKind = TokenKind QuasiQuote.
+            self state advance.
+
+            $expression := self parseUnaryPrefixExpression.
+            
+            ParseTreeNode(ParseTreeQuasiQuoteNode#{
+                sourcePosition: (self state sourcePositionFrom: startingPosition).
+                expression: expression
+            })
+        };
+        withSelector: #parseQuasiUnquote addMethod: {|$(Parser)self :: ParseTreeNode |
+            $startingPosition := self state position.
+            assert: self state peekKind = TokenKind QuasiUnquote.
+            self state advance.
+
+            $expression := self parseUnaryPrefixExpression.
+            
+            ParseTreeNode(ParseTreeQuasiUnquoteNode#{
+                sourcePosition: (self state sourcePositionFrom: startingPosition).
+                expression: expression
+            })
+        };
+        withSelector: #parseSplice addMethod: {|$(Parser)self :: ParseTreeNode |
+            $startingPosition := self state position.
+            assert: self state peekKind = TokenKind Splice.
+            self state advance.
+
+            $expression := self parseUnaryPrefixExpression.
+            
+            ParseTreeNode(ParseTreeSpliceNode#{
+                sourcePosition: (self state sourcePositionFrom: startingPosition).
+                expression: expression
+            })
+        };
+
+        withSelector: #parseUnaryPrefixExpression addMethod: {|$(Parser)self :: ParseTreeNode |
+            $kind := self state peekKind.
+            if: kind = TokenKind Quote then: {
+                return: self parseQuote
+            }.
+            if: kind = TokenKind QuasiQuote then: {
+                return: self parseQuasiQuote
+            }.
+            if: kind = TokenKind QuasiUnquote then: {
+                return: self parseQuasiUnquote
+            }.
+            if: kind = TokenKind Splice then: {
+                return: self parseSplice
+            }.
+            self parseUnaryPostfixExpression
+        };
+        withSelector: #isBinaryExpressionOperator: addMethod: {|$(Parser)self $(TokenKind)kind :: Boolean |
+            (kind = TokenKind Operator) || (kind = TokenKind Star) ||
+            (kind = TokenKind LessThan) || (kind = TokenKind GreaterThan) ||
+            (kind = TokenKind Bar)
+        };
+        withSelector: #parseBinaryExpressionSequence addMethod: {|$(Parser)self :: ParseTreeNode |
+            $startingPosition := self state position.
+            $operand := self parseUnaryPrefixExpression.
+            if: (self isBinaryExpressionOperator: self state peekKind) not then: {
+                return: operand
+            }.
+
+            $elements := OrderedCollection().
+            elements add: operand.
+
+            while: (self isBinaryExpressionOperator: self state peekKind) do: {
+                $operatorToken := self state next.
+                $operatorSymbol := operatorToken getText asSymbol.
+
+                $operatorNode := ParseTreeNode(ParseTreeLiteralSymbolNode#{
+                    sourcePosition: operatorToken sourcePosition.
+                    value: operatorSymbol
+                }).
+                elements add: operatorNode.
+
+                $nextOperand := self parseUnaryPrefixExpression.
+                elements add: nextOperand
+            }.
+            
+            ParseTreeNode(ParseTreeBinaryOperatorSequenceNode#{
+                sourcePosition: (self state sourcePositionFrom: startingPosition).
+                elements: elements asArray
+            })
+        };
+        withSelector: #parseAssociationExpression addMethod: {|$(Parser)self :: ParseTreeNode |
+            $startingPosition := self state position.
+            $key := self parseBinaryExpressionSequence.
+            if: self state peekKind ~= TokenKind Colon then: {
+                return: key
+            }.
+            self state advance.
+            $value := self parseAssociationExpression.
+            ParseTreeNode(ParseTreeAssociationNode#{
+                sourcePosition: (self state sourcePositionFrom: startingPosition).
+                key: key.
+                value: value
+            })
+        };
+        withSelector: #parseKeywordApplication addMethod: {|$(Parser)self :: ParseTreeNode |
+            assert: (self state peekKind = TokenKind Keyword).
+            $startingPosition := self state position.
+            $!selectorValue := "".
+            $arguments := OrderedCollection().
+
+            while: (self state peekKind = TokenKind Keyword) do: {
+                $token := self state next.
+                selectorValue := selectorValue -- token getText.
+
+                $argument := self parseBinaryExpressionSequence.
+                arguments add: argument
+            }.
+
+            $identifierSymbol := selectorValue asSymbol.
+            $identifierNode := ParseTreeNode(ParseTreeIdentifierReferenceNode#{
+                sourcePosition: (self state sourcePositionFrom: startingPosition).
+                value: identifierSymbol.
+            }).
+
+            ParseTreeNode(ParseTreeFunctionApplicationNode#{
+                sourcePosition: (self state sourcePositionFrom: startingPosition).
+                functional: identifierNode.
+                arguments: arguments asArray
+            })
+        };
+        withSelector: #parseKeywordMessageSend addMethod: {|$(Parser)self :: ParseTreeNode |
+            $startingPosition := self state position.
+            $receiver := self parseAssociationExpression.
+            if: self state peekKind ~= TokenKind Keyword then: {
+                return: receiver
+            }.
+
+            $!selectorValue := "".
+            $arguments := OrderedCollection().
+
+            while: (self state peekKind = TokenKind Keyword) do: {
+                $token := self state next.
+                selectorValue := selectorValue -- token getText.
+
+                $argument := self parseBinaryExpressionSequence.
+                arguments add: argument
+            }.
+
+            $selector := selectorValue asSymbol.
+
+            $sourcePosition := self state sourcePositionFrom: startingPosition.
+            $selectorNode := ParseTreeNode(ParseTreeLiteralSymbolNode#{
+                sourcePosition: sourcePosition.
+                value: selector.
+            }).
+
+            ParseTreeNode(ParseTreeMessageSendNode#{
+                sourcePosition: sourcePosition.
+                receiver: receiver.
+                selector: selectorNode.
+                arguments: arguments asArray.
+            })
+        };
+        withSelector: #parseMessageCascade addMethod: {|$(Parser)self :: ParseTreeNode |
+            self parseKeywordMessageSend
+        };
+        withSelector: #parseLowPrecedenceExpression addMethod: {|$(Parser)self :: ParseTreeNode |
+            if: self state peekKind = TokenKind Keyword then: {
+                return: self parseKeywordApplication
+            } else: {
+                return: self parseMessageCascade
+            }
+        };
+        withSelector: #parseAssignmentExpression addMethod: {|$(Parser)self :: ParseTreeNode |
+            $startingPosition := self state position.
+            $assignedStore := self parseLowPrecedenceExpression.
+            if: self state peekKind = TokenKind Assignment then: {
+                self state advance
+                
+                $assignedValue := self parseAssignmentExpression.
+                return: ParseTreeNode(ParseTreeAssignmentNode#{
+                    sourcePosition: (self state sourcePositionFrom: startingPosition).
+                    store: assignedStore.
+                    value: assignedValue.
+                })
+            }
+            else: {
+                return: assignedStore
+            }
+        };
+        withSelector: #parseCommaExpression addMethod: {|$(Parser)self :: ParseTreeNode |
+            $startingPosition := self state position.
+            $element := self parseAssignmentExpression.
+            if: self state peekKind ~= TokenKind Comma then: {
+                return: element
+            }.
+
+            $elements := OrderedCollection().
+            elements add: element.
+            while: self state peekKind = TokenKind Comma do: {
+                self state advance.
+                $element := self parseAssignmentExpression.
+                elements add: element.
+            }.
+
+            ParseTreeNode(ParseTreeTupleNode#{
+                sourcePosition: (self state sourcePositionFrom: startingPosition).
+                elements: elements asArray
+            })
+        };
         withSelector: #parseExpression addMethod: {|$(Parser)self :: ParseTreeNode |
-            self parseTerm
+            self parseCommaExpression
         };
         withSelector: #parseExpressionListUntilEndOrDelimiter: addMethod: {|$(Parser)self $(TokenKind)delimiter :: Array |
             $expressions := OrderedCollection().
@@ -285,7 +523,15 @@ $parseString($(String)text :: ParseTreeNode) := {
 
 ].
 
+##printLine(parseString("")).
 ##printLine(parseString("42 . 42.5 'A' ")).
-printLine(parseString("'A' . \"Hello\\n World\"")).
+##printLine(parseString("'A' . \"Hello\\n World\"")).
 ##printLine(parseString("#symbol . #\"Test Symbol\"")).
+##printLine(parseString("identifier")).
+##printLine(parseString("1 , 2")).
+##printLine(parseString("if: true then: 1 else: 2")).
+##printLine(parseString("a value: 42 with: 5")).
+##printLine(parseString("1 + 2")).
+##printLine(parseString("1 + 2 *3 - 5")).
+##printLine(parseString("#first : 1")).
 }.
