@@ -201,6 +201,18 @@ $isIdentifierStart($(UInt32)character :: Boolean)
 $isIdentifierMiddle($(UInt32)character :: Boolean)
     := isDigit(character) || isIdentifierStart(character).
 
+$isOperatorCharacter($(UInt32)character :: Boolean) := {
+    $charset := "+-/\\*~<>=@%|&?!^".
+    $!i := 0u32.
+    while: (i < charset size) do:{
+        if: (charset at: i) asUInt32 = character then: {
+            return: true
+        }.
+    } continueWith: (i := i + 1u32).
+
+    return: false
+}.
+
 $skipWhite($(ScannerState)state :: ScannedToken) := {
     $!hasSeenComments := false.
     do: {
@@ -222,7 +234,24 @@ $skipWhite($(ScannerState)state :: ScannedToken) := {
             else: {
                 ## Multiline
                 if: ((state peekAt: 1) = '*'u32) then: {
-                    ## TODO: Implement this case.
+                    $startingState := state copy.
+                    state advance: 2u32.
+                    $!hasCommentEnd := false.
+                    while: state atEnd not && hasCommentEnd not do: {
+                        hasCommentEnd := (state peek = '*'u32) && ((state peekAt: 1) = '#'u32).
+
+                        if:(hasCommentEnd) then: {
+                            state advance: 2
+                        }
+                        else: {
+                            state advance.
+                        }
+                    }.
+                    if: hasCommentEnd then: {
+                        hasSeenComments := true
+                    } else: {
+                        return: (state makeErrorToken: "Incomplete multiline comment." startingFrom: startingState)
+                    }
                 }
             }
             
@@ -298,10 +327,30 @@ $scanSingleToken($(ScannerState)state :: ScannerToken) := {
             state advance
         }.
 
+        if: state peek = 'r'u32 then: {
+            state advance.
+
+            while: (isIdentifierMiddle(state peek)) do: {
+                state advance
+            }.
+            return: (state makeToken: TokenKind Nat startingFrom: initialState)
+        }.
+
         if: ((state peek = '.'u32) && (isDigit(state peekAt: 1))) then: {
             state advance.
             while: (isDigit(state peek)) do: {
                 state advance
+            }.
+
+            if: (state peek = 'e'u32) || (state peek = 'E'u32) then: {
+                if: (isDigit(state peek)) || 
+                (((state peek = '-'u32) || (state peek = '+'u32))
+                && (isDigit(state peekAt: 1u32))) then: {
+                    state advance: 2u32
+                    while: (isDigit(state peek)) do: {
+                        state advance
+                    }.
+                }
             }.
 
             return: (state makeToken: TokenKind Float startingFrom: initialState)    
@@ -310,6 +359,116 @@ $scanSingleToken($(ScannerState)state :: ScannerToken) := {
         return: (state makeToken: TokenKind Nat startingFrom: initialState)
     }.
 
+    ## Symbols
+    if: c = '#'u32 then: {
+        $c1 := state peekAt: 1.
+        if: (isIdentifierStart(c1)) then: {
+            state advance.
+            while: isIdentifierMiddle(state peek) do:{
+                state advance
+            }.
+
+            if: state peek = ':'u32 then: {
+                state advance.
+
+                $!isMultiKeyword := false.
+                $!hasAdvanced := true.
+                while: (hasAdvanced) do: {
+                    hasAdvanced := scanAdvanceKeyword(state).
+                    isMultiKeyword := isMultiKeyword || hasAdvanced
+                }.
+
+                if: isMultiKeyword then: {
+                    return: (state makeToken: TokenKind Symbol startingFrom: initialState)
+                }
+                else: {
+                    return: (state makeToken: TokenKind Symbol startingFrom: initialState)
+                }
+            }.
+
+            return: (state makeToken: TokenKind Symbol startingFrom: initialState)
+        }.
+
+        if: isOperatorCharacter(c1) then: {
+            state advance.
+            while: (isOperatorCharacter(state peek)) do: {
+                state advance
+            }.
+            return: (state makeToken: TokenKind Symbol startingFrom: initialState)
+        }.
+
+        if: c1 = '"'u32 then: {
+            state advance: 2.
+            while: (state atEnd not && (state peek ~= '"'u32)) do: {
+                if: (state peek = '\\') && ((state peekAt: 1) > 0u32) then: {
+                    state advance: 2.
+                }
+                else: {
+                    state advance.
+                }.
+            }.
+
+            if: state peek ~= '"' then: {
+                return: (state makeErrorToken: "Incomplete string" startingFrom: initialState)
+            }.
+
+            state advance.
+            return: (state makeToken: TokenKind Symbol startingFrom: initialState)
+        }.
+        if: c1 = '['u32 then: {
+            state advance: 2.
+            return: (state makeToken: TokenKind ByteArrayStart startingFrom: initialState)
+        }.
+        if: c1 = '{'u32 then: {
+            state advance: 2.
+            return: (state makeToken: TokenKind DictionaryStart startingFrom: initialState)
+        }.
+        if: c1 = '('u32 then: {
+            state advance: 2.
+            return: (state makeToken: TokenKind LiteralArrayStart startingFrom: initialState)
+        }.
+    }.
+
+    ## Strings
+    if: c = '"'u32 then: {
+        state advance.
+        while: (state atEnd not && (state peek ~= '"'u32)) do: {
+            if: (state peek = '\\') && ((state peekAt: 1) > 0u32) then: {
+                state advance: 2.
+            }
+            else: {
+                state advance.
+            }.
+        }.
+
+        if: state peek ~= '"' then: {
+            return: (state makeErrorToken: "Incomplete string literal" startingFrom: initialState)
+        }.
+
+        state advance.
+        return: (state makeToken: TokenKind String startingFrom: initialState)
+    }.
+
+    ## Characters
+    if: c = '\''u32 then: {
+        state advance.
+        while: (state atEnd not && (state peek ~= '"'u32)) do: {
+            if: (state peek = '\\') && ((state peekAt: 1) > 0u32) then: {
+                state advance: 2.
+            }
+            else: {
+                state advance.
+            }.
+        }.
+
+        if: state peek ~= '\'' then: {
+            return: (state makeErrorToken: "Incomplete character literal" startingFrom: initialState)
+        }.
+
+        state advance.
+        return: (state makeToken: TokenKind Character startingFrom: initialState)
+    }.
+    
     ScannedToken(TokenKind EndOfSource)
 }.
 
@@ -320,7 +479,7 @@ public: [
         $!scannedToken := ScannedToken(TokenKind NullToken).
         do: {
             scannedToken := scanSingleToken(state).
-            printLine(scannedToken).
+            printLine(scannedToken kind).
             list add: scannedToken
         } while: (scannedToken kind ~= TokenKind EndOfSource).
 
@@ -328,7 +487,11 @@ public: [
     }
 ]
 
-$sourceCode := makeSourceCodeForString(" multi:keyword: keyword: identifier 42 42.5 ").
+$sourceCode := makeSourceCodeForString("
+     multi:keyword: keyword: identifier 42 42.5
+     #symbol #symbol: #symbol:with: #+
+     #\"Hello World\" #[1 . 2] #{} \"Hello String\" 'A'
+").
 ##printLine(sourceCode).
 $scanResult := scanSourceCode(sourceCode).
 ##printLine(scanResult size . " " .  scanResult).

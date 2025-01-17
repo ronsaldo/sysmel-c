@@ -281,14 +281,20 @@ static sysmelb_IntegerLiteralType_t sysmelb_normalizeIntegerValue(sysmelb_Type_t
     if(integerType == sysmelb_BasicTypesData.integer || integerType->valueSize == 8)
         return value;
 
+    sysmelb_UnsignedIntegerLiteralType_t integerBitCount = integerType->valueSize*8;
+    sysmelb_UnsignedIntegerLiteralType_t integerBitMask =  ((sysmelb_UnsignedIntegerLiteralType_t)1<<integerBitCount) - 1;
+    
+    sysmelb_IntegerLiteralType_t integerSignedBitMask =  (1<<(integerBitCount - 1)) - 1;
+    sysmelb_IntegerLiteralType_t integerSignBitMask =  (1<<(integerBitCount - 1));
+
+
     switch(integerType->kind)
     {
     case SysmelTypeKindPrimitiveCharacter:
     case SysmelTypeKindPrimitiveUnsignedInteger:
-        return value & ((1 << integerType->valueSize*8) - 1);
+        return value & integerBitMask;
     case SysmelTypeKindPrimitiveSignedInteger:
-        return (value & ((1 << (integerType->valueSize*8 - 1)) - 1))
-            - (value & (1 << (integerType->valueSize*8 - 1)));
+        return (value & integerSignedBitMask) - (value & integerSignBitMask);
     case SysmelTypeKindInteger:
     default: return value;
     }
