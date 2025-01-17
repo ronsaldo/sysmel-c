@@ -17,6 +17,9 @@ public: [
     }.
 
     SourcePosition
+        withSelector: #getText addMethod: {|$(SourcePosition)self :: String |
+            self sourceCode text substringFrom: self startIndex until: self endIndex
+        };
         withSelector: #to: addMethod: {|$(SourcePosition)self $(SourcePosition)target :: SourcePosition |
             SourcePosition#{
                 sourceCode: self sourceCode.

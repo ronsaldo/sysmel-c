@@ -4,6 +4,8 @@
 #include "parse-tree.h"
 #include "value.h"
 #include <stdbool.h>
+#include <stdlib.h>
+#include <string.h>
 
 static bool sysmelb_BasicTypesDataInitialized;
 static sysmelb_BasicTypes_t sysmelb_BasicTypesData;
@@ -499,6 +501,30 @@ static sysmelb_Value_t sysmelb_primitive_integerGreaterOrEquals(size_t argumentC
     return result;
 }
 
+static sysmelb_Value_t sysmelb_primitive_integerAsInteger(size_t argumentCount, sysmelb_Value_t *arguments)
+{
+    assert(argumentCount == 1);
+    sysmelb_Value_t originalValue = sysmelb_decayValue(arguments[0]);
+    sysmelb_Value_t result = {
+        .kind = SysmelValueKindInteger,
+        .type = sysmelb_BasicTypesData.integer,
+        .integer = originalValue.integer
+    };
+    return result;
+}
+
+static sysmelb_Value_t sysmelb_primitive_integerAsCharacter(size_t argumentCount, sysmelb_Value_t *arguments)
+{
+    assert(argumentCount == 1);
+    sysmelb_Value_t originalValue = sysmelb_decayValue(arguments[0]);
+    sysmelb_Value_t result = {
+        .kind = SysmelValueKindInteger,
+        .type = sysmelb_BasicTypesData.character,
+        .integer = originalValue.integer
+    };
+    return result;
+}
+
 static sysmelb_Value_t sysmelb_primitive_integerAsInt8(size_t argumentCount, sysmelb_Value_t *arguments)
 {
     assert(argumentCount == 1);
@@ -650,6 +676,9 @@ static void sysmelb_createBasicIntegersPrimitives(void)
         sysmelb_type_addPrimitiveMethod(type, sysmelb_internSymbolC(">"), sysmelb_primitive_integerGreaterThan);
         sysmelb_type_addPrimitiveMethod(type, sysmelb_internSymbolC(">="), sysmelb_primitive_integerGreaterOrEquals);
 
+        sysmelb_type_addPrimitiveMethod(type, sysmelb_internSymbolC("asInteger"),  sysmelb_primitive_integerAsInteger);
+        sysmelb_type_addPrimitiveMethod(type, sysmelb_internSymbolC("asCharacter"),  sysmelb_primitive_integerAsCharacter);
+
         sysmelb_type_addPrimitiveMethod(type, sysmelb_internSymbolC("asInt8"),  sysmelb_primitive_integerAsInt8);
         sysmelb_type_addPrimitiveMethod(type, sysmelb_internSymbolC("asInt16"), sysmelb_primitive_integerAsInt16);
         sysmelb_type_addPrimitiveMethod(type, sysmelb_internSymbolC("asInt32"), sysmelb_primitive_integerAsInt32);
@@ -742,11 +771,58 @@ static sysmelb_Value_t sysmelb_primitive_stringAt(size_t argumentCount, sysmelb_
     return result;
 }
 
+static sysmelb_Value_t sysmelb_primitive_substringFromUntil(size_t argumentCount, sysmelb_Value_t *arguments)
+{
+    assert(argumentCount == 3);
+    assert(arguments[0].kind == SysmelValueKindStringReference
+        && (arguments[1].kind == SysmelValueKindInteger || arguments[1].kind == SysmelValueKindUnsignedInteger)
+        && (arguments[2].kind == SysmelValueKindInteger || arguments[2].kind == SysmelValueKindUnsignedInteger));
+
+    size_t stringSize = arguments[0].stringSize;
+    unsigned int startIndex = arguments[1].unsignedInteger;
+    unsigned int endIndex = arguments[2].unsignedInteger;
+    assert(startIndex < stringSize);
+    assert(endIndex <= stringSize);
+
+    unsigned int substringSize = endIndex - startIndex;
+    char *substring = sysmelb_allocate(substringSize);
+    memcpy(substring, arguments[0].string + startIndex, substringSize);
+
+    sysmelb_Value_t result = {
+        .kind = SysmelValueKindStringReference,
+        .type = sysmelb_getBasicTypes()->string,
+        .string = substring,
+        .stringSize = substringSize,
+    };
+    return result;
+}
+
+static sysmelb_Value_t sysmelb_primitive_stringAsFloat(size_t argumentCount, sysmelb_Value_t *arguments)
+{
+    assert(argumentCount == 1);
+    assert(arguments[0].kind == SysmelValueKindStringReference);
+
+    size_t stringSize = arguments[0].stringSize;
+    char *cstring = calloc(stringSize, 1);
+    memcpy(cstring, arguments[0].string, stringSize);
+    double floatValue = atof(cstring);
+    free(cstring);
+
+    sysmelb_Value_t result = {
+        .kind = SysmelValueKindFloatingPoint,
+        .type = sysmelb_BasicTypesData.integer,
+        .floatingPoint = floatValue
+    };
+    return result;
+}
+
 static void sysmelb_createBasicStringPrimitives(void)
 {
     sysmelb_type_addPrimitiveMethod(sysmelb_BasicTypesData.string, sysmelb_internSymbolC("--"), sysmelb_primitive_concatenateString);
     sysmelb_type_addPrimitiveMethod(sysmelb_BasicTypesData.string, sysmelb_internSymbolC("size"), sysmelb_primitive_stringSize);
     sysmelb_type_addPrimitiveMethod(sysmelb_BasicTypesData.string, sysmelb_internSymbolC("at:"), sysmelb_primitive_stringAt);
+    sysmelb_type_addPrimitiveMethod(sysmelb_BasicTypesData.string, sysmelb_internSymbolC("substringFrom:until:"), sysmelb_primitive_substringFromUntil);
+    sysmelb_type_addPrimitiveMethod(sysmelb_BasicTypesData.string, sysmelb_internSymbolC("asFloat"), sysmelb_primitive_stringAsFloat);
 }
 
 static sysmelb_Value_t sysmelb_primitive_concatenateArrays(size_t argumentCount, sysmelb_Value_t *arguments)

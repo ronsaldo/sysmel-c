@@ -75,6 +75,10 @@ $makeScannerStateForSourceCode($(SourceCode)sourceCode :: ScannerState)
     }.
 ].
 
+ScannedToken
+    withSelector: #getText addMethod: {|$(ScannedToken)self :: String |
+        self sourcePosition getText
+    }.
 ScannerState
     withSelector: #copy addMethod: {|$(ScannerState)self :: ScannerState |
         ScannerState#{

@@ -75,19 +75,133 @@ public: [
                 $endSourcePosition := self currentSourcePosition.
                 startSourcePosition until: endSourcePosition
             }
+        };
+        withSelector: #makeErrorAtCurrentSourcePosition: addMethod: {|$(ParserState)self $(String)errorMessage :: ParseTreeNode |
+            ParseTreeNode(ParseTreeErrorNode#{
+                sourcePosition: self currentSourcePosition.
+                errorMessage: errorMessage.
+                innerNodes: ParseTreeNullNode()
+            })
+        };
+        withSelector: #advanceWithExpectedError: addMethod: {|$(ParserState)self $(String)errorMessage :: ParseTreeNode |
+            if: self peekKind = TokenKind Error then: {
+                $errorToken := self next.
+
+                return: ParseTreeNode(ParseTreeErrorNode#{
+                    sourcePosition: errorToken sourcePosition.
+                    errorMessage: errorMessage.
+                    innerNodes: ParseTreeNullNode()})
+            }.
+            if: self atEnd then: {
+                return: ParseTreeNode(ParseTreeErrorNode#{
+                    sourcePosition: self currentSourcePosition.
+                    errorMessage: errorMessage.
+                    innerNodes: ParseTreeNullNode()})
+            }.
+
+            return: ParseTreeNode(ParseTreeErrorNode#{
+                sourcePosition: self currentSourcePosition.
+                errorMessage: errorMessage.
+                innerNodes: ParseTreeNullNode()})
         }.
 
+    $parseIntegerConstant($(String)text :: Integer) := {
+        $!value := 0.
+        $!radix := 10.
+        $!hasSeenRadix := false.
+        
+        $i := 0.
+        $stringSize := text size.
+        while: i < stringSize do: {
+            $c := text at: i.
+            if: hasSeenRadix not && ((c = 'r') || (c = 'R')) then: {
+                radix := value.
+                value := 0.
+                hasSeenRadix := true
+            } else: {
+                if: ('0' <= c) && (c <= '9') then: {
+                    $digit := (c - '0') asInteger.
+                    value := (value*radix) + digit
+                }.
+                if: ('A' <= c) && (c <= 'Z') then: {
+                    $digit := (c - 'A') asInteger + 10.
+                    value := (value*radix) + digit
+                }.
+                if: ('a' <= c) && (c <= 'z') then: {
+                    $digit := (c - 'a') asInteger + 10.
+                    value := (value*radix) + digit
+                }.
+            }
+        } continueWith: (i := i + 1).
+
+        value
+    }.
 
     Record: Parser withFields: #{
         state: ParserState.
     }.
     Parser
-        withSelector: #parseExpressionListUntilEndOrDelimiter: addMethod: {|$(ParserState)self $(TokenKind)delimiter :: Array |
+        withSelector: #parseInteger addMethod: {|$(Parser)self :: ParseTreeNode |
+            $token := self state next.
+
+            ParseTreeNode(ParseTreeLiteralIntegerNode#{
+                sourcePosition: token sourcePosition.
+                value: parseIntegerConstant(token getText)
+            })
+        };
+        withSelector: #parseFloat addMethod: {|$(Parser)self :: ParseTreeNode |
+            $token := self state next.
+
+            ParseTreeNode(ParseTreeLiteralFloatNode#{
+                sourcePosition: token sourcePosition.
+                value: token getText asFloat
+            })
+        };
+        withSelector: #parseLiteral addMethod: {|$(Parser)self :: ParseTreeNode |
+            $kind := self state peekKind.
+            if: kind = TokenKind Nat then: {
+                return: self parseInteger
+            }.
+            if: kind = TokenKind Float then: {
+                return: self parseFloat
+            }.
+
+            self state advanceWithExpectedError: "Expected a literal."
+        };
+        withSelector: #parseTerm addMethod: {|$(Parser)self :: ParseTreeNode |
+            self parseLiteral
+        };
+        withSelector: #parseExpression addMethod: {|$(Parser)self :: ParseTreeNode |
+            self parseTerm
+        };
+        withSelector: #parseExpressionListUntilEndOrDelimiter: addMethod: {|$(Parser)self $(TokenKind)delimiter :: Array |
             $expressions := OrderedCollection().
+
+            ## Leading dots
+            while: self state peekKind = TokenKind Dot do: {
+                self state advance
+            }.
+
+            $!expectsExpressions := true.
+            while: (self state atEnd not && (self state peekKind ~= delimiter)) do: {
+                if: expectsExpressions not then: {
+                    expressions add: (self state makeErrorAtCurrentSourcePosition: "Expected dot before expression.")
+                }.
+
+                $expression := self parseExpression.
+                expressions add: expression.
+
+                ## Trailing dots
+                expectsExpressions := false.
+                while: self state peekKind = TokenKind Dot do: {
+                    expectsExpressions := true.
+                    self state advance
+                }.
+            }.
 
             expressions asArray
         };
-        withSelector: #parseSequenceUntilEndOrDelimiter: addMethod: {|$(ParserState)self $(TokenKind)delimiter :: ParseTreeNode |
+        withSelector: #parseSequenceUntilEndOrDelimiter: addMethod: {|$(Parser)self $(TokenKind)delimiter :: ParseTreeNode |
             $startingPosition := self state position.
             $expressions := self parseExpressionListUntilEndOrDelimiter: delimiter.
             printLine("expressions ". expressions size).
@@ -101,7 +215,7 @@ public: [
                 elements: expressions
             })
         };
-        withSelector: #parseTopLevelExpressions addMethod: {|$(ParserState)self :: ParseTreeNode |
+        withSelector: #parseTopLevelExpressions addMethod: {|$(Parser)self :: ParseTreeNode |
             self parseSequenceUntilEndOrDelimiter: TokenKind EndOfSource
         }.
 
@@ -124,5 +238,5 @@ $parseString($(String)text :: ParseTreeNode) := {
 
 ].
 
-printLine(parseString("42")).
+printLine(parseString("42 . 42.5 ")).
 }.
