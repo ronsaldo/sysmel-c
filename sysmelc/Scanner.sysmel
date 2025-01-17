@@ -591,17 +591,16 @@ $scanSingleToken($(ScannerState)state :: ScannerToken) := {
 }.
 
 public: [
-    $scanSourceCode($(SourceCode)sourceCode :: OrderedCollection) := {
+    $scanSourceCode($(SourceCode)sourceCode :: Array) := {
         $list := OrderedCollection().
         $state := makeScannerStateForSourceCode(sourceCode).
         $!scannedToken := ScannedToken(TokenKind NullToken).
         do: {
             scannedToken := scanSingleToken(state).
-            printLine(scannedToken kind).
             list add: scannedToken
         } while: (scannedToken kind ~= TokenKind EndOfSource).
 
-        list
+        list asArray
     }
 ]
 
