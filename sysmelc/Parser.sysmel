@@ -63,24 +63,20 @@ public: [
 
             assert: self tokenCount > 0.
             return: (self tokens at: self tokenCount - 1) sourcePosition
+        };
+        withSelector: #sourcePositionFrom: addMethod: {|$(ParserState)self $(UInt32)startingPosition :: SourcePosition |
+            assert: startingPosition < self tokenCount.
+            $startSourcePosition := (self tokens at: startingPosition) sourcePosition.
+            
+            if: self position > 0u32 then: {
+                $endSourcePosition := self previousSourcePosition.
+                startSourcePosition to: endSourcePosition
+            } else: {
+                $endSourcePosition := self currentSourcePosition.
+                startSourcePosition until: endSourcePosition
+            }
         }.
-    #*
-sysmelb_SourcePosition_t parserState_sourcePositionFrom(sysmelb_parserState_t *state, size_t startingPosition)
-{
-    assert(startingPosition < state->tokenCount);
-    sysmelb_SourcePosition_t startSourcePosition = state->tokens[startingPosition].sourcePosition;
-    if (state->position > 0)
-    {
-        sysmelb_SourcePosition_t endSourcePosition = parserState_previousSourcePosition(state);
-        return sysmelb_sourcePosition_to(&startSourcePosition, &endSourcePosition);
-    }
-    else
-    {
-        sysmelb_SourcePosition_t endSourcePosition = parserState_previousSourcePosition(state);
-        return sysmelb_sourcePosition_until(&startSourcePosition, &endSourcePosition);
-    }
-}
-*#
+
 
     Record: Parser withFields: #{
         state: ParserState.
@@ -94,21 +90,19 @@ sysmelb_SourcePosition_t parserState_sourcePositionFrom(sysmelb_parserState_t *s
         withSelector: #parseSequenceUntilEndOrDelimiter: addMethod: {|$(ParserState)self $(TokenKind)delimiter :: ParseTreeNode |
             $startingPosition := self state position.
             $expressions := self parseExpressionListUntilEndOrDelimiter: delimiter.
+            printLine("expressions ". expressions size).
+
             if: expressions size = 1 then: {
                 return: (expressions at: 0)
-            }
+            }.
 
-            #*
-
-    sysmelb_ParseTreeNode_t *sequenceNode = sysmelb_newParseTreeNode(ParseTreeSequence, parserState_sourcePositionFrom(state, startingPosition));
-    sequenceNode->sequence.elements = expressions;
-    return sequenceNode;
-    *#
-            ParseTreeNode(ParseTreeNullNode())
+            ParseTreeNode(ParseTreeSequenceNode#{
+                sourcePosition: (self state sourcePositionFrom: startingPosition).
+                elements: expressions
+            })
         };
         withSelector: #parseTopLevelExpressions addMethod: {|$(ParserState)self :: ParseTreeNode |
-            
-            ParseTreeNode(ParseTreeNullNode())
+            self parseSequenceUntilEndOrDelimiter: TokenKind EndOfSource
         }.
 
 $parseTokenList($(SourceCode)sourceCode $(Array)tokens :: ParseTreeNode) := {
@@ -125,9 +119,7 @@ $parseTokenList($(SourceCode)sourceCode $(Array)tokens :: ParseTreeNode) := {
 $parseString($(String)text :: ParseTreeNode) := {
     $sourceCode := makeSourceCodeForString(text).
     $tokens := scanSourceCode(sourceCode).
-    parseTokenList(sourceCode . tokens).
-
-    ParseTreeNode(ParseTreeNullNode())
+    parseTokenList(sourceCode . tokens)
 }.
 
 ].

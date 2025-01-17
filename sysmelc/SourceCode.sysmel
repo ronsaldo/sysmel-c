@@ -16,6 +16,30 @@ public: [
         endColumn: Int32.
     }.
 
+    SourcePosition
+        withSelector: #to: addMethod: {|$(SourcePosition)self $(SourcePosition)target :: SourcePosition |
+            SourcePosition#{
+                sourceCode: self sourceCode.
+                startIndex: self startIndex.
+                endIndex: target endIndex.
+                startLine: self startLine.
+                endLine: target endLine.
+                startColumn: self startColumn.
+                endColumn: target endColumn.
+            }
+        };
+        withSelector: #until: addMethod: {|$(SourcePosition)self $(SourcePosition)target :: SourcePosition |
+            SourcePosition#{
+                sourceCode: self sourceCode.
+                startIndex: self startIndex.
+                endIndex: target startIndex.
+                startLine: self startLine.
+                endLine: target startLine.
+                startColumn: self startColumn.
+                endColumn: target startColumn.
+            }
+        }.
+
 $makeSourceCodeForString($(String)text :: SourceCode)
     := SourceCode#{
         name: "Text String".
