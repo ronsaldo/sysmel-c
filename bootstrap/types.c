@@ -155,6 +155,15 @@ int sysmelb_findIndexOfFieldNamed(sysmelb_Type_t *type, sysmelb_symbol_t *name)
 
     return -1;
 }
+int sysmelb_findSumTypeIndexForType(sysmelb_Type_t *sumType, sysmelb_Type_t *injectedType)
+{
+    for(uint32_t i = 0; i < sumType->sumType.alternativeCount; ++i)
+    {
+        if(sumType->sumType.alternatives[i] == injectedType)
+            return (int)i;
+    }
+    return -1;
+}
 
 sysmelb_Value_t sysmelb_instantiateTypeWithArguments(sysmelb_Type_t *type, size_t argumentCount, sysmelb_Value_t *arguments)
 {
@@ -216,6 +225,32 @@ sysmelb_Value_t sysmelb_instantiateTypeWithArguments(sysmelb_Type_t *type, size_
         return result;
     }
 
+    if(type->kind == SysmelTypeKindSum)
+    {
+        if(argumentCount != 1)
+        {
+            sysmelb_SourcePosition_t emptyPosition = {0};
+            sysmelb_errorPrintf(emptyPosition, "Sum types can only be instantiated with a single parameter.");
+        }
+        sysmelb_Type_t *argumentType = arguments[0].type;
+        int injectionIndex = sysmelb_findSumTypeIndexForType(type, argumentType);
+        if(injectionIndex < 0)
+        {
+            sysmelb_SourcePosition_t emptyPosition = {0};
+            sysmelb_errorPrintf(emptyPosition, "Failed to inject value of a type into a sum type.");
+        }
+
+        sysmelb_SumTypeValue_t *sumValue = sysmelb_allocate(sizeof(sysmelb_SumTypeValue_t));
+        sumValue->alternativeIndex = injectionIndex;
+        sumValue->alternativeValue = arguments[0];
+        
+        sysmelb_Value_t sumValueValue = {
+            .kind = SysmelValueKindSumValueReference,
+            .type = type,
+            .sumTypeValueReference = sumValue
+        };
+        return sumValueValue;
+    }
 
     abort();
 }

@@ -3,4 +3,4 @@ Inductive: Arithmetic withAlternatives: [
     Record: Plus withFields: #{leftOperand: Arithmetic. rightOperand: Arithmetic}
 ].
 
-printLine(LiteralInteger)
+printLine(Arithmetic(LiteralInteger{42})).

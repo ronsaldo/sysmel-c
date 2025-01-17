@@ -27,6 +27,7 @@ typedef enum sysmelb_ValueKind_e
     SysmelValueKindValueBoxReference,
     SysmelValueKindNamespaceReference,
     SysmelValueKindOrderedCollectionReference,
+    SysmelValueKindSumValueReference,
 } sysmelb_ValueKind_t;
 
 typedef struct sysmelb_Value_s sysmelb_Value_t;
@@ -48,6 +49,7 @@ typedef struct sysmelb_Dictionary_s sysmelb_Dictionary_t;
 typedef struct sysmelb_ValueBox_s sysmelb_ValueBox_t;
 
 typedef struct sysmelb_OrderedCollection_s sysmelb_OrderedCollection_t;
+typedef struct sysmelb_SumTypeValue_s sysmelb_SumTypeValue_t;
 
 struct sysmelb_Value_s
 {
@@ -75,6 +77,7 @@ struct sysmelb_Value_s
         sysmelb_Namespace_t *namespaceReference;
 
         sysmelb_OrderedCollection_t *orderedCollectionReference;
+        sysmelb_SumTypeValue_t *sumTypeValueReference;
 
         struct
         {
@@ -124,6 +127,12 @@ struct sysmelb_OrderedCollection_s
     size_t capacity;
     size_t size;
     sysmelb_Value_t *elements;
+};
+
+struct sysmelb_SumTypeValue_s
+{
+    uint32_t alternativeIndex;
+    sysmelb_Value_t alternativeValue;
 };
 
 void sysmelb_OrderedCollection_add(sysmelb_OrderedCollection_t *collection, sysmelb_Value_t value);

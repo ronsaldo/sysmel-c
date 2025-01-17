@@ -194,6 +194,12 @@ void sysmelb_printValue(sysmelb_Value_t value)
         }
         printf("]");
         break;
+    case SysmelValueKindSumValueReference:
+        printf("%.*s[%u:", value.type->name->size, value.type->name->string,
+             value.sumTypeValueReference->alternativeIndex);
+        sysmelb_printValue(value.sumTypeValueReference->alternativeValue);
+        printf("]");
+        break;
     default: abort();
     }
 }

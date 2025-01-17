@@ -10,7 +10,7 @@
             "request": "launch",
             "program": "${workspaceFolder}/build/bootstrap",
             //"args": ["${workspaceFolder}/sysmelc/package.sysmel"],
-            "args": ["${workspaceFolder}/samples/17-MoreLoops.sysmel"],
+            "args": ["${workspaceFolder}/samples/17-InductiveTypes.sysmel"],
             "stopAtEntry": false,
             "cwd": "${workspaceFolder}",
             "environment": [],
