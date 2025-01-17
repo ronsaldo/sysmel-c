@@ -269,6 +269,181 @@ public: [
 
             expressionWithError
         };
+        withSelector: #parseFunctionalType addMethod: {|$(Parser)self :: ParseTreeNode |
+            $startingPosition := self state position.
+            $arguments := OrderedCollection().
+            $!resultTypeExpression := ParseTreeNode(ParseTreeNullNode()).
+
+            while: self state peekKind = TokenKind Dollar do: {
+                $argument := self parseBindableName.
+                arguments add: argument
+            }.
+
+            if: self state peekKind = TokenKind ColonColon then: {
+                self state advance.
+                resultTypeExpression := self parseUnaryPrefixExpression
+            }.
+
+            ParseTreeNode(ParseTreeFunctionalDependentTypeNode#{
+                sourcePosition: (self state sourcePositionFrom: startingPosition).
+                arguments: arguments asArray.
+                resultTypeExpression: resultTypeExpression.
+            })
+        };
+        withSelector: #parseBlock addMethod: {|$(Parser)self :: ParseTreeNode |
+            $startingPosition := self state position.
+            ## {
+            assert: self state peekKind = TokenKind LeftCurlyBracket.
+            self state advance.
+
+            $!hasFunctionalType := false.
+            $!functionalType := ParseTreeNode(ParseTreeNullNode()).
+
+            if: self state peekKind = TokenKind Bar then: {
+                self state advance.
+                if: self state peekKind = TokenKind Bar then: {
+                    self state advance.
+                    functionalType := ParseTreeNode(ParseTreeFunctionalDependentTypeNode#{
+                        sourcePosition: (self state sourcePositionFrom: startingPosition).
+                        arguments: [].
+                        resultTypeExpression: ParseTreeNode(ParseTreeNullNode())
+                    }).
+                    hasFunctionalType := true.
+                } else: {
+                    functionalType := self parseFunctionalType.
+                    functionalType := self state expect: TokenKind Bar
+                        addingError: "Expected a bar (|) finalizing the block closure signature." toNode: functionalType.
+                    hasFunctionalType := true
+                }
+            }.
+
+            $body := self parseSequenceUntilEndOrDelimiter: TokenKind RightCurlyBracket.
+            $bodyWithError := self state expect: TokenKind RightCurlyBracket addingError: "Missing right curly bracket" toNode: body.
+            ## }
+
+            if: hasFunctionalType then: {
+                ParseTreeNode(ParseTreeBlockClosureNode#{
+                    sourcePosition: (self state sourcePositionFrom: startingPosition).
+                    functionType: functionalType.
+                    body: bodyWithError.
+                })
+            }
+            else: {
+                ParseTreeNode(ParseTreeLexicalBlockNode#{
+                    sourcePosition: (self state sourcePositionFrom: startingPosition).
+                    expression: bodyWithError.
+                })
+            }
+        };
+        withSelector: #parseOptionalBindableNameType addMethod: {|$(Parser)self :: ParseTreeNode |
+            if: self state peekKind = TokenKind LeftBracket then: {
+                self state advance.
+                $typeExpression := self parseExpression.
+                $typeExpressionWithError := self state expect: TokenKind RightBracket addingError: "Expected a right bracket." toNode: typeExpression.
+                return: typeExpressionWithError
+            }.
+            if: self state peekKind = TokenKind LeftParent then: {
+                self state advance.
+                $typeExpression := self parseExpression.
+                $typeExpressionWithError := self state expect: TokenKind RightParent addingError: "Expected a right parenthesis." toNode: typeExpression.
+                return: typeExpressionWithError
+            }.
+            return: ParseTreeNode(ParseTreeNullNode())
+        };
+        withSelector: #parseNameExpression addMethod: {|$(Parser)self :: ParseTreeNode |
+            if: self state peekKind = TokenKind Identifier then: {
+                $token := self state next.
+                $tokenSymbol := token getText asSymbol.
+
+                return: ParseTreeNode(ParseTreeLiteralSymbolNode #{
+                    sourcePosition: token sourcePosition.
+                    value: tokenSymbol
+                })
+            } else: {
+                self state makeErrorAtCurrentSourcePosition: "Expected a bindable name."
+            }
+        };
+        withSelector: #parseBindableDependentType addMethod: {|$(Parser)self :: ParseTreeNode |
+            assert: self state peekKind = TokenKind LeftParent.
+            self state advance.
+            $functionalType := self parseFunctionalType.
+            $functionalTypeWithError := self state expect: TokenKind RightParent addingError: "Missing right parenthesis." toNode: functionalType.
+            return: functionalTypeWithError
+        };
+        withSelector: #parseBindableName addMethod: {|$(Parser)self :: ParseTreeNode |
+            $startingPosition := self state position.
+            assert: self state peekKind = TokenKind Dollar.
+            self state advance.
+            
+            $!isExistential := false
+            $!isMutable := false.
+            
+            if: self state peekKind = TokenKind Bang then: {
+                self state advance.
+                isMutable := true.
+            }.
+            if: self state peekKind = TokenKind Question then: {
+                self state advance.
+                isExistential := true.
+            }.
+
+            $!isAnonymousFunction := false.
+            if: self state peekKind = TokenKind Dollar then: {
+                self state advance.
+                isAnonymousFunction := true.
+            }.
+
+            $isImplicit := false.
+            $!typeExpression := null.
+            $!hasTypeExpression := false.
+            if: isAnonymousFunction not then: {
+                if: self state peekKind = TokenKind LeftBracket then: {
+                    isImplicit := true.
+                    hasTypeExpression := true
+                }.
+                if: self state peekKind = TokenKind LeftParent then: {
+                    hasTypeExpression := true
+                }.
+
+                typeExpression := self parseOptionalBindableNameType.
+            }.
+
+            $!hasPostTypeExpression := false.
+            $!isVariadic := false.
+
+            $!nameExpression := ParseTreeNode(ParseTreeNullNode()).
+            if: self state peekKind = TokenKind Ellipsis then: {
+                self state advance.
+                isVariadic := true.
+            } else: {
+                if: isAnonymousFunction not then: {
+                    nameExpression := self parseNameExpression
+                }
+            }.
+
+            if: hasTypeExpression not || isAnonymousFunction then: {
+                if: self state peekKind = TokenKind LeftParent then: {
+                    typeExpression := self parseBindableDependentType.
+                    hasPostTypeExpression := true
+                }
+            }.
+
+            if: self state peekKind = TokenKind Ellipsis then: {
+                self state advance.
+                isVariadic := true.
+            }.
+
+            ParseTreeNode(ParseTreeBindableNameNode#{
+                sourcePosition: (self state sourcePositionFrom: startingPosition).
+                typeExpression: typeExpression.
+                nameExpression: nameExpression.
+                isImplicit: isImplicit.
+                isExistential: isExistential.
+                isVariadic: isVariadic.
+                isMutable: isMutable.
+                hasPostTypeExpression: hasPostTypeExpression.
+            })
+        };
         withSelector: #parseTerm addMethod: {|$(Parser)self :: ParseTreeNode |
             $kind := self state peekKind.
             if: kind = TokenKind Identifier then: {
@@ -277,17 +452,19 @@ public: [
             if: kind = TokenKind LeftParent then: {
                 return: self parseParenthesis
             }.
+            if: kind = TokenKind LeftCurlyBracket then: {
+                return: self parseBlock
+            }.
+            if: kind = TokenKind Dollar then: {
+                return: self parseBindableName
+            }.
 #*
-    case SysmelTokenLeftCurlyBracket:
-        return parser_parseBlock(state);
     case SysmelTokenLeftBracket:
         return parser_parseArray(state);
     case SysmelTokenByteArrayStart:
         return parser_parseByteArray(state);
     case SysmelTokenDictionaryStart:
         return parser_parseDictionary(state);
-    case SysmelTokenDollar:
-        return parser_parseBindableName(state);
 *#            
             self parseLiteral
         };
@@ -621,5 +798,11 @@ $parseString($(String)text :: ParseTreeNode) := {
 ##printLine(parseString("#first : 1")).
 ##printLine(parseString("1 negated")).
 
-printLine(parseString("2 * (1 + 5)")).
+##printLine(parseString("$x")).
+##printLine(parseString("$(Integer)x")).
+##printLine(parseString("$id($(Integer)x :: Integer)")).
+
+##printLine(parseString("{}")).
+##printLine(parseString("{| |}")).}
+##printLine(parseString("{|$x $y | x + y}")).
 }.

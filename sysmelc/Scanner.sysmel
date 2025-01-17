@@ -546,19 +546,18 @@ $scanSingleToken($(ScannerState)state :: ScannerToken) := {
             state advance: 2.
             return: (state makeToken: TokenKind Splice startingFrom: initialState)
         }.
-        if: (state peekAt: 1) = '|'u32 then: {
-            state advance.
-            if: isOperatorCharacter(state peek) then: {
-                while: isOperatorCharacter(state peek) do: {
-                    state advance
-                }.
-
-                return: (state makeToken: TokenKind Operator startingFrom: initialState)
-            }.
-            return: (state makeToken: TokenKind Bar startingFrom: initialState)
-        }.
     }.
+    if: c = '|'u32 then: {
+        state advance.
+        if: isOperatorCharacter(state peek) then: {
+            while: isOperatorCharacter(state peek) do: {
+                state advance
+            }.
 
+            return: (state makeToken: TokenKind Operator startingFrom: initialState)
+        }.
+        return: (state makeToken: TokenKind Bar startingFrom: initialState)
+    }.
     if: isOperatorCharacter(c) then: {
         state advance.
 
