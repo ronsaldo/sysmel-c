@@ -574,7 +574,26 @@ sysmelb_Value_t sysmelb_interpretBytecodeFunction(sysmelb_function_t *function, 
         }
             ++pc;
             break;
+        case SysmelFunctionOpcodeMakeArray:
+        {
+            uint16_t arraySize = currentInstruction->arraySize;
+            sysmelb_ArrayHeader_t *array = sysmelb_allocate(sizeof(sysmelb_ArrayHeader_t) + arraySize*sizeof(sysmelb_Value_t));
+            array->size = arraySize;
+            for(uint16_t i = 0; i < arraySize; ++i)
+            {
+                sysmelb_Value_t element = sysmelb_bytecodeActivationContext_pop(&context);
+                array->elements[arraySize - 1 - i] = element;
+            }
 
+            sysmelb_Value_t arrayValue = {
+                .kind = SysmelValueKindArrayReference,
+                .type = sysmelb_getBasicTypes()->array,
+                .arrayReference = array
+            };
+            sysmelb_bytecodeActivationContext_push(&context, arrayValue);
+        }
+            ++pc;
+            break;
         case SysmelFunctionOpcodeAssert:
         {
             sysmelb_Value_t condition = sysmelb_bytecodeActivationContext_pop(&context);

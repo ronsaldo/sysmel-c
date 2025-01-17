@@ -83,6 +83,18 @@ public: [
                 innerNodes: ParseTreeNullNode()
             })
         };
+        withSelector: #expect:addingError:toNode: addMethod: {|$(ParserState)self $(TokenKind)expectedKind $(String)errorMessage $(ParseTreeNode)innerNode :: ParseTreeNode |
+            if: self peekKind = expectedKind then: {
+                self advance.
+                return: innerNode
+            }.
+
+            ParseTreeNode(ParseTreeErrorNode#{
+                sourcePosition: self currentSourcePosition.
+                errorMessage: errorMessage.
+                innerNodes: innerNode
+            })
+        };
         withSelector: #advanceWithExpectedError: addMethod: {|$(ParserState)self $(String)errorMessage :: ParseTreeNode |
             if: self peekKind = TokenKind Error then: {
                 $errorToken := self next.
@@ -225,17 +237,90 @@ public: [
                 value: symbol
             })
         };
+        withSelector: #parseParenthesis addMethod: {|$(Parser)self :: ParseTreeNode |
+            $startingPosition := self state position.
+            ## (
+            assert: self state peekKind = TokenKind LeftParent.
+            self state advance.
+
+            if: (self isBinaryExpressionOperator: self state peekKind) &&
+                ((self state peekKind: 1) = TokenKind RightParent) then: {
+                $token := self state next.
+                self state advance.
+
+                $tokenSymbol := token getText asSymbol.
+                return: ParseTreeNode(ParseTreeIdentifierReferenceNode#{
+                    sourcePosition: token sourcePosition.
+                    value: tokenSymbol
+                })
+            }.
+
+            if: self state peekKind = TokenKind RightParent then: {
+                self state advance.
+                return: ParseTreeNode(ParseTreeTupleNode#{
+                    sourcePosition: (self state sourcePositionFrom: startingPosition).
+                    value: []
+                })
+            }.
+        
+            $expression := self parseSequenceUntilEndOrDelimiter: TokenKind RightParent.
+            $expressionWithError := self state expect: TokenKind RightParent addingError: "Missing right parenthesis" toNode: expression.
+            ## )
+
+            expressionWithError
+        };
         withSelector: #parseTerm addMethod: {|$(Parser)self :: ParseTreeNode |
             $kind := self state peekKind.
             if: kind = TokenKind Identifier then: {
                 return: self parseIdentifier
             }.
-            
+            if: kind = TokenKind LeftParent then: {
+                return: self parseParenthesis
+            }.
+#*
+    case SysmelTokenLeftCurlyBracket:
+        return parser_parseBlock(state);
+    case SysmelTokenLeftBracket:
+        return parser_parseArray(state);
+    case SysmelTokenByteArrayStart:
+        return parser_parseByteArray(state);
+    case SysmelTokenDictionaryStart:
+        return parser_parseDictionary(state);
+    case SysmelTokenDollar:
+        return parser_parseBindableName(state);
+*#            
             self parseLiteral
         };
+        withSelector: #isUnaryPostfixToken: addMethod: {|$(Parser)self $(TokenKind)kind :: Boolean |
+            (kind = TokenKind Identifier) || (kind = TokenKind LeftParent) ||
+            (kind = TokenKind LeftBracket) || (kind = TokenKind LeftCurlyBracket) ||
+            (kind = TokenKind ByteArrayStart) || (kind = TokenKind DictionaryStart)
+        };
         withSelector: #parseUnaryPostfixExpression addMethod: {|$(Parser)self :: ParseTreeNode |
+            $startingPosition := self state position.
             $!receiver := self parseTerm.
 
+            while: (self isUnaryPostfixToken: self state peekKind) do: {
+                $token := self state peek.
+                if: token kind = TokenKind Identifier then: {
+                    self state advance.
+                    $selector := token getText asSymbol.
+                    $selectorNode := ParseTreeNode(ParseTreeLiteralSymbolNode#{
+                        sourcePosition: token sourcePosition.
+                        value: selector
+                    }).
+
+                    $unaryMessage := ParseTreeNode(ParseTreeMessageSendNode#{
+                        sourcePosition: (self state sourcePositionFrom: startingPosition).
+                        receiver: receiver.
+                        selector: selectorNode.
+                        arguments: []
+                    }).
+
+                    receiver := unaryMessage.
+                }.
+
+            }.
             receiver
         };
         withSelector: #parseQuote addMethod: {|$(Parser)self :: ParseTreeNode |
@@ -534,4 +619,7 @@ $parseString($(String)text :: ParseTreeNode) := {
 ##printLine(parseString("1 + 2")).
 ##printLine(parseString("1 + 2 *3 - 5")).
 ##printLine(parseString("#first : 1")).
+##printLine(parseString("1 negated")).
+
+printLine(parseString("2 * (1 + 5)")).
 }.
