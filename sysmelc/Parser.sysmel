@@ -1,0 +1,5 @@
+namespace: SysmelC definition: {
+public: [
+].
+printLine(ParseTreeDictionaryNode)
+}.

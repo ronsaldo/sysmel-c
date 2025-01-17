@@ -1,0 +1,177 @@
+namespace: SysmelC definition: {
+public: [
+    Inductive: ParseTreeNode withAlternatives: [
+        Record: ParseTreeNullNode withFields: #{}.
+
+        ## Errors.
+        Record: ParseTreeErrorNode withFields: #{
+            sourcePosition: SourcePosition.
+            errorMessage: String.
+            innerNodes: ParseTreeNode
+        }.
+        Record: ParseTreeAssertNode withFields: #{
+            sourcePosition: SourcePosition.
+            errorMessage: String.
+            innerNodes: ParseTreeNode
+        }.
+        
+        ## Literals
+        Record: ParseTreeLiteralIntegerNode withFields: #{
+            sourcePosition: SourcePosition.
+            value: Integer.
+        }.
+        Record: ParseTreeLiteralCharacterNode withFields: #{
+            sourcePosition: SourcePosition.
+            value: Character.
+        }.
+        Record: ParseTreeLiteralFloatNode withFields: #{
+            sourcePosition: SourcePosition.
+            value: Float.
+        }.
+        Record: ParseTreeLiteralStringNode withFields: #{
+            sourcePosition: SourcePosition.
+            value: String.
+        }.
+        
+        ## Identifiers
+        Record: ParseTreeIdentifierReferenceNode withFields: #{
+            sourcePosition: SourcePosition.
+            value: Symbol.
+        }.
+
+        ## Functions and message send
+        Record: ParseTreeFunctionApplicationNode withFields: #{
+            sourcePosition: SourcePosition.
+            functional: ParseTreeNode.
+            arguments: Array
+        }.
+        Record: ParseTreeMessageSendNode withFields: #{
+            sourcePosition: SourcePosition.
+            receiver: ParseTreeNode.
+            selector: ParseTreeNode.
+            arguments: Array
+        }.
+        Record: ParseTreeMessageCascadeNode withFields: #{
+            sourcePosition: SourcePosition.
+            receiver: ParseTreeNode.
+            cascadedMessages: Array.
+        }.
+        Record: ParseTreeCascadedMessageNode withFields: #{
+            sourcePosition: SourcePosition.
+            selector: ParseTreeNode.
+            arguments: Array
+        }.
+        Record: ParseTreeBinaryOperatorSequenceNode withFields: #{
+            sourcePosition: SourcePosition.
+            elements: Array
+        }.
+
+        ## Sequences, array, tuples
+        Record: ParseTreeSequenceNode withFields: #{
+            sourcePosition: SourcePosition.
+            elements: Array
+        }.
+        Record: ParseTreeSequenceNode withFields: #{
+            sourcePosition: SourcePosition.
+            elements: Array
+        }.
+        Record: ParseTreeTupleNode withFields: #{
+            sourcePosition: SourcePosition.
+            elements: Array
+        }.
+        Record: ParseTreeArrayNode withFields: #{
+            sourcePosition: SourcePosition.
+            elements: Array
+        }.
+        Record: ParseTreeByteArrayNode withFields: #{
+            sourcePosition: SourcePosition.
+            elements: Array
+        }.
+
+        ## Dictionary.
+        Record: ParseTreeAssociationNode withFields: #{
+            sourcePosition: SourcePosition.
+            key: ParseTreeNode.
+            value: ParseTreeNode.
+        }.
+        Record: ParseTreeDictionaryNode withFields: #{
+            sourcePosition: SourcePosition.
+            elements: Array.
+        }.
+
+        ## Blocks
+        Record: ParseTreeBlockClosureNode withFields: #{
+            functionType: ParseTreeNode.
+            body: ParseTreeNode.
+        }.
+        Record: ParseTreeLexicalBlockNode withFields: #{
+            expression: ParseTreeNode
+        }.
+
+        ## Macro operators
+        Record: ParseTreeQuoteNode withFields: #{
+            expression: ParseTreeNode
+        }.
+        Record: ParseTreeQuasiQuoteNode withFields: #{
+            expression: ParseTreeNode
+        }.
+        Record: ParseTreeQuasiUnquoteNode withFields: #{
+            expression: ParseTreeNode
+        }.
+        Record: ParseTreeSpliceNode withFields: #{
+            expression: ParseTreeNode
+        }.
+
+        ## Binding and pattern matching
+        Record: ParseTreeFunctionalDependentTypeNode withFields: #{
+            arguments: Array.
+            resultTypeExpression: ParseTreeNode
+        }.
+        Record: ParseTreeBindableNameNode withFields: #{
+            typeExpression: ParseTreeNode.
+            nameExpression: ParseTreeNode.
+            isImplicit: Boolean.
+            isExistential: Boolean.
+            isVariadic: Boolean.
+            isMutable: Boolean.
+            hasPostTypeExpression: Boolean.
+        }.
+        Record: ParseTreeAssignmentNode withFields: #{
+            store: ParseTreeNode.
+            value: ParseTreeNode.
+        }.
+
+        ## Closure and functions.
+        Record: ParseTreeFunctionNode withFields: #{
+            functionDependentType: ParseTreeNode.
+            bodyExpression: ParseTreeNode.
+            name: Symbol
+        }.
+
+        ## Control flow. Exposed via macros
+        Record: ParseTreeIfSelectionNode withFields: #{
+            condition: ParseTreeNode.
+            trueExpression: ParseTreeNode.
+            falseExpression: ParseTreeNode
+        }.
+        Record: ParseTreeWhileLoopNode withFields: #{
+            condition: ParseTreeNode.
+            body: ParseTreeNode.
+            continueExpression: ParseTreeNode
+        }.
+        Record: ParseTreeDoWhileLoopNode withFields: #{
+            body: ParseTreeNode.
+            continueExpression: ParseTreeNode.
+            condition: ParseTreeNode
+        }.
+        Record: ParseTreeReturnNode withFields: #{
+            valueExpression: ParseTreeNode.
+        }.
+
+        ## Namespaces
+        Record: ParseTreeNamespaceDefinitionNode withFields: #{
+            namespace: Namespace.
+            definition: ParseTreeNode.
+        }.
+    ].
+]}.

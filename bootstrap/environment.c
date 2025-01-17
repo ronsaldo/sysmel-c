@@ -440,6 +440,23 @@ static sysmelb_Value_t sysmelb_PublicMacro(sysmelb_MacroContext_t *macroContext,
         {
             if(valueToExport.typeReference->name)
                 sysmelb_namespace_exportValueWithName(ownerNamespace, valueToExport.typeReference->name, &valueToExport);
+            if(valueToExport.typeReference->kind == SysmelTypeKindSum)
+            {
+                uint32_t alternatives = valueToExport.typeReference->sumType.alternativeCount;
+                for(uint32_t i = 0; i < alternatives; ++i)
+                {
+                    sysmelb_Type_t *alternativeType = valueToExport.typeReference->sumType.alternatives[i];
+                    if(alternativeType->name)
+                    {
+                        sysmelb_Value_t alternativeTypeValue = {
+                            .kind = SysmelValueKindTypeReference,
+                            .type = sysmelb_getBasicTypes()->universe,
+                            .typeReference = alternativeType,
+                        };
+                        sysmelb_namespace_exportValueWithName(ownerNamespace, alternativeType->name, &alternativeTypeValue);
+                    }
+                }
+            }
         }
             break;
         case SysmelValueKindFunctionReference:

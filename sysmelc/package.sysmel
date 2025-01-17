@@ -1,2 +1,6 @@
+loadFileOnce: "Namespace.sysmel".
+loadFileOnce: "Module.sysmel".
 loadFileOnce: "SourceCode.sysmel".
 loadFileOnce: "Scanner.sysmel".
+loadFileOnce: "ParseTree.sysmel".
+loadFileOnce: "Parser.sysmel".
