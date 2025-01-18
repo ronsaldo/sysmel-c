@@ -670,12 +670,74 @@ sysmelb_Value_t sysmelb_analyzeAndEvaluateScript(sysmelb_Environment_t *environm
         
         if(!defaultCase)
         {
-            sysmelb_errorPrintf(ast->sourcePosition, "Switch statement without default case.");
-            abort();
+            sysmelb_Value_t result = {
+                .kind = SysmelValueKindVoid,
+                .type = sysmelb_getBasicTypes()->voidType,
+            };
+            return result;
         }
 
         return sysmelb_analyzeAndEvaluateScript(environment, defaultCase);
     };
+    case ParseTreeSwitchPatternMatching:
+        sysmelb_Value_t value = sysmelb_analyzeAndEvaluateScript(environment, ast->switchPatternMatching.value);
+        sysmelb_Value_t sumTypeValue = sysmelb_analyzeAndEvaluateScript(environment, ast->switchPatternMatching.valueSumType);
+        assert(value.kind == SysmelValueKindSumValueReference);
+        assert(sumTypeValue.kind == SysmelValueKindTypeReference);
+        assert(ast->switchPatternMatching.cases->kind == ParseTreeDictionary);
+        sysmelb_ParseTreeDictionary_t *dictionary = &ast->switchPatternMatching.cases->dictionary;
+        size_t caseCount = dictionary->elements.size;
+        sysmelb_ParseTreeNode_t *defaultCase = NULL;
+
+        for(size_t i = 0; i < caseCount; ++i)
+        {
+            assert(dictionary->elements.elements[i]->kind == ParseTreeAssociation);
+            sysmelb_ParseTreeAssociation_t *caseAssoc = &dictionary->elements.elements[i]->association;
+            if(caseAssoc->key->kind == ParseTreeBindableName)
+            {
+                sysmelb_ParseTreeBindableName_t *bindableName = &caseAssoc->key->bindableName;
+                if(!bindableName->typeExpression)
+                {
+                    sysmelb_errorPrintf(caseAssoc->key->sourcePosition, "Pattern matching bindable name usage requires an explicit case type.");
+                    abort();
+                }
+
+                sysmelb_Value_t bindableTypeValue = sysmelb_analyzeAndEvaluateScript(environment, bindableName->typeExpression);
+                int sumTypeIndex = sysmelb_findSumTypeIndexForType(sumTypeValue.typeReference, bindableTypeValue.typeReference);
+                if(sumTypeIndex < 0 || value.sumTypeValueReference->alternativeIndex != (uint32_t)sumTypeIndex)
+                    continue;
+
+                sysmelb_Environment_t *caseEnvironment = sysmelb_createLexicalEnvironment(environment);
+                sysmelb_Value_t caseValue = value.sumTypeValueReference->alternativeValue;
+
+                if(bindableName->nameExpression)
+                {
+                    sysmelb_Value_t bindableNameValue = sysmelb_analyzeAndEvaluateScript(caseEnvironment, bindableName->nameExpression);
+                    sysmelb_Environment_setLocalSymbolBinding(caseEnvironment, bindableNameValue.symbolReference, sysmelb_createSymbolValueBinding(caseValue));
+                }
+
+                return sysmelb_analyzeAndEvaluateScript(caseEnvironment, caseAssoc->value);
+            }
+
+            sysmelb_Value_t caseKeyValue = sysmelb_analyzeAndEvaluateScript(environment, caseAssoc->key);
+            if(caseKeyValue.kind == SysmelValueKindSymbolReference)
+            {
+                assert(caseKeyValue.symbolReference->size == 1 && caseKeyValue.symbolReference->string[0] == '_');
+                defaultCase = caseAssoc->value;
+
+            }
+        }
+        
+        if(!defaultCase)
+        {
+            sysmelb_Value_t result = {
+                .kind = SysmelValueKindVoid,
+                .type = sysmelb_getBasicTypes()->voidType,
+            };
+            return result;
+        }
+
+        return sysmelb_analyzeAndEvaluateScript(environment, defaultCase);
     case ParseTreeNamespaceDefinition:
     {
         sysmelb_Environment_t *namespaceEnvironment = sysmelb_createNamespaceEnvironment(ast->namespaceDefinition.namespace, environment);

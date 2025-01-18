@@ -236,6 +236,7 @@ static sysmelb_Value_t sysmelb_SwitchWithCasesMacro(sysmelb_MacroContext_t *macr
 
     sysmelb_Value_t result = {
         .kind = SysmelValueKindParseTreeReference,
+        .type = sysmelb_getBasicTypes()->parseTreeNode,
         .parseTreeReference = node
     };
     return result;
@@ -248,43 +249,18 @@ static sysmelb_Value_t sysmelb_MatchOfTypeWithPatterns(sysmelb_MacroContext_t *m
     assert(arguments[0].kind == SysmelValueKindParseTreeReference);
     assert(arguments[1].kind == SysmelValueKindParseTreeReference);
     assert(arguments[2].kind == SysmelValueKindParseTreeReference);
-    
-    // Make sure that we are actually receiving a sum type.
-    sysmelb_Value_t sumTypeValue = sysmelb_analyzeAndEvaluateScript(macroContext->environment, arguments[1].parseTreeReference);
-    if(sumTypeValue.kind != SysmelValueKindTypeReference || sumTypeValue.typeReference->kind != SysmelTypeKindSum)
-    {
-        sysmelb_errorPrintf(macroContext->sourcePosition, "Expected a sum type");
-        abort();
-    }
 
-    sysmelb_Type_t *sumType = sumTypeValue.typeReference;
+    sysmelb_ParseTreeNode_t *patternMatchingNode = sysmelb_newParseTreeNode(ParseTreeSwitchPatternMatching, macroContext->sourcePosition);
+    patternMatchingNode->switchPatternMatching.value = arguments[0].parseTreeReference;
+    patternMatchingNode->switchPatternMatching.valueSumType = arguments[1].parseTreeReference;
+    patternMatchingNode->switchPatternMatching.cases = arguments[2].parseTreeReference;
 
-    // Make sure the alternatives is a dictionary
-    if(arguments[2].parseTreeReference->kind != ParseTreeDictionary)
-    {
-        sysmelb_errorPrintf(arguments[2].parseTreeReference->sourcePosition, "Expected a dictionary with the alternatives");
-        abort();
-    }
-    
-    sysmelb_ParseTreeDictionary_t *dictionary = &arguments[2].parseTreeReference->dictionary;
-    size_t dictionarySize = dictionary->elements.size;
-
-    for(size_t i = 0; i < dictionarySize; ++i)
-    {
-        sysmelb_ParseTreeNode_t *element = dictionary->elements.elements[i];
-        assert(element->kind == ParseTreeAssociation);
-
-        sysmelb_ParseTreeNode_t *key = element->association.key;
-        assert(key->kind == ParseTreeBindableName && key->bindableName.typeExpression);
-        
-        sysmelb_Value_t alternativeType = sysmelb_analyzeAndEvaluateScript(macroContext->environment, key->bindableName.typeExpression);
-        assert(alternativeType.kind == SysmelValueKindTypeReference);
-
-        int sumAlternativeIndex = sysmelb_findSumTypeIndexForType(sumType, alternativeType.typeReference);
-        abort();
-        
-    }
-
+    sysmelb_Value_t result = {
+        .kind = SysmelValueKindParseTreeReference,
+        .type = sysmelb_getBasicTypes()->parseTreeNode,
+        .parseTreeReference = patternMatchingNode
+    };
+    return result;
     abort();
 }
 
@@ -737,7 +713,7 @@ sysmelb_Environment_t *sysmelb_getOrCreateIntrinsicsEnvironment()
     {
         sysmelb_function_t *function = sysmelb_allocate(sizeof(sysmelb_function_t));
         function->kind = SysmelFunctionKindPrimitiveMacro;
-        function->name = sysmelb_internSymbolC("match:ofType:withAlternatives:");
+        function->name = sysmelb_internSymbolC("match:ofType:withPatterns:");
         function->primitiveMacroFunction = sysmelb_MatchOfTypeWithPatterns;
 
         sysmelb_Environment_setLocalSymbolBinding(&sysmelb_IntrinsicsEnvironment, function->name, sysmelb_createSymbolFunctionBinding(function));
