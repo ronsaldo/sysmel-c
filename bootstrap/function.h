@@ -41,6 +41,8 @@ typedef enum sysmelb_FunctionOpcode_e
     SysmelFunctionOpcodeMakeAssociation,
     SysmelFunctionOpcodeMakeDictionary,
     SysmelFunctionOpcodeMakeTuple,
+    SysmelFunctionOpcodeGetSumIndex,
+    SysmelFunctionOpcodeGetSumInjectedValue,
     SysmelFunctionOpcodeAssert,
 } sysmelb_FunctionOpcode_t;
 
@@ -107,6 +109,9 @@ void sysmelb_bytecode_makeAssociation(sysmelb_FunctionBytecode_t *bytecode);
 void sysmelb_bytecode_makeArray(sysmelb_FunctionBytecode_t *bytecode, uint16_t size);
 void sysmelb_bytecode_makeDictionary(sysmelb_FunctionBytecode_t *bytecode, uint16_t size);
 void sysmelb_bytecode_makeTuple(sysmelb_FunctionBytecode_t *bytecode, uint16_t size);
+
+void sysmelb_bytecode_getSumIndex(sysmelb_FunctionBytecode_t *bytecode);
+void sysmelb_bytecode_getSumInjectedValue(sysmelb_FunctionBytecode_t *bytecode);
 
 void sysmelb_bytecode_assert(sysmelb_FunctionBytecode_t *bytecode, sysmelb_SourcePosition_t);
 

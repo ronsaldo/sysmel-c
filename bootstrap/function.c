@@ -229,6 +229,24 @@ void sysmelb_bytecode_makeTuple(sysmelb_FunctionBytecode_t *bytecode, uint16_t s
     sysmelb_bytecode_addInstruction(bytecode, inst);
 }
 
+void sysmelb_bytecode_getSumIndex(sysmelb_FunctionBytecode_t *bytecode)
+{
+    sysmelb_FunctionInstruction_t inst ={
+        .opcode = SysmelFunctionOpcodeGetSumIndex,
+    };
+
+    sysmelb_bytecode_addInstruction(bytecode, inst);
+}
+
+void sysmelb_bytecode_getSumInjectedValue(sysmelb_FunctionBytecode_t *bytecode)
+{
+    sysmelb_FunctionInstruction_t inst ={
+        .opcode = SysmelFunctionOpcodeGetSumInjectedValue,
+    };
+
+    sysmelb_bytecode_addInstruction(bytecode, inst);
+}
+
 void sysmelb_bytecode_assert(sysmelb_FunctionBytecode_t *bytecode, sysmelb_SourcePosition_t sourcePosition)
 {
     sysmelb_FunctionInstruction_t inst ={
@@ -361,6 +379,12 @@ void sysmelb_disassemblyBytecodeFunction(sysmelb_function_t *function)
             break;
         case SysmelFunctionOpcodeMakeDictionary:
             printf("%04d MakeDictionary %d\n", pc, currentInstruction->dictionarySize);
+            break;
+        case SysmelFunctionOpcodeGetSumIndex:
+            printf("%04d GetSumIndex\n", pc);
+            break;
+        case SysmelFunctionOpcodeGetSumInjectedValue:
+            printf("%04d GetSumInjectedValue\n", pc);
             break;
         case SysmelFunctionOpcodeAssert:
             printf("%04d Assert\n", pc);
@@ -619,6 +643,29 @@ sysmelb_Value_t sysmelb_interpretBytecodeFunction(sysmelb_function_t *function, 
                 .arrayReference = array
             };
             sysmelb_bytecodeActivationContext_push(&context, arrayValue);
+        }
+            ++pc;
+            break;
+        case SysmelFunctionOpcodeGetSumIndex:
+        {
+            sysmelb_Value_t sumValue = sysmelb_bytecodeActivationContext_pop(&context);
+            assert(sumValue.kind == SysmelValueKindSumValueReference);
+
+            sysmelb_Value_t injectedIndex = {
+                .kind = SysmelValueKindInteger,
+                .type = sysmelb_getBasicTypes()->integer,
+                .integer = sumValue.sumTypeValueReference->alternativeIndex
+            };
+
+            sysmelb_bytecodeActivationContext_push(&context, injectedIndex);
+        }
+            ++pc;
+            break;
+        case SysmelFunctionOpcodeGetSumInjectedValue:
+        {
+            sysmelb_Value_t sumValue = sysmelb_bytecodeActivationContext_pop(&context);
+            assert(sumValue.kind == SysmelValueKindSumValueReference);
+            sysmelb_bytecodeActivationContext_push(&context, sumValue.sumTypeValueReference->alternativeValue);
         }
             ++pc;
             break;

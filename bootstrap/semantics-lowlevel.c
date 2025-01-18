@@ -400,6 +400,7 @@ static void sysmelb_analyzeAndCompileClosureBody(sysmelb_Environment_t *environm
         uint16_t casesJumps[256];
         uint16_t casesMergeJumps[256];
         uint16_t defaultCaseMergeJump;
+        memset(isCaseWithJump, 0, sizeof(isCaseWithJump));
 
         assert(ast->switchExpression.cases->kind == ParseTreeDictionary);
         sysmelb_ParseTreeDictionary_t *dictionary = &ast->switchExpression.cases->dictionary;
@@ -463,7 +464,140 @@ static void sysmelb_analyzeAndCompileClosureBody(sysmelb_Environment_t *environm
             
             assert(dictionary->elements.elements[i]->kind == ParseTreeAssociation);
             sysmelb_ParseTreeAssociation_t *caseAssoc = &dictionary->elements.elements[i]->association;
-            sysmelb_analyzeAndCompileClosureBody(environment, function, caseAssoc->value);
+            sysmelb_Environment_t *lexicalEnvironment = sysmelb_createLexicalEnvironment(environment);
+            sysmelb_analyzeAndCompileClosureBody(lexicalEnvironment, function, caseAssoc->value);
+
+            casesMergeJumps[i] = sysmelb_bytecode_jump(&function->bytecode);
+        }
+
+        // Merge everything.
+        sysmelb_bytecode_patchJumpToHere(&function->bytecode, defaultCaseMergeJump);
+        for(size_t i = 0; i < caseCount; ++i)
+        {
+            if(isCaseWithJump[i])
+                sysmelb_bytecode_patchJumpToHere(&function->bytecode, casesMergeJumps[i]);
+        }
+        return;
+    }
+    case ParseTreeSwitchPatternMatching:
+    {
+        bool isCaseWithJump[256];
+        uint16_t casesJumps[256];
+        uint16_t casesMergeJumps[256];
+        uint16_t defaultCaseMergeJump;
+        memset(isCaseWithJump, 0, sizeof(isCaseWithJump));
+
+        assert(ast->switchPatternMatching.cases->kind == ParseTreeDictionary);
+        sysmelb_ParseTreeDictionary_t *dictionary = &ast->switchPatternMatching.cases->dictionary;
+        size_t caseCount = dictionary->elements.size;
+        assert(caseCount <= 256);
+        
+        sysmelb_ParseTreeNode_t *defaultCase = NULL;
+
+        // Evaluate the sum type.
+        sysmelb_Value_t sumTypeValue = sysmelb_analyzeAndEvaluateScript(environment, ast->switchPatternMatching.valueSumType);
+        assert(sumTypeValue.kind == SysmelValueKindTypeReference && sumTypeValue.typeReference->kind == SysmelTypeKindSum);
+        sysmelb_Type_t *sumType = sumTypeValue.typeReference;
+
+        // Compile the value expression, and store it in a temporary.
+        uint16_t valueTemporary = sysmelb_bytecode_allocateTemporary(&function->bytecode);
+        uint16_t indexTemporary = sysmelb_bytecode_allocateTemporary(&function->bytecode);
+
+        sysmelb_analyzeAndCompileClosureBody(environment, function, ast->switchExpression.value);
+        sysmelb_bytecode_storeTemporary(&function->bytecode, valueTemporary);
+
+        sysmelb_bytecode_getSumIndex(&function->bytecode);
+        sysmelb_bytecode_popAndStoreTemporary(&function->bytecode, indexTemporary);
+
+
+        // First pass. Generate a series of jump if true.
+        for(size_t i = 0; i < caseCount; ++i)
+        {
+            assert(dictionary->elements.elements[i]->kind == ParseTreeAssociation);
+            sysmelb_ParseTreeAssociation_t *caseAssoc = &dictionary->elements.elements[i]->association;
+            if (caseAssoc->key->kind == ParseTreeBindableName)
+            {
+                sysmelb_ParseTreeNode_t *bindableName = caseAssoc->key;
+                assert(bindableName->bindableName.typeExpression);
+                sysmelb_Value_t bindableTypeValue = sysmelb_analyzeAndEvaluateScript(environment, bindableName->bindableName.typeExpression);
+                sysmelb_Type_t *bindableType = bindableTypeValue.typeReference;
+                int alternativeIndex = sysmelb_findSumTypeIndexForType(sumType, bindableType);
+                if(alternativeIndex < 0)
+                {
+                    sysmelb_errorPrintf(bindableName->sourcePosition, "Pattern does not match anything.");
+                    abort();
+                }
+
+                sysmelb_Value_t alternativeIndexValue = {
+                    .kind = SysmelValueKindInteger,
+                    .type = sysmelb_getBasicTypes()->integer,
+                    .integer = alternativeIndex,
+                };
+
+                sysmelb_bytecode_pushLiteral(&function->bytecode, &alternativeIndexValue);
+                sysmelb_bytecode_pushTemporary(&function->bytecode, indexTemporary);
+                sysmelb_bytecode_integerEquals(&function->bytecode);
+                casesJumps[i] = sysmelb_bytecode_jumpIfTrue(&function->bytecode);
+                isCaseWithJump[i] = true;
+                continue;
+            }
+            else if(caseAssoc->key->kind == ParseTreeLiteralSymbolNode)
+            {
+                sysmelb_ParseTreeNode_t *keyNode = caseAssoc->key;
+                assert(keyNode->literalSymbol.internedSymbol->size == 1 && keyNode->literalSymbol.internedSymbol->string[0] == '_');
+                defaultCase = caseAssoc->value;
+                continue;
+            }
+
+        }
+
+        // Generate the default case
+        if(defaultCase)
+        {
+            sysmelb_analyzeAndCompileClosureBody(environment, function, defaultCase);
+            defaultCaseMergeJump = sysmelb_bytecode_jump(&function->bytecode);
+        }
+        else
+        {
+            // Emit void to balance the results.
+            sysmelb_Value_t voidValue = {
+                .kind = SysmelValueKindVoid,
+                .type = sysmelb_getBasicTypes()->voidType
+            };
+            sysmelb_bytecode_pushLiteral(&function->bytecode, &voidValue);
+            defaultCaseMergeJump = sysmelb_bytecode_jump(&function->bytecode);
+        }
+
+        // Second pass. Generate the body of the different alternatives.
+        for(size_t i = 0; i < caseCount; ++i)
+        {
+            if(!isCaseWithJump[i])
+                continue;
+
+            sysmelb_bytecode_patchJumpToHere(&function->bytecode, casesJumps[i]);
+            
+            assert(dictionary->elements.elements[i]->kind == ParseTreeAssociation);
+            sysmelb_ParseTreeAssociation_t *caseAssoc = &dictionary->elements.elements[i]->association;
+            sysmelb_Environment_t *lexicalEnvironment = sysmelb_createLexicalEnvironment(environment);
+            if (caseAssoc->key->kind == ParseTreeBindableName && caseAssoc->key->bindableName.nameExpression && caseAssoc->key->bindableName.typeExpression)
+            {
+                sysmelb_Value_t bindableNameValue = sysmelb_analyzeAndEvaluateScript(lexicalEnvironment, caseAssoc->key->bindableName.nameExpression);
+                sysmelb_Value_t bindableNameType = sysmelb_analyzeAndEvaluateScript(lexicalEnvironment, caseAssoc->key->bindableName.typeExpression);
+                if(bindableNameValue.kind == SysmelValueKindSymbolReference)
+                {
+                    sysmelb_symbol_t *bindableSymbol = bindableNameValue.symbolReference;
+                    sysmelb_bytecode_pushTemporary(&function->bytecode, valueTemporary);
+                    sysmelb_bytecode_getSumInjectedValue(&function->bytecode);
+                    
+                    uint16_t caseTemporary = sysmelb_bytecode_allocateTemporary(&function->bytecode);
+                    sysmelb_bytecode_popAndStoreTemporary(&function->bytecode, caseTemporary);
+
+                    sysmelb_SymbolBinding_t *caseBinding = sysmelb_createSymbolTemporaryBinding(caseTemporary, bindableNameType.typeReference);
+                    sysmelb_Environment_setLocalSymbolBinding(lexicalEnvironment, bindableSymbol, caseBinding);
+                }
+            }
+            
+            sysmelb_analyzeAndCompileClosureBody(lexicalEnvironment, function, caseAssoc->value);
 
             casesMergeJumps[i] = sysmelb_bytecode_jump(&function->bytecode);
         }

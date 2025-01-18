@@ -16,7 +16,6 @@ match: sumExpression ofType: Arithmetic withPatterns: #{
     $(Minus)minus : printLine("Minus: ". minus leftOperand . "-" . minus rightOperand).
 }.
 
-#*
 $evaluateExpression($(Arithmetic)expression :: Integer) := {
     match: expression ofType: Arithmetic withPatterns: #{
         $(LiteralInteger)literal : literal value.
@@ -26,4 +25,3 @@ $evaluateExpression($(Arithmetic)expression :: Integer) := {
 }.
 
 printLine(evaluateExpression(sumExpression)).
-*#
