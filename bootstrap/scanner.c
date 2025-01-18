@@ -387,7 +387,7 @@ sysmelb_ScannerToken_t sysmelb_scanSingleToken(sysmelb_scannerState_t *state)
         else if (c1 == '{')
         {
             scannerState_advance(state, 2);
-            return scannerState_makeTokenStartingFrom(state, SysmelTokenDictionaryStart, &initialState);
+            return scannerState_makeTokenStartingFrom(state, SysmelTokenImmutableDictionaryStart, &initialState);
         }
         else if (c1 == '(')
         {

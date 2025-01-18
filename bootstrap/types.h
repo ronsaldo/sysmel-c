@@ -11,7 +11,7 @@
 #include <stdbool.h>
 
 typedef struct sysmelb_Type_s sysmelb_Type_t;
-typedef struct sysmelb_Dictionary_s sysmelb_Dictionary_t;
+typedef struct sysmelb_ImmutableDictionary_s sysmelb_ImmutableDictionary_t;
 typedef struct sysmelb_OrderedCollection_s sysmelb_OrderedCollection_t;
 
 typedef enum sysmelb_TypeKind_e {
@@ -25,7 +25,7 @@ typedef enum sysmelb_TypeKind_e {
     SysmelTypeKindSymbol,
     SysmelTypeKindArray,
     SysmelTypeKindAssociation,
-    SysmelTypeKindDictionary,
+    SysmelTypeKindImmutableDictionary,
     SysmelTypeKindByteArray,
     SysmelTypeKindTuple,
     SysmelTypeKindRecord,
@@ -127,9 +127,9 @@ void sysmelb_type_addPrimitiveMacroMethod(sysmelb_Type_t *type, sysmelb_symbol_t
 sysmelb_function_t *sysmelb_type_lookupSelector(sysmelb_Type_t *type, sysmelb_symbol_t *selector);
 
 sysmelb_Type_t *sysmelb_allocateValueType(sysmelb_TypeKind_t kind, sysmelb_symbol_t *name, uint32_t size, uint32_t alignment);
-sysmelb_Type_t *sysmelb_allocateRecordType(sysmelb_symbol_t *name, sysmelb_Dictionary_t *fieldsAndTypes);
+sysmelb_Type_t *sysmelb_allocateRecordType(sysmelb_symbol_t *name, sysmelb_ImmutableDictionary_t *fieldsAndTypes);
 sysmelb_Type_t *sysmelb_allocateSumType(sysmelb_symbol_t *name, size_t alternativeCount);
-sysmelb_Type_t *sysmelb_allocateEnumType(sysmelb_symbol_t *name, sysmelb_Type_t *baseType, sysmelb_Dictionary_t *namesAndValues);
+sysmelb_Type_t *sysmelb_allocateEnumType(sysmelb_symbol_t *name, sysmelb_Type_t *baseType, sysmelb_ImmutableDictionary_t *namesAndValues);
 
 int sysmelb_findIndexOfFieldNamed(sysmelb_Type_t *type, sysmelb_symbol_t *name);
 bool sysmelb_findEnumValueWithName(sysmelb_Type_t *type, sysmelb_symbol_t *name, sysmelb_Value_t *outValue);

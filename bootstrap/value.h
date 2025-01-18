@@ -23,7 +23,7 @@ typedef enum sysmelb_ValueKind_e
     SysmelValueKindByteArrayReference,
     SysmelValueKindTupleReference,
     SysmelValueKindAssociationReference,
-    SysmelValueKindDictionaryReference,
+    SysmelValueKindImmutableDictionaryReference,
     SysmelValueKindValueBoxReference,
     SysmelValueKindNamespaceReference,
     SysmelValueKindOrderedCollectionReference,
@@ -44,7 +44,7 @@ typedef struct sysmelb_ByteArrayHeader_s sysmelb_ByteArrayHeader_t;
 typedef struct sysmelb_TupleHeader_s sysmelb_TupleHeader_t;
 
 typedef struct sysmelb_Association_s sysmelb_Association_t;
-typedef struct sysmelb_Dictionary_s sysmelb_Dictionary_t;
+typedef struct sysmelb_ImmutableDictionary_s sysmelb_ImmutableDictionary_t;
 
 typedef struct sysmelb_ValueBox_s sysmelb_ValueBox_t;
 
@@ -70,7 +70,7 @@ struct sysmelb_Value_s
         sysmelb_ByteArrayHeader_t *byteArrayReference;
         sysmelb_TupleHeader_t *tupleReference;
         sysmelb_Association_t *associationReference;
-        sysmelb_Dictionary_t *dictionaryReference;
+        sysmelb_ImmutableDictionary_t *dictionaryReference;
 
         sysmelb_ValueBox_t *valueBoxReference;
 
@@ -111,7 +111,7 @@ struct sysmelb_Association_s
     sysmelb_Value_t value;
 };
 
-struct sysmelb_Dictionary_s
+struct sysmelb_ImmutableDictionary_s
 {
     size_t size;
     sysmelb_Association_t *elements[];

@@ -14,7 +14,7 @@ sysmelb_ParseTreeNodeDynArray_t parser_parseExpressionListUntilEndOrDelimiter(sy
 sysmelb_ParseTreeNode_t *parser_parseSequenceUntilEndOrDelimiter(sysmelb_parserState_t *state, sysmelb_TokenKind_t delimiter);
 sysmelb_ParseTreeNode_t *parser_parseUnaryPrefixExpression(sysmelb_parserState_t *state);
 sysmelb_ParseTreeNode_t *parser_parseTerm(sysmelb_parserState_t *state);
-sysmelb_ParseTreeNode_t *parser_parseDictionary(sysmelb_parserState_t *state);
+sysmelb_ParseTreeNode_t *parser_parseImmutableDictionary(sysmelb_parserState_t *state);
 sysmelb_ParseTreeNode_t *parser_parseBlock(sysmelb_parserState_t *state);
 sysmelb_ParseTreeNode_t *parser_parseExpression(sysmelb_parserState_t *state);
 sysmelb_ParseTreeNode_t *parser_parseBindableName(sysmelb_parserState_t *state);
@@ -437,7 +437,7 @@ bool parser_isUnaryPostfixTokenKind(sysmelb_TokenKind_t kind)
     case SysmelTokenLeftBracket:
     case SysmelTokenLeftCurlyBracket:
     case SysmelTokenByteArrayStart:
-    case SysmelTokenDictionaryStart:
+    case SysmelTokenImmutableDictionaryStart:
         return true;
     default:
         return false;
@@ -511,9 +511,9 @@ sysmelb_ParseTreeNode_t *parser_parseUnaryPostfixExpression(sysmelb_parserState_
             receiver = application;
         }
         break;
-        case SysmelTokenDictionaryStart:
+        case SysmelTokenImmutableDictionaryStart:
         {
-            sysmelb_ParseTreeNode_t *argument = parser_parseDictionary(state);
+            sysmelb_ParseTreeNode_t *argument = parser_parseImmutableDictionary(state);
 
             sysmelb_ParseTreeNode_t *application = sysmelb_newParseTreeNode(ParseTreeFunctionApplication, parserState_sourcePositionFrom(state, startPosition));
             application->functionApplication.functional = receiver;
@@ -903,7 +903,7 @@ sysmelb_ParseTreeNode_t *parser_parseBlock(sysmelb_parserState_t *state)
     }
 }
 
-sysmelb_ParseTreeNode_t *parser_parseDictionaryAssociation(sysmelb_parserState_t *state)
+sysmelb_ParseTreeNode_t *parser_parseImmutableDictionaryAssociation(sysmelb_parserState_t *state)
 {
     size_t startPosition = state->position;
     sysmelb_ParseTreeNode_t *key = NULL;
@@ -934,11 +934,11 @@ sysmelb_ParseTreeNode_t *parser_parseDictionaryAssociation(sysmelb_parserState_t
     return dictAssociation;
 }
 
-sysmelb_ParseTreeNode_t *parser_parseDictionary(sysmelb_parserState_t *state)
+sysmelb_ParseTreeNode_t *parser_parseImmutableDictionary(sysmelb_parserState_t *state)
 {
     // {
     size_t startPosition = state->position;
-    assert(parserState_peekKind(state, 0) == SysmelTokenDictionaryStart);
+    assert(parserState_peekKind(state, 0) == SysmelTokenImmutableDictionaryStart);
     parserState_advance(state);
 
     // Chop the initial dots
@@ -954,7 +954,7 @@ sysmelb_ParseTreeNode_t *parser_parseDictionary(sysmelb_parserState_t *state)
         if (!expectsExpression)
             sysmelb_ParseTreeNodeDynArray_add(&elements, parserState_makeErrorAtCurrentSourcePosition(state, "Expected dot before association."));
 
-        sysmelb_ParseTreeNode_t *expression = parser_parseDictionaryAssociation(state);
+        sysmelb_ParseTreeNode_t *expression = parser_parseImmutableDictionaryAssociation(state);
         sysmelb_ParseTreeNodeDynArray_add(&elements, expression);
 
         expectsExpression = false;
@@ -972,7 +972,7 @@ sysmelb_ParseTreeNode_t *parser_parseDictionary(sysmelb_parserState_t *state)
     else
         sysmelb_ParseTreeNodeDynArray_add(&elements, parserState_makeErrorAtCurrentSourcePosition(state, "Expected a right curly bracket."));
 
-    sysmelb_ParseTreeNode_t *dictionary = sysmelb_newParseTreeNode(ParseTreeDictionary, parserState_sourcePositionFrom(state, startPosition));
+    sysmelb_ParseTreeNode_t *dictionary = sysmelb_newParseTreeNode(ParseTreeImmutableDictionary, parserState_sourcePositionFrom(state, startPosition));
     dictionary->dictionary.elements = elements;
     return dictionary;
 }
@@ -1125,8 +1125,8 @@ sysmelb_ParseTreeNode_t *parser_parseTerm(sysmelb_parserState_t *state)
         return parser_parseArray(state);
     case SysmelTokenByteArrayStart:
         return parser_parseByteArray(state);
-    case SysmelTokenDictionaryStart:
-        return parser_parseDictionary(state);
+    case SysmelTokenImmutableDictionaryStart:
+        return parser_parseImmutableDictionary(state);
     case SysmelTokenDollar:
         return parser_parseBindableName(state);
     default:

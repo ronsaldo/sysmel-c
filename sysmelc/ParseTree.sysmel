@@ -92,13 +92,13 @@ public: [
             elements: Array
         }.
 
-        ## Dictionary.
+        ## ImmutableDictionary.
         Record: ParseTreeAssociationNode withFields: #{
             sourcePosition: SourcePosition.
             key: ParseTreeNode.
             value: ParseTreeNode.
         }.
-        Record: ParseTreeDictionaryNode withFields: #{
+        Record: ParseTreeImmutableDictionaryNode withFields: #{
             sourcePosition: SourcePosition.
             elements: Array.
         }.

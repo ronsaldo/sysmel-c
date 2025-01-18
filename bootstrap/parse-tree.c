@@ -149,9 +149,9 @@ void sysmelb_dumpParseTree(sysmelb_ParseTreeNode_t *node)
         printf(")");
         break;
 
-    // Dictionary
-    case ParseTreeDictionary:
-        printf("ParseTreeDictionary(");
+    // ImmutableDictionary
+    case ParseTreeImmutableDictionary:
+        printf("ParseTreeImmutableDictionary(");
         for(size_t i = 0; i < node->dictionary.elements.size; ++i)
         {
             if( i!= 0 )
@@ -356,14 +356,14 @@ int sysmelb_visitForDisplayingAndCountingErrors(sysmelb_ParseTreeNode_t *node)
         return errorCount;
     }
 
-    // Dictionary
+    // ImmutableDictionary
     case ParseTreeAssociation:
     {
         errorCount += sysmelb_visitForDisplayingAndCountingErrors(node->association.key);
         errorCount += sysmelb_visitForDisplayingAndCountingErrors(node->association.value);
         return errorCount;
     }
-    case ParseTreeDictionary:
+    case ParseTreeImmutableDictionary:
     {
         for(size_t i = 0; i <node->dictionary.elements.size; ++i)
             errorCount += sysmelb_visitForDisplayingAndCountingErrors(node->dictionary.elements.elements[i]);

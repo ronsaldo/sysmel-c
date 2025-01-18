@@ -41,9 +41,9 @@ typedef enum sysmelb_ParseTreeNodeKind_e {
     ParseTreeArray,
     ParseTreeByteArray,
 
-    // Dictionary
+    // ImmutableDictionary
     ParseTreeAssociation,
-    ParseTreeDictionary,
+    ParseTreeImmutableDictionary,
 
     // Blocks
     ParseTreeBlockClosure,
@@ -173,10 +173,10 @@ typedef struct sysmelb_ParseTreeByteArray_s {
     sysmelb_ParseTreeNodeDynArray_t elements;
 } sysmelb_ParseTreeByteArray_t;
 
-// Dictionary.
-typedef struct sysmelb_ParseTreeDictionary_s {
+// ImmutableDictionary.
+typedef struct sysmelb_ParseTreeImmutableDictionary_s {
     sysmelb_ParseTreeNodeDynArray_t elements;
-} sysmelb_ParseTreeDictionary_t;
+} sysmelb_ParseTreeImmutableDictionary_t;
 
 typedef struct sysmelb_ParseTreeAssociation_s {
     sysmelb_ParseTreeNode_t *key;
@@ -313,8 +313,8 @@ typedef struct sysmelb_ParseTreeNode_s {
         sysmelb_ParseTreeArray_t array;
         sysmelb_ParseTreeByteArray_t byteArray;
 
-        // Dictionary
-        sysmelb_ParseTreeDictionary_t dictionary;
+        // ImmutableDictionary
+        sysmelb_ParseTreeImmutableDictionary_t dictionary;
         sysmelb_ParseTreeAssociation_t association;
 
         // Blocks

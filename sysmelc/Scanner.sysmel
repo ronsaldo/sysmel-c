@@ -43,7 +43,7 @@ Enum: TokenKind withBaseType: UInt8 values: #{
     Splice:.
 
     ByteArrayStart:.
-    DictionaryStart:.
+    ImmutableDictionaryStart:.
     LiteralArrayStart:.    
 }.
 
@@ -425,7 +425,7 @@ $scanSingleToken($(ScannerState)state :: ScannerToken) := {
         }.
         if: c1 = '{'u32 then: {
             state advance: 2.
-            return: (state makeToken: TokenKind DictionaryStart startingFrom: initialState)
+            return: (state makeToken: TokenKind ImmutableDictionaryStart startingFrom: initialState)
         }.
         if: c1 = '('u32 then: {
             state advance: 2.

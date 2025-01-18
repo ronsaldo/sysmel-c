@@ -228,7 +228,7 @@ static sysmelb_Value_t sysmelb_SwitchWithCasesMacro(sysmelb_MacroContext_t *macr
 {
     assert(argumentCount == 2);
     assert(arguments[0].kind == SysmelValueKindParseTreeReference);
-    assert(arguments[1].kind == SysmelValueKindParseTreeReference && arguments[1].parseTreeReference->kind == ParseTreeDictionary);
+    assert(arguments[1].kind == SysmelValueKindParseTreeReference && arguments[1].parseTreeReference->kind == ParseTreeImmutableDictionary);
     
     sysmelb_ParseTreeNode_t *node = sysmelb_newParseTreeNode(ParseTreeSwitch, macroContext->sourcePosition);
     node->switchExpression.value = arguments[0].parseTreeReference;
@@ -301,7 +301,7 @@ static sysmelb_Value_t sysmelb_RecordWithFieldsMacro(sysmelb_MacroContext_t *mac
     }
 
     sysmelb_Value_t dictionaryWithFieldAndType = sysmelb_analyzeAndEvaluateScript(macroContext->environment, arguments[1].parseTreeReference);
-    if(dictionaryWithFieldAndType.kind != SysmelValueKindDictionaryReference)
+    if(dictionaryWithFieldAndType.kind != SysmelValueKindImmutableDictionaryReference)
     {
         sysmelb_errorPrintf(arguments[1].parseTreeReference->sourcePosition, "An ImmutableDictionar with field names and types is expected.");
         abort();
@@ -400,7 +400,7 @@ static sysmelb_Value_t sysmelb_EnumWithBaseTypeAndValuesMacro(sysmelb_MacroConte
     }
 
     sysmelb_Value_t dictionaryWithFieldAndType = sysmelb_analyzeAndEvaluateScript(macroContext->environment, arguments[2].parseTreeReference);
-    if(dictionaryWithFieldAndType.kind != SysmelValueKindDictionaryReference)
+    if(dictionaryWithFieldAndType.kind != SysmelValueKindImmutableDictionaryReference)
     {
         sysmelb_errorPrintf(arguments[2].parseTreeReference->sourcePosition, "An ImmutableDictionar with field names and types is expected.");
         abort();

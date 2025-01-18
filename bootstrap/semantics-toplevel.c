@@ -423,7 +423,7 @@ sysmelb_Value_t sysmelb_analyzeAndEvaluateScript(sysmelb_Environment_t *environm
             return result;
         }
 
-    // Dictionary
+    // ImmutableDictionary
     case ParseTreeAssociation:
         {
             sysmelb_Association_t *association = sysmelb_allocate(sizeof(sysmelb_Association_t));
@@ -439,10 +439,10 @@ sysmelb_Value_t sysmelb_analyzeAndEvaluateScript(sysmelb_Environment_t *environm
             return result;
         }
 
-    case ParseTreeDictionary:
+    case ParseTreeImmutableDictionary:
         {
             size_t dictionarySize = ast->dictionary.elements.size;
-            sysmelb_Dictionary_t *dictionary = sysmelb_allocate(sizeof(sysmelb_Dictionary_t) + dictionarySize * sizeof(sysmelb_Association_t*));
+            sysmelb_ImmutableDictionary_t *dictionary = sysmelb_allocate(sizeof(sysmelb_ImmutableDictionary_t) + dictionarySize * sizeof(sysmelb_Association_t*));
             dictionary->size = dictionarySize;
             for(size_t i = 0; i < dictionarySize; ++i)
             {
@@ -453,7 +453,7 @@ sysmelb_Value_t sysmelb_analyzeAndEvaluateScript(sysmelb_Environment_t *environm
             }
             
             sysmelb_Value_t result = {
-                .kind = SysmelValueKindDictionaryReference,
+                .kind = SysmelValueKindImmutableDictionaryReference,
                 .type = sysmelb_getBasicTypes()->dictionary,
                 .dictionaryReference = dictionary
             };
@@ -646,8 +646,8 @@ sysmelb_Value_t sysmelb_analyzeAndEvaluateScript(sysmelb_Environment_t *environm
     {
         sysmelb_Value_t value = sysmelb_analyzeAndEvaluateScript(environment, ast->switchExpression.value);
         assert(value.kind == SysmelValueKindInteger || value.kind == SysmelValueKindUnsignedInteger);
-        assert(ast->switchExpression.cases->kind == ParseTreeDictionary);
-        sysmelb_ParseTreeDictionary_t *dictionary = &ast->switchExpression.cases->dictionary;
+        assert(ast->switchExpression.cases->kind == ParseTreeImmutableDictionary);
+        sysmelb_ParseTreeImmutableDictionary_t *dictionary = &ast->switchExpression.cases->dictionary;
         size_t caseCount = dictionary->elements.size;
         sysmelb_ParseTreeNode_t *defaultCase = NULL;
         for(size_t i = 0; i < caseCount; ++i)
@@ -684,8 +684,8 @@ sysmelb_Value_t sysmelb_analyzeAndEvaluateScript(sysmelb_Environment_t *environm
         sysmelb_Value_t sumTypeValue = sysmelb_analyzeAndEvaluateScript(environment, ast->switchPatternMatching.valueSumType);
         assert(value.kind == SysmelValueKindSumValueReference);
         assert(sumTypeValue.kind == SysmelValueKindTypeReference);
-        assert(ast->switchPatternMatching.cases->kind == ParseTreeDictionary);
-        sysmelb_ParseTreeDictionary_t *dictionary = &ast->switchPatternMatching.cases->dictionary;
+        assert(ast->switchPatternMatching.cases->kind == ParseTreeImmutableDictionary);
+        sysmelb_ParseTreeImmutableDictionary_t *dictionary = &ast->switchPatternMatching.cases->dictionary;
         size_t caseCount = dictionary->elements.size;
         sysmelb_ParseTreeNode_t *defaultCase = NULL;
 

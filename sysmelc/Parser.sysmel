@@ -383,7 +383,7 @@ public: [
             }
             ## ]
         };
-        withSelector: #parseDictionaryAssociation addMethod: {|$(Parser)self :: ParseTreeNode |
+        withSelector: #parseImmutableDictionaryAssociation addMethod: {|$(Parser)self :: ParseTreeNode |
             $startingPosition := self state position.
             $!key := ParseTreeNode(ParseTreeNullNode()). 
             $!value := ParseTreeNode(ParseTreeNullNode()).
@@ -418,10 +418,10 @@ public: [
                 value: value.
             })
         };
-        withSelector: #parseDictionary addMethod: {|$(Parser)self :: ParseTreeNode |
+        withSelector: #parseImmutableDictionary addMethod: {|$(Parser)self :: ParseTreeNode |
             $startingPosition := self state position.
             ## #{
-            assert: self state peekKind = TokenKind DictionaryStart.
+            assert: self state peekKind = TokenKind ImmutableDictionaryStart.
             self state advance.
 
             ## Chop the initial dots
@@ -438,7 +438,7 @@ public: [
                     elements add: (self state makeErrorAtCurrentSourcePosition: "Expected a dot before the association.")
                 }.
 
-                $expression := self parseDictionaryAssociation.
+                $expression := self parseImmutableDictionaryAssociation.
                 elements add: expression.
 
                 expectsExpression := false.
@@ -456,7 +456,7 @@ public: [
                 elements add: (self state makeErrorAtCurrentSourcePosition: "Missing right bracket to close the dictionary.")
             }.
 
-            ParseTreeNode(ParseTreeDictionaryNode#{
+            ParseTreeNode(ParseTreeImmutableDictionaryNode#{
                 sourcePosition: (self state sourcePositionFrom: startingPosition).
                 elements: elements asArray
             })
@@ -587,8 +587,8 @@ public: [
             if: kind = TokenKind ByteArrayStart then: {
                 return: self parseByteArray
             }.
-            if: kind = TokenKind DictionaryStart then: {
-                return: self parseDictionary
+            if: kind = TokenKind ImmutableDictionaryStart then: {
+                return: self parseImmutableDictionary
             }.
             if: kind = TokenKind Dollar then: {
                 return: self parseBindableName
@@ -599,7 +599,7 @@ public: [
         withSelector: #isUnaryPostfixToken: addMethod: {|$(Parser)self $(TokenKind)kind :: Boolean |
             (kind = TokenKind Identifier) || (kind = TokenKind LeftParent) ||
             (kind = TokenKind LeftBracket) || (kind = TokenKind LeftCurlyBracket) ||
-            (kind = TokenKind ByteArrayStart) || (kind = TokenKind DictionaryStart)
+            (kind = TokenKind ByteArrayStart) || (kind = TokenKind ImmutableDictionaryStart)
         };
         withSelector: #parseUnaryPostfixExpression addMethod: {|$(Parser)self :: ParseTreeNode |
             $startingPosition := self state position.
@@ -670,8 +670,8 @@ public: [
                         arguments: arguments
                     })
                 }.
-                if: token kind = TokenKind DictionaryStart then: {
-                    $argument := self parseDictionary.
+                if: token kind = TokenKind ImmutableDictionaryStart then: {
+                    $argument := self parseImmutableDictionary.
                     $arguments := [argument].
                     
                     receiver := ParseTreeNode(ParseTreeFunctionApplicationNode#{

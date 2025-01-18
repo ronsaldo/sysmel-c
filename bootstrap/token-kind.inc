@@ -40,5 +40,5 @@ TokenKindName(QuasiUnquote)
 TokenKindName(Splice)
 
 TokenKindName(ByteArrayStart)
-TokenKindName(DictionaryStart)
+TokenKindName(ImmutableDictionaryStart)
 TokenKindName(LiteralArrayStart)

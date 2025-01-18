@@ -209,10 +209,10 @@ void sysmelb_bytecode_makeArray(sysmelb_FunctionBytecode_t *bytecode, uint16_t s
     sysmelb_bytecode_addInstruction(bytecode, inst);
 }
 
-void sysmelb_bytecode_makeDictionary(sysmelb_FunctionBytecode_t *bytecode, uint16_t size)
+void sysmelb_bytecode_makeImmutableDictionary(sysmelb_FunctionBytecode_t *bytecode, uint16_t size)
 {
     sysmelb_FunctionInstruction_t inst ={
-        .opcode = SysmelFunctionOpcodeMakeDictionary,
+        .opcode = SysmelFunctionOpcodeMakeImmutableDictionary,
         .dictionarySize = size,
     };
 
@@ -377,8 +377,8 @@ void sysmelb_disassemblyBytecodeFunction(sysmelb_function_t *function)
         case SysmelFunctionOpcodeMakeAssociation:
             printf("%04d MakeAssociation\n", pc);
             break;
-        case SysmelFunctionOpcodeMakeDictionary:
-            printf("%04d MakeDictionary %d\n", pc, currentInstruction->dictionarySize);
+        case SysmelFunctionOpcodeMakeImmutableDictionary:
+            printf("%04d MakeImmutableDictionary %d\n", pc, currentInstruction->dictionarySize);
             break;
         case SysmelFunctionOpcodeGetSumIndex:
             printf("%04d GetSumIndex\n", pc);
@@ -605,10 +605,10 @@ sysmelb_Value_t sysmelb_interpretBytecodeFunction(sysmelb_function_t *function, 
             ++pc;
         }
             break;
-        case SysmelFunctionOpcodeMakeDictionary:
+        case SysmelFunctionOpcodeMakeImmutableDictionary:
         {
             uint16_t dictionarySize = currentInstruction->dictionarySize;
-            sysmelb_Dictionary_t *dictionary = sysmelb_allocate(sizeof(sysmelb_Dictionary_t) + dictionarySize*sizeof(sysmelb_Association_t));
+            sysmelb_ImmutableDictionary_t *dictionary = sysmelb_allocate(sizeof(sysmelb_ImmutableDictionary_t) + dictionarySize*sizeof(sysmelb_Association_t));
             dictionary->size = dictionarySize;
             for(uint16_t i = 0; i < dictionarySize; ++i)
             {
@@ -618,7 +618,7 @@ sysmelb_Value_t sysmelb_interpretBytecodeFunction(sysmelb_function_t *function, 
             }
 
             sysmelb_Value_t dictionaryValue = {
-                .kind = SysmelValueKindDictionaryReference,
+                .kind = SysmelValueKindImmutableDictionaryReference,
                 .type = sysmelb_getBasicTypes()->dictionary,
                 .dictionaryReference = dictionary
             };

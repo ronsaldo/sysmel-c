@@ -301,11 +301,11 @@ static void sysmelb_analyzeAndCompileClosureBody(sysmelb_Environment_t *environm
         sysmelb_analyzeAndCompileClosureBody(environment, function, ast->association.value);
         return sysmelb_bytecode_makeAssociation(&function->bytecode);
     }
-    case ParseTreeDictionary:
+    case ParseTreeImmutableDictionary:
     {
         for(size_t i = 0; i < ast->dictionary.elements.size; ++i)
             sysmelb_analyzeAndCompileClosureBody(environment, function, ast->dictionary.elements.elements[i]);
-        return sysmelb_bytecode_makeDictionary(&function->bytecode, ast->dictionary.elements.size);
+        return sysmelb_bytecode_makeImmutableDictionary(&function->bytecode, ast->dictionary.elements.size);
     }
 
     // Lexical block
@@ -402,8 +402,8 @@ static void sysmelb_analyzeAndCompileClosureBody(sysmelb_Environment_t *environm
         uint16_t defaultCaseMergeJump;
         memset(isCaseWithJump, 0, sizeof(isCaseWithJump));
 
-        assert(ast->switchExpression.cases->kind == ParseTreeDictionary);
-        sysmelb_ParseTreeDictionary_t *dictionary = &ast->switchExpression.cases->dictionary;
+        assert(ast->switchExpression.cases->kind == ParseTreeImmutableDictionary);
+        sysmelb_ParseTreeImmutableDictionary_t *dictionary = &ast->switchExpression.cases->dictionary;
         size_t caseCount = dictionary->elements.size;
         assert(caseCount <= 256);
         
@@ -487,8 +487,8 @@ static void sysmelb_analyzeAndCompileClosureBody(sysmelb_Environment_t *environm
         uint16_t defaultCaseMergeJump;
         memset(isCaseWithJump, 0, sizeof(isCaseWithJump));
 
-        assert(ast->switchPatternMatching.cases->kind == ParseTreeDictionary);
-        sysmelb_ParseTreeDictionary_t *dictionary = &ast->switchPatternMatching.cases->dictionary;
+        assert(ast->switchPatternMatching.cases->kind == ParseTreeImmutableDictionary);
+        sysmelb_ParseTreeImmutableDictionary_t *dictionary = &ast->switchPatternMatching.cases->dictionary;
         size_t caseCount = dictionary->elements.size;
         assert(caseCount <= 256);
         
