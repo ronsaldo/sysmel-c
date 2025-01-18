@@ -1,0 +1,23 @@
+switch: 42 withCases: #{
+    1: printLine("One").
+    2: printLine("Two").
+    3: printLine("Three").
+    4: printLine("Four").
+    5: printLine("Five").
+    _: printLine("Something").
+}.
+
+$functionWithSwitch($(Integer)n :: Void) := {
+    switch: n withCases: #{
+        1: printLine("One").
+        2: printLine("Two").
+        3: printLine("Three").
+        4: printLine("Four").
+        5: printLine("Five").
+        _: printLine("Something").
+    }.
+}.
+
+functionWithSwitch(2).
+functionWithSwitch(5).
+functionWithSwitch(42).

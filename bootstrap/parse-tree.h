@@ -70,8 +70,13 @@ typedef enum sysmelb_ParseTreeNodeKind_e {
     ParseTreeWhileLoop,
     ParseTreeDoWhileLoop,
     ParseTreeReturnValue,
-    
-    /// Namespaces
+    ParseTreeSwitch,
+
+    // Sum type
+    ParseTreeGetSumAlternativeIndex,
+    ParseTreeExtractSumAlternativeWithTypes,
+
+    // Namespaces
     ParseTreeNamespaceDefinition,
 } sysmelb_ParseTreeNodeKind_t;
 
@@ -255,11 +260,25 @@ typedef struct sysmelb_ParseTreeReturnValue_s {
     sysmelb_ParseTreeNode_t *valueExpression;
 } sysmelb_ParseTreeReturnValue_t;
 
+typedef struct sysmelb_ParseTreeSwitch_s {
+    sysmelb_ParseTreeNode_t *value;
+    sysmelb_ParseTreeNode_t *cases;
+} sysmelb_ParseTreeSwitch_t;
+
 typedef struct sysmelb_ParseTreeNamespaceDefinition_s {
     sysmelb_Namespace_t *namespace;
     sysmelb_ParseTreeNode_t *definition;
 } sysmelb_ParseTreeNamespaceDefinition_t;
 
+typedef struct sysmelb_ParseTreeGetSumAlternativeIndex_s {
+    sysmelb_ParseTreeNode_t *sumValue;
+} sysmelb_ParseTreeGetSumAlternativeIndex_t;
+
+typedef struct sysmelb_ParseTreeExtractSumAlternativeWithType_s {
+    sysmelb_ParseTreeNode_t *sumValue;
+    sysmelb_ParseTreeNode_t *alternativeType;
+    uint16_t indexToExtract;
+} sysmelb_ParseTreeExtractSumAlternativeWithType_t;
 
 // Tagged node union.
 typedef struct sysmelb_ParseTreeNode_s {
@@ -322,6 +341,11 @@ typedef struct sysmelb_ParseTreeNode_s {
         sysmelb_ParseTreeWhileLoop_t whileLoop;
         sysmelb_ParseTreeDoWhileLoop_t doWhileLoop;
         sysmelb_ParseTreeReturnValue_t returnExpression;
+        sysmelb_ParseTreeSwitch_t switchExpression;
+
+        // Sum values
+        sysmelb_ParseTreeGetSumAlternativeIndex_t getSumAlternativeIndex;
+        sysmelb_ParseTreeExtractSumAlternativeWithType_t extractSumAlternativeWithType;
 
         // Namespace
         sysmelb_ParseTreeNamespaceDefinition_t namespaceDefinition;

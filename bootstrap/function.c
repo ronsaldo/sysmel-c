@@ -161,6 +161,15 @@ void sysmelb_bytecode_patchJumpToLabel(sysmelb_FunctionBytecode_t *bytecode, uin
     bytecode->instructions[jumpInstructionIndex].jumpOffset = offset;
 }
 
+void sysmelb_bytecode_integerEquals(sysmelb_FunctionBytecode_t *bytecode)
+{
+    sysmelb_FunctionInstruction_t inst ={
+        .opcode = SysmelFunctionOpcodeIntegerEquals
+    };
+
+    sysmelb_bytecode_addInstruction(bytecode, inst);
+}
+
 void sysmelb_bytecode_applyFunction(sysmelb_FunctionBytecode_t *bytecode, uint16_t argumentCount)
 {
     sysmelb_FunctionInstruction_t inst ={
@@ -323,6 +332,9 @@ void sysmelb_disassemblyBytecodeFunction(sysmelb_function_t *function)
         case SysmelFunctionOpcodeReturn:
             printf("%04d Return\n", pc);
             break;
+        case SysmelFunctionOpcodeIntegerEquals:
+            printf("%04d IntegerEquals\n", pc);
+            break;
         case SysmelFunctionOpcodeApplyFunction:
             printf("%04d ApplyFunction %d\n", pc, currentInstruction->applicationArgumentCount);
             break;
@@ -413,6 +425,22 @@ sysmelb_Value_t sysmelb_interpretBytecodeFunction(sysmelb_function_t *function, 
         case SysmelFunctionOpcodeReturn:
             result = sysmelb_bytecodeActivationContext_top(&context);
             return result;
+        case SysmelFunctionOpcodeIntegerEquals:
+        {
+            sysmelb_Value_t rightOperand = sysmelb_bytecodeActivationContext_pop(&context);
+            sysmelb_Value_t leftOperand = sysmelb_bytecodeActivationContext_pop(&context);
+            assert(leftOperand.kind == SysmelValueKindInteger || leftOperand.kind == SysmelValueKindUnsignedInteger);
+            assert(rightOperand.kind == SysmelValueKindInteger || rightOperand.kind == SysmelValueKindUnsignedInteger);
+            
+            sysmelb_Value_t result = {
+                .kind = SysmelValueKindBoolean,
+                .type = sysmelb_getBasicTypes()->boolean,
+                .boolean = leftOperand.integer == rightOperand.integer,
+            };
+            sysmelb_bytecodeActivationContext_push(&context, result);
+        }
+            ++pc;
+            break;
         case SysmelFunctionOpcodeApplyFunction:
             {
                 uint32_t applicationArgumentCount = currentInstruction->applicationArgumentCount;

@@ -642,6 +642,40 @@ sysmelb_Value_t sysmelb_analyzeAndEvaluateScript(sysmelb_Environment_t *environm
         };
         return voidValue;
     }
+    case ParseTreeSwitch:
+    {
+        sysmelb_Value_t value = sysmelb_analyzeAndEvaluateScript(environment, ast->switchExpression.value);
+        assert(value.kind == SysmelValueKindInteger || value.kind == SysmelValueKindUnsignedInteger);
+        assert(ast->switchExpression.cases->kind == ParseTreeDictionary);
+        sysmelb_ParseTreeDictionary_t *dictionary = &ast->switchExpression.cases->dictionary;
+        size_t caseCount = dictionary->elements.size;
+        sysmelb_ParseTreeNode_t *defaultCase = NULL;
+        for(size_t i = 0; i < caseCount; ++i)
+        {
+            assert(dictionary->elements.elements[i]->kind == ParseTreeAssociation);
+            sysmelb_ParseTreeAssociation_t *caseAssoc = &dictionary->elements.elements[i]->association;
+            sysmelb_Value_t caseKeyValue = sysmelb_analyzeAndEvaluateScript(environment, caseAssoc->key);
+            if(caseKeyValue.kind == SysmelValueKindSymbolReference)
+            {
+                assert(caseKeyValue.symbolReference->size == 1 && caseKeyValue.symbolReference->string[0] == '_');
+                defaultCase = caseAssoc->value;
+
+            }
+            else if(caseKeyValue.kind == SysmelValueKindInteger || caseKeyValue.kind == SysmelValueKindUnsignedInteger)
+            {
+                if(value.integer == caseKeyValue.integer)
+                    return sysmelb_analyzeAndEvaluateScript(environment, caseAssoc->value);
+            }
+        }
+        
+        if(!defaultCase)
+        {
+            sysmelb_errorPrintf(ast->sourcePosition, "Switch statement without default case.");
+            abort();
+        }
+
+        return sysmelb_analyzeAndEvaluateScript(environment, defaultCase);
+    };
     case ParseTreeNamespaceDefinition:
     {
         sysmelb_Environment_t *namespaceEnvironment = sysmelb_createNamespaceEnvironment(ast->namespaceDefinition.namespace, environment);

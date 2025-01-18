@@ -31,6 +31,7 @@ typedef enum sysmelb_FunctionOpcode_e
     SysmelFunctionOpcodePopAndStoreTemporary,
     SysmelFunctionOpcodePop,
     SysmelFunctionOpcodeReturn,
+    SysmelFunctionOpcodeIntegerEquals,
     SysmelFunctionOpcodeApplyFunction,
     SysmelFunctionOpcodeSendMessage,
     SysmelFunctionOpcodeJump,
@@ -97,6 +98,8 @@ void sysmelb_bytecode_patchJumpToHere(sysmelb_FunctionBytecode_t *bytecode, uint
 uint16_t sysmelb_bytecode_label(sysmelb_FunctionBytecode_t *bytecode);
 void sysmelb_bytecode_patchJumpToLabel(sysmelb_FunctionBytecode_t *bytecode, uint16_t jumpInstructionIndex, uint16_t labelTarget);
 
+void sysmelb_bytecode_integerEquals(sysmelb_FunctionBytecode_t *bytecode);
+    
 void sysmelb_bytecode_applyFunction(sysmelb_FunctionBytecode_t *bytecode, uint16_t argumentCount);
 void sysmelb_bytecode_sendMessage(sysmelb_FunctionBytecode_t *bytecode, sysmelb_symbol_t *selector, uint16_t argumentCount);
 

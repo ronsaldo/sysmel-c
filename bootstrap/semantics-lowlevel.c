@@ -394,6 +394,89 @@ static void sysmelb_analyzeAndCompileClosureBody(sysmelb_Environment_t *environm
         sysmelb_bytecode_patchJumpToHere(&function->bytecode, mergeJump);
         return;
     }
+    case ParseTreeSwitch:
+    {
+        bool isCaseWithJump[256];
+        uint16_t casesJumps[256];
+        uint16_t casesMergeJumps[256];
+        uint16_t defaultCaseMergeJump;
+
+        assert(ast->switchExpression.cases->kind == ParseTreeDictionary);
+        sysmelb_ParseTreeDictionary_t *dictionary = &ast->switchExpression.cases->dictionary;
+        size_t caseCount = dictionary->elements.size;
+        assert(caseCount <= 256);
+        
+        sysmelb_ParseTreeNode_t *defaultCase = NULL;
+
+        // Compile the value expression, and store it in a temporary.
+        uint16_t valueTemporary = sysmelb_bytecode_allocateTemporary(&function->bytecode);
+        sysmelb_analyzeAndCompileClosureBody(environment, function, ast->switchExpression.value);
+        sysmelb_bytecode_popAndStoreTemporary(&function->bytecode, valueTemporary);
+
+        // First pass. Generate a series of jump if true.
+        for(size_t i = 0; i < caseCount; ++i)
+        {
+            assert(dictionary->elements.elements[i]->kind == ParseTreeAssociation);
+            sysmelb_ParseTreeAssociation_t *caseAssoc = &dictionary->elements.elements[i]->association;
+            sysmelb_Value_t caseKeyValue = sysmelb_analyzeAndEvaluateScript(environment, caseAssoc->key);
+            
+            if(caseKeyValue.kind == SysmelValueKindSymbolReference)
+            {
+                assert(caseKeyValue.symbolReference->size == 1 && caseKeyValue.symbolReference->string[0] == '_');
+                defaultCase = caseAssoc->value;
+
+            }
+            else if(caseKeyValue.kind == SysmelValueKindInteger || caseKeyValue.kind == SysmelValueKindUnsignedInteger)
+            {
+                sysmelb_bytecode_pushLiteral(&function->bytecode, &caseKeyValue);
+                sysmelb_bytecode_pushTemporary(&function->bytecode, valueTemporary);
+                sysmelb_bytecode_integerEquals(&function->bytecode);
+                casesJumps[i] = sysmelb_bytecode_jumpIfTrue(&function->bytecode);
+                isCaseWithJump[i] = true;
+            }
+        }
+
+        // Generate the default case
+        if(defaultCase)
+        {
+            sysmelb_analyzeAndCompileClosureBody(environment, function, defaultCase);
+            defaultCaseMergeJump = sysmelb_bytecode_jump(&function->bytecode);
+        }
+        else
+        {
+            // Emit void to balance the results.
+            sysmelb_Value_t voidValue = {
+                .kind = SysmelValueKindVoid,
+                .type = sysmelb_getBasicTypes()->voidType
+            };
+            sysmelb_bytecode_pushLiteral(&function->bytecode, &voidValue);
+            defaultCaseMergeJump = sysmelb_bytecode_jump(&function->bytecode);
+        }
+
+        // Second pass. Generate a series of jump if true.
+        for(size_t i = 0; i < caseCount; ++i)
+        {
+            if(!isCaseWithJump[i])
+                continue;
+
+            sysmelb_bytecode_patchJumpToHere(&function->bytecode, casesJumps[i]);
+            
+            assert(dictionary->elements.elements[i]->kind == ParseTreeAssociation);
+            sysmelb_ParseTreeAssociation_t *caseAssoc = &dictionary->elements.elements[i]->association;
+            sysmelb_analyzeAndCompileClosureBody(environment, function, caseAssoc->value);
+
+            casesMergeJumps[i] = sysmelb_bytecode_jump(&function->bytecode);
+        }
+
+        // Merge everything.
+        sysmelb_bytecode_patchJumpToHere(&function->bytecode, defaultCaseMergeJump);
+        for(size_t i = 0; i < caseCount; ++i)
+        {
+            if(isCaseWithJump[i])
+                sysmelb_bytecode_patchJumpToHere(&function->bytecode, casesMergeJumps[i]);
+        }
+        return;
+    }
     case ParseTreeWhileLoop:
     {
         // Header
