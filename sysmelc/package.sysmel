@@ -13,3 +13,6 @@ loadFileOnce: "Module.sysmel".
 loadFileOnce: "Namespace.sysmel".
 
 loadFileOnce: "TopLevelSemantics.sysmel".
+
+## Main frontend
+loadFileOnce: "MainFrontend.sysmel".

@@ -11,6 +11,7 @@ typedef struct sysmelb_Module_s
 {
     sysmelb_symbol_t *name;
     sysmelb_Namespace_t *globalNamespace;
+    sysmelb_Value_t mainEntryPointFunction;
 
     sysmelb_Environment_t *moduleEnvironment;
     sysmelb_Environment_t *globalNamespaceEnvironment;

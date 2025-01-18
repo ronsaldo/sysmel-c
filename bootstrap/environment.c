@@ -575,6 +575,19 @@ static sysmelb_Value_t sysmelb_assertMacro(sysmelb_MacroContext_t *macroContext,
     return resultValue;
 }
 
+static sysmelb_Value_t sysmelb_setMainEntryPointMacro(sysmelb_MacroContext_t *macroContext, size_t argumentCount, sysmelb_Value_t *arguments)
+{   assert(argumentCount == 1);
+    sysmelb_Value_t entryPointFunction = sysmelb_analyzeAndEvaluateScript(macroContext->environment, arguments[0].parseTreeReference);
+    sysmelb_Module_t *module = sysmelb_lookEnvironmentForModule(macroContext->environment);
+    module->mainEntryPointFunction = entryPointFunction;
+
+    sysmelb_Value_t resultValue = {
+        .kind = SysmelValueKindVoid,
+        .type = sysmelb_getBasicTypes()->voidType,
+    };
+    return resultValue;
+}
+
 
 sysmelb_Environment_t *sysmelb_getOrCreateIntrinsicsEnvironment()
 {
@@ -812,6 +825,16 @@ sysmelb_Environment_t *sysmelb_getOrCreateIntrinsicsEnvironment()
         function->kind = SysmelFunctionKindPrimitiveMacro;
         function->name = sysmelb_internSymbolC("assert:");
         function->primitiveMacroFunction = sysmelb_assertMacro;
+
+        sysmelb_Environment_setLocalSymbolBinding(&sysmelb_IntrinsicsEnvironment, function->name, sysmelb_createSymbolFunctionBinding(function));
+    }
+
+    // setMainEntryPoint:
+    {
+        sysmelb_function_t *function = sysmelb_allocate(sizeof(sysmelb_function_t));
+        function->kind = SysmelFunctionKindPrimitiveMacro;
+        function->name = sysmelb_internSymbolC("setMainEntryPoint:");
+        function->primitiveMacroFunction = sysmelb_setMainEntryPointMacro;
 
         sysmelb_Environment_setLocalSymbolBinding(&sysmelb_IntrinsicsEnvironment, function->name, sysmelb_createSymbolFunctionBinding(function));
     }

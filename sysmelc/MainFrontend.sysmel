@@ -1,0 +1,10 @@
+namespace: SysmelC definition: {
+public: [
+    $MainFrontEnd($(Array)arguments :: Int32) := {
+        printLine(arguments).
+        0i32
+    }.
+].
+
+setMainEntryPoint: MainFrontEnd.
+}

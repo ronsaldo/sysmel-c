@@ -104,6 +104,34 @@ int main(int argc, const char **argv)
                     currentModule = sysmelb_createModuleNamed(sysmelb_internSymbolC("CLI"));
                 evaluateText(argv[++i]);
             }
+            else if(!strcmp(arg, "--"))
+            {
+                size_t remainingArguments = argc - i;
+                sysmelb_ArrayHeader_t *array = sysmelb_allocate(sizeof(sysmelb_ArrayHeader_t) + sizeof(sysmelb_Value_t) * remainingArguments);
+                array->size = remainingArguments;
+                for(size_t j = 0; j < remainingArguments; ++j)
+                {
+                    sysmelb_Value_t stringValue = {
+                        .kind = SysmelValueKindStringReference,
+                        .type = sysmelb_getBasicTypes()->string,
+                        .string = argv[i + j],
+                        .stringSize = strlen(argv[i + j]),
+                    };
+
+                    array->elements[j] = stringValue;
+                }
+
+                if(currentModule->mainEntryPointFunction.kind == SysmelValueKindFunctionReference)
+                {
+                    sysmelb_Value_t arrayArgument = {
+                        .kind = SysmelValueKindArrayReference,
+                        .type = sysmelb_getBasicTypes()->array,
+                        .arrayReference = array,
+                    };
+                    sysmelb_Value_t result = sysmelb_callFunctionWithArguments(currentModule->mainEntryPointFunction.functionReference, 1, &arrayArgument);
+                    return result.integer;
+                }
+            }
         }
         else
         {
