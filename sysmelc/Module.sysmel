@@ -1,5 +1,7 @@
 namespace: SysmelC definition: {
+public: [
     Record: Module withFields: #{
-
+        globalNamespace: Namespace
     }.
-}
+]
+}.

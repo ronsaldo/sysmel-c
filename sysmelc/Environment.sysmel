@@ -1,0 +1,24 @@
+namespace: SysmelC definition: {
+public: [
+    Inductive: Environment withAlternatives: [
+        Record: EmptyEnvironment withFields: #{}.
+        Record: IntrinsicsEnvironment withFields: #{
+            parent: Environment
+        }.
+        Record: ModuleEnvironment withFields: #{
+            parent: Environment.
+            module: Module
+        }.
+        Record: NamespaceEnvironment withFields: #{
+            parent: Environment.
+            namespace: Namespace
+        }.
+        Record: LexicalEnvironment withFields: #{
+            parent: Environment.
+        }.
+        Record: FunctionAnalysisEnvironment withFields: #{
+            parent: Environment.
+        }.
+    ]
+]
+}

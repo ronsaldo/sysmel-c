@@ -1,5 +1,5 @@
 namespace: SysmelC definition: {
-    Record: Namespaces withFields: #{
-
+    Record: Namespace withFields: #{
+        name: Symbol
     }.
 }
