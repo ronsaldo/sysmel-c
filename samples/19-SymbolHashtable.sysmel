@@ -1,0 +1,10 @@
+$table := SymbolHashtable().
+printLine("Table size: ". table size).
+
+table at: #test put: 42.
+printLine("Table size: ". table size).
+printLine("Table: ". table).
+
+printLine("Table at #test : ". table at: #test).
+printLine("Table includesKey #test : ". table includesKey: #test).
+printLine("Table includesKey #notAdded : ". table includesKey: #notAdded).

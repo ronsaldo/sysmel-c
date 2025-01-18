@@ -2,6 +2,7 @@
 #define SYSMELB_VALUE_H
 
 #include "types.h"
+#include "hashtable.h"
 #include <stdbool.h>
 
 typedef enum sysmelb_ValueKind_e
@@ -24,7 +25,7 @@ typedef enum sysmelb_ValueKind_e
     SysmelValueKindTupleReference,
     SysmelValueKindAssociationReference,
     SysmelValueKindImmutableDictionaryReference,
-    SysmelValueKindIdentityDictionaryReference,
+    SysmelValueKindSymbolHashtableReference,
     SysmelValueKindValueBoxReference,
     SysmelValueKindNamespaceReference,
     SysmelValueKindOrderedCollectionReference,
@@ -80,6 +81,8 @@ struct sysmelb_Value_s
         sysmelb_Namespace_t *namespaceReference;
 
         sysmelb_OrderedCollection_t *orderedCollectionReference;
+        sysmelb_SymbolHashtable_t *symbolHashtableReference;
+        
         sysmelb_SumTypeValue_t *sumTypeValueReference;
 
         struct

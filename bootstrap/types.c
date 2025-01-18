@@ -3,6 +3,7 @@
 #include "memory.h"
 #include "parse-tree.h"
 #include "value.h"
+#include "hashtable.h"
 #include <stdbool.h>
 #include <stdlib.h>
 #include <string.h>
@@ -226,7 +227,16 @@ sysmelb_Value_t sysmelb_instantiateTypeWithArguments(sysmelb_Type_t *type, size_
         };
         return result;
     }
-
+    if(type->kind == SysmelTypeKindSymbolHashtable)
+    {
+        sysmelb_SymbolHashtable_t *table = sysmelb_allocate(sizeof(sysmelb_SymbolHashtable_t));
+        sysmelb_Value_t result = {
+            .kind = SysmelValueKindSymbolHashtableReference,
+            .type = sysmelb_getBasicTypes()->symbolHashtable,
+            .symbolHashtableReference = table
+        };
+        return result;
+    }
     if(type->kind == SysmelTypeKindSum)
     {
         if(argumentCount != 1)
@@ -284,7 +294,7 @@ static void sysmelb_createBasicTypes(void)
     sysmelb_BasicTypesData.enumType       = sysmelb_allocateValueType(SysmelTypeKindEnum, sysmelb_internSymbolC("Enum"), 4, 4);
     sysmelb_BasicTypesData.association    = sysmelb_allocateValueType(SysmelTypeKindAssociation, sysmelb_internSymbolC("Association"), pointerSize, pointerAlignment);
     sysmelb_BasicTypesData.immutableDictionary = sysmelb_allocateValueType(SysmelTypeKindImmutableDictionary, sysmelb_internSymbolC("ImmutableDictionary"), pointerSize, pointerAlignment);
-    sysmelb_BasicTypesData.identityDictionary  = sysmelb_allocateValueType(SysmelTypeKindIdentityDictionary, sysmelb_internSymbolC("IdentityDictionary"), pointerSize, pointerAlignment);
+    sysmelb_BasicTypesData.symbolHashtable  = sysmelb_allocateValueType(SysmelTypeKindSymbolHashtable, sysmelb_internSymbolC("SymbolHashtable"), pointerSize, pointerAlignment);
     sysmelb_BasicTypesData.parseTreeNode  = sysmelb_allocateValueType(SysmelTypeKindParseTreeNode, sysmelb_internSymbolC("ParseTreeNode"), pointerSize, pointerAlignment);
     sysmelb_BasicTypesData.valueReference = sysmelb_allocateValueType(SysmelTypeKindValueReference, sysmelb_internSymbolC("ValueReference"), pointerSize, pointerAlignment);
     sysmelb_BasicTypesData.function       = sysmelb_allocateValueType(SysmelTypeKindSimpleFunction, sysmelb_internSymbolC("Function"), pointerSize, pointerAlignment);
@@ -1212,6 +1222,70 @@ static void sysmelb_createBasicOrderedCollectionPrimitives(void)
     sysmelb_type_addPrimitiveMethod(sysmelb_BasicTypesData.orderedCollection, sysmelb_internSymbolC("asArray"), sysmelb_primitive_OrderedCollection_asArray);
 }
 
+static sysmelb_Value_t sysmelb_primitive_SymbolHashtable_size(size_t argumentCount, sysmelb_Value_t *arguments)
+{
+    assert(argumentCount == 1);
+    assert(arguments[0].kind == SysmelValueKindSymbolHashtableReference);
+    sysmelb_Value_t result = {
+        .kind = SysmelValueKindUnsignedInteger,
+        .type = sysmelb_getBasicTypes()->integer,
+        .unsignedInteger = arguments[0].symbolHashtableReference->size,
+    };
+    return result;
+}
+
+static sysmelb_Value_t sysmelb_primitive_SymbolHashtable_includesKey(size_t argumentCount, sysmelb_Value_t *arguments)
+{
+    assert(argumentCount == 2);
+    assert(arguments[0].kind == SysmelValueKindSymbolHashtableReference);
+
+    const sysmelb_SymbolHashtablePair_t *lookupResult = sysmelb_SymbolHashtable_lookupSymbol(arguments[0].symbolHashtableReference, arguments[1].symbolReference);
+    sysmelb_Value_t result = {
+        .kind = SysmelValueKindBoolean,
+        .type = sysmelb_getBasicTypes()->boolean,
+        .boolean = lookupResult != NULL && lookupResult->value != NULL
+    };
+
+    return result;
+}
+
+static sysmelb_Value_t sysmelb_primitive_SymbolHashtable_at(size_t argumentCount, sysmelb_Value_t *arguments)
+{
+    assert(argumentCount == 2);
+    assert(arguments[0].kind == SysmelValueKindSymbolHashtableReference);
+
+    const sysmelb_SymbolHashtablePair_t *lookupResult = sysmelb_SymbolHashtable_lookupSymbol(arguments[0].symbolHashtableReference, arguments[1].symbolReference);
+    if(!lookupResult)
+    {
+        sysmelb_SourcePosition_t null;
+        sysmelb_errorPrintf(null, "Failed to find key in symbol hashtable.");
+    }
+
+    sysmelb_Value_t *resultPointer = (sysmelb_Value_t*)lookupResult->value;
+    return *resultPointer;
+}
+
+static sysmelb_Value_t sysmelb_primitive_SymbolHashtable_atPut(size_t argumentCount, sysmelb_Value_t *arguments)
+{
+    assert(argumentCount == 3);
+    assert(arguments[0].kind == SysmelValueKindSymbolHashtableReference);
+    assert(arguments[1].kind == SysmelValueKindSymbolReference);
+
+    sysmelb_Value_t *resultPointer = sysmelb_allocateValue();
+    *resultPointer = arguments[2];
+
+    sysmelb_SymbolHashtable_addSymbolWithValue(arguments[0].symbolHashtableReference, arguments[1].symbolReference, resultPointer);
+    return *resultPointer;
+}
+
+static void sysmelb_createBasicSymbolHashtablePrimitives(void)
+{
+    sysmelb_type_addPrimitiveMethod(sysmelb_BasicTypesData.symbolHashtable, sysmelb_internSymbolC("size"), sysmelb_primitive_SymbolHashtable_size);
+    sysmelb_type_addPrimitiveMethod(sysmelb_BasicTypesData.symbolHashtable, sysmelb_internSymbolC("includesKey:"), sysmelb_primitive_SymbolHashtable_includesKey);
+    sysmelb_type_addPrimitiveMethod(sysmelb_BasicTypesData.symbolHashtable, sysmelb_internSymbolC("at:"), sysmelb_primitive_SymbolHashtable_at);
+    sysmelb_type_addPrimitiveMethod(sysmelb_BasicTypesData.symbolHashtable, sysmelb_internSymbolC("at:put:"), sysmelb_primitive_SymbolHashtable_atPut);
+}
+
 static sysmelb_Value_t sysmelb_primitive_Boolean_Not(size_t argumentCount, sysmelb_Value_t *arguments)
 {
     assert(argumentCount == 1);
@@ -1290,6 +1364,7 @@ static void sysmelb_createBasicTypesPrimitives(void)
     sysmelb_createBasicAssociationPrimitives();
     sysmelb_createBasicImmutableDictionaryPrimitives();
     sysmelb_createBasicOrderedCollectionPrimitives();
+    sysmelb_createBasicSymbolHashtablePrimitives();
     sysmelb_createBasicTypeUniversePrimitives();
 }
 

@@ -200,6 +200,11 @@ void sysmelb_printValue(sysmelb_Value_t value)
         sysmelb_printValue(value.sumTypeValueReference->alternativeValue);
         printf("]");
         break;
+    case SysmelValueKindSymbolHashtableReference:
+        printf("SymbolHashtable with: [");
+        // TODO: print the elements
+        printf("]");
+        break;
     default: abort();
     }
 }

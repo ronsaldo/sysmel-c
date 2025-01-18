@@ -84,6 +84,7 @@
         "locale": "c",
         "__functional_03": "c",
         "queue": "c",
-        "unordered_set": "c"
+        "unordered_set": "c",
+        "symbol.h": "c"
     }
 }

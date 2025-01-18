@@ -26,7 +26,7 @@ typedef enum sysmelb_TypeKind_e {
     SysmelTypeKindArray,
     SysmelTypeKindAssociation,
     SysmelTypeKindImmutableDictionary,
-    SysmelTypeKindIdentityDictionary,
+    SysmelTypeKindSymbolHashtable,
     SysmelTypeKindByteArray,
     SysmelTypeKindTuple,
     SysmelTypeKindRecord,
@@ -99,7 +99,7 @@ typedef struct sysmelb_BasicTypes_s {
     sysmelb_Type_t *sum;
     sysmelb_Type_t *association;
     sysmelb_Type_t *immutableDictionary;
-    sysmelb_Type_t *identityDictionary;
+    sysmelb_Type_t *symbolHashtable;
     sysmelb_Type_t *parseTreeNode;
     sysmelb_Type_t *valueReference;
     sysmelb_Type_t *function;
