@@ -1,15 +1,27 @@
 namespace: SysmelC definition: {
 public: [
-    Record: Module withFields: #{
-        name: Symbol.
-        globalNamespace: Namespace.
-    }.
-
     $MakeModuleWithName($(Symbol)name :: Module) := {
         Module#{
             name: name.
             globalNamespace: MakeNamespaceNamed(#__global).
         }
-    }
-]
+    }.
+    Module
+        withSelector: #createTopLevelScriptEnvironment addMethod: {|$(Module)self :: Environment |
+            $moduleEnvironment := Environment(ModuleEnvironment#{
+                parent: getDefaultIntrinsicsEnvironment().
+                module: self.
+            }).
+            $namespaceEnvironment := Environment(NamespaceEnvironment#{
+                parent: moduleEnvironment.
+                namespace: self globalNamespace
+            }).
+            $scriptLexicalScope := Environment(LexicalEnvironment#{
+                parent: namespaceEnvironment.
+                localSymbols: SymbolHashtable().
+            }).
+
+            scriptLexicalScope
+        }
+] 
 }.

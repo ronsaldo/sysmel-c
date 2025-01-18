@@ -283,6 +283,13 @@ static sysmelb_Value_t sysmelb_printLine(size_t argumentCount, sysmelb_Value_t *
     return result;
 }
 
+static sysmelb_Value_t sysmelb_abort(size_t argumentCount, sysmelb_Value_t *arguments)
+{
+    (void)argumentCount;
+    (void)arguments;
+    abort();
+}
+
 static sysmelb_Value_t sysmelb_RecordWithFieldsMacro(sysmelb_MacroContext_t *macroContext, size_t argumentCount, sysmelb_Value_t *arguments)
 {
     assert(argumentCount == 2);
@@ -725,6 +732,16 @@ sysmelb_Environment_t *sysmelb_getOrCreateIntrinsicsEnvironment()
         function->kind = SysmelFunctionKindPrimitive;
         function->name = sysmelb_internSymbolC("printLine");
         function->primitiveFunction = sysmelb_printLine;
+
+        sysmelb_Environment_setLocalSymbolBinding(&sysmelb_IntrinsicsEnvironment, function->name, sysmelb_createSymbolFunctionBinding(function));
+    }
+
+    // Abort
+    {
+        sysmelb_function_t *function = sysmelb_allocate(sizeof(sysmelb_function_t));
+        function->kind = SysmelFunctionKindPrimitive;
+        function->name = sysmelb_internSymbolC("abort");
+        function->primitiveFunction = sysmelb_abort;
 
         sysmelb_Environment_setLocalSymbolBinding(&sysmelb_IntrinsicsEnvironment, function->name, sysmelb_createSymbolFunctionBinding(function));
     }

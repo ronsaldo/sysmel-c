@@ -1,26 +1,39 @@
 namespace: SysmelC definition: {
 public: [
-    Inductive: Environment withAlternatives: [
-        Record: EmptyEnvironment withFields: #{}.
-        Record: IntrinsicsEnvironment withFields: #{
-            parent: Environment
-        }.
-        Record: ModuleEnvironment withFields: #{
-            parent: Environment.
-            module: Module
-        }.
-        Record: NamespaceEnvironment withFields: #{
-            parent: Environment.
-            namespace: Namespace
-        }.
-        Record: LexicalEnvironment withFields: #{
-            parent: Environment.
-            localSymbols: SymbolHashtable.
-        }.
-        Record: FunctionAnalysisEnvironment withFields: #{
-            parent: Environment.
-            localSymbols: SymbolHashtable.
-        }.
-    ].
+    Environment
+        withSelector: #lookupSymbolRecursively: addMethod: {
+            | $(Environment)self $(Symbol)symbol :: Value |
+            match: self ofType: Environment withPatterns: #{
+                $(EmptyEnvironment) empty : {
+                    return: Value(InvalidErrorValue("Symbol not found in environment"))
+                }.
+                $(IntrinsicsEnvironment)intrinsics : {
+                    if: (intrinsics localSymbols includesKey: symbol) then: {
+                        intrinsics localSymbols at: symbol
+                    }
+                    else: {
+                        return: (intrinsics parent lookupSymbolRecursively: symbol)
+                    }
+                }.
+                $(ModuleEnvironment)moduleEnv : {
+                    return: (moduleEnv parent lookupSymbolRecursively: symbol)
+                }.
+                $(NamespaceEnvironment)nspaceEnv : {
+                    if: (nspaceEnv namespace exportedObjectTable includesKey: symbol) then: {
+                        return: (nspaceEnv namespace exportedObjectTable at: symbol)
+                    }.
+                    return: (nspaceEnv parent lookupSymbolRecursively: symbol)
+                }.
+                $(LexicalEnvironment)lexical : {
+                    if: (lexical localSymbols includesKey: symbol) then: {
+                        lexical localSymbols at: symbol
+                    }
+                    else: {
+                        return: (lexical parent lookupSymbolRecursively: symbol)
+                    }
+                }.
+                _: Value(InvalidErrorValue("Symbol not found"))
+            }
+        }
 ]
 }

@@ -1,13 +1,15 @@
-loadFileOnce: "Namespace.sysmel".
-loadFileOnce: "Module.sysmel".
-loadFileOnce: "Environment.sysmel".
-loadFileOnce: "BasicTypes.sysmel".
-loadFileOnce: "Value.sysmel".
-loadFileOnce: "Intrinsics.sysmel".
-
+## Front-end. Parser an parse tree.
 loadFileOnce: "SourceCode.sysmel".
 loadFileOnce: "Scanner.sysmel".
 loadFileOnce: "ParseTree.sysmel".
 loadFileOnce: "Parser.sysmel".
+
+## Middle-end. Semantics analysis
+loadFileOnce: "SemanticsDeclarations.sysmel".
+
+loadFileOnce: "Environment.sysmel".
+loadFileOnce: "Intrinsics.sysmel".
+loadFileOnce: "Module.sysmel".
+loadFileOnce: "Namespace.sysmel".
 
 loadFileOnce: "TopLevelSemantics.sysmel".

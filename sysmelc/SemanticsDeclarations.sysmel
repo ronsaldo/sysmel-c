@@ -1,0 +1,133 @@
+namespace: SysmelC definition: {
+public: [
+    Record: Namespace withFields: #{
+        name: Symbol.
+        exportedObjectTable: SymbolHashtable.
+        exportedObjectList: OrderedCollection.
+    }.
+    $MakeNamespaceNamed($(Symbol)name :: Namespace) := Namespace#{
+        name: name.
+        exportedObjectTable: SymbolHashtable().
+        exportedObjectList: OrderedCollection().
+    }.
+
+    Record: Module withFields: #{
+        name: Symbol.
+        globalNamespace: Namespace.
+    }.
+
+    ## The different kinds of Environment
+    Inductive: Environment withAlternatives: [
+        Record: EmptyEnvironment withFields: #{}.
+        Record: IntrinsicsEnvironment withFields: #{
+            parent: Environment.
+            localSymbols: SymbolHashtable.
+        }.
+        Record: ModuleEnvironment withFields: #{
+            parent: Environment.
+            module: Module.
+        }.
+        Record: NamespaceEnvironment withFields: #{
+            parent: Environment.
+            namespace: Namespace
+        }.
+        Record: LexicalEnvironment withFields: #{
+            parent: Environment.
+            localSymbols: SymbolHashtable.
+        }.
+        Record: FunctionAnalysisEnvironment withFields: #{
+            parent: Environment.
+        }.
+    ].
+    
+    ## Basic types
+    Inductive: BasicType withAlternatives: [
+        Record: NullType withFields: #{}.
+        Record: IntegerType withFields: #{}.
+        Record: CharacterType withFields: #{}.
+        Record: SymbolType withFields: #{}.
+        Record: GradualType withFields: #{}.
+
+        Record: Int8Type withFields: #{}.
+        Record: Int16Type withFields: #{}.
+        Record: Int32Type withFields: #{}.
+        Record: Int64Type withFields: #{}.
+
+        Record: UInt8Type withFields: #{}.
+        Record: UInt16Type withFields: #{}.
+        Record: UInt32Type withFields: #{}.
+        Record: UInt64Type withFields: #{}.
+
+        Record: Char8Type withFields: #{}.
+        Record: Char16Type withFields: #{}.
+        Record: Char32Type withFields: #{}.
+
+        Record: Float32Type withFields: #{}.
+        Record: Float64Type withFields: #{}.
+
+        Record: ConstType withFields: #{
+            baseType: Type
+        }.
+        Record: PointerType withFields: #{
+            baseType: Type
+        }.
+        Record: ReferenceType withFields: #{
+            baseType: Type
+        }.
+    ].
+
+    ## A value with its different alternatives.
+    Inductive: Value withAlternatives: [
+        Record: InvalidErrorValue withFields: #{
+            message: String
+        }.
+        Record: NullValue withFields: #{}.
+        Record: IntegerValue withFields: #{
+            value: Integer
+        }.
+        Record: FloatValue withFields: #{
+            value: Float
+        }.
+        Record: CharacterValue withFields: #{
+            value: Character
+        }.
+        Record: StringValue withFields: #{
+            value: String
+        }.
+        Record: SymbolValue withFields: #{
+            value: Symbol
+        }.
+        Record: EnvironmentValue withFields: #{
+            value: Environment
+        }.
+        Record: ParseTreeNodeValue withFields: #{
+            value: ParseTreeNode
+        }.
+        Record: NamespaceValue withFields: #{
+            value: Namespace
+        }.
+        Record: ModuleValue withFields: #{
+            value: Module
+        }.
+        Record: BasicTypeValue withFields: #{
+            value: BasicType
+        }.
+    ].
+
+    Value
+        withSelector: #isInvalidErrorValue addMethod: {
+            |$(Value)self :: Boolean |
+            match: self ofType: Value withPatterns: #{
+                $(InvalidErrorValue)errorValue : true.
+                _: false.
+            }
+        };
+        withSelector: #getInvalidErrorValueMessage addMethod: {
+            |$(Value)self :: String |
+            match: self ofType: Value withPatterns: #{
+                $(InvalidErrorValue)errorValue : errorValue message.
+                _: abort().
+            }
+        }
+]
+}

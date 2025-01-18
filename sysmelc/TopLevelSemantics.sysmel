@@ -27,22 +27,34 @@ public: [
 
             ## Identifier reference
             $(ParseTreeIdentifierReferenceNode)identifier : {
-                return: Value(SymbolValue(identifier value)).
+                $value := environment lookupSymbolRecursively: identifier value.
+                if: value isInvalidErrorValue then: {
+                    printLine(value getInvalidErrorValueMessage).
+                    abort()
+                }.
+                return: value.
             }.
+
+            _: {
+                printLine("Unsupported parse-tree node: ". ast).
+                abort()
+            }
         }
     }
 ]
 
+$module := MakeModuleWithName("Test module").
 $evaluateString($(String)text :: Value) := {
     $sourceCode := makeSourceCodeForString(text).
     $tokens := scanSourceCode(sourceCode).
-    $environment := Environment(EmptyEnvironment()).
     $ast := parseTokenList(sourceCode . tokens).
+
+    $environment := module createTopLevelScriptEnvironment.
 
     TopLevelSemanticsState()
         analyzeAndEvaluateWithEnvironment: environment script: ast
 }.
 
-printLine(evaluateString("2.5")).
+printLine(evaluateString("Integer")).
 
 }

@@ -1,3 +1,34 @@
 namespace: SysmelC definition: {
+$DefaultIntrinsicsEnvironment := IntrinsicsEnvironment#{
+    parent: Environment(EmptyEnvironment()).
+    localSymbols: SymbolHashtable().
+}.
+DefaultIntrinsicsEnvironment localSymbols
+    at: #Null  put: Value(BasicTypeValue(BasicType(NullType())));
+    at: #Integer  put: Value(BasicTypeValue(BasicType(IntegerType())));
+    at: #Character  put: Value(BasicTypeValue(BasicType(CharacterType())));
+    at: #Symbol  put: Value(BasicTypeValue(BasicType(SymbolType())));
+
+    at: #Gradual  put: Value(BasicTypeValue(BasicType(GradualType())));
+
+    at: #Int8  put: Value(BasicTypeValue(BasicType(Int8Type())));
+    at: #Int16 put: Value(BasicTypeValue(BasicType(Int16Type())));
+    at: #Int32 put: Value(BasicTypeValue(BasicType(Int32Type())));
+    at: #Int64 put: Value(BasicTypeValue(BasicType(Int64Type())));
+
+    at: #UInt8  put: Value(BasicTypeValue(BasicType(UInt8Type())));
+    at: #UInt16 put: Value(BasicTypeValue(BasicType(UInt16Type())));
+    at: #UInt32 put: Value(BasicTypeValue(BasicType(UInt32Type())));
+    at: #UInt64 put: Value(BasicTypeValue(BasicType(UInt64Type())));
+
+    at: #Char8  put: Value(BasicTypeValue(BasicType(Char8Type())));
+    at: #Char16 put: Value(BasicTypeValue(BasicType(Char16Type())));
+    at: #Char32 put: Value(BasicTypeValue(BasicType(Char32Type())));
+
+    at: #Float32 put: Value(BasicTypeValue(BasicType(Float32Type())));
+    at: #Float64 put: Value(BasicTypeValue(BasicType(Float64Type()))).
+
 public: [
-]}
+    $getDefaultIntrinsicsEnvironment(:: Environment) := Environment(DefaultIntrinsicsEnvironment).
+].
+}
