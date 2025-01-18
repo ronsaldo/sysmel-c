@@ -283,6 +283,45 @@ static sysmelb_Value_t sysmelb_printLine(size_t argumentCount, sysmelb_Value_t *
     return result;
 }
 
+static sysmelb_Value_t sysmelb_readWholeFileAsText(size_t argumentCount, sysmelb_Value_t *arguments)
+{
+    assert(argumentCount == 1);
+    assert(arguments[0].kind == SysmelValueKindStringReference);
+
+    char* nameCString = calloc(arguments[0].stringSize + 1, 1);
+    memcpy(nameCString, arguments[0].string, arguments[0].stringSize);
+
+    FILE *file = fopen(nameCString, "rb");
+    if(!file)
+    {
+        printf("Failed to open file %s.", nameCString);
+        abort();
+    }
+
+    fseek(file, 0, SEEK_END);
+    size_t fileSize = ftell(file);
+    fseek(file, 0, SEEK_SET);
+
+    char *fileData = sysmelb_allocate(fileSize + 1);
+    if(fread(fileData, fileSize, 1, file) != 1)
+    {
+        printf("Failed to read completely file %s.", nameCString);
+        abort();
+    }
+
+    free(nameCString);
+    fclose(file);
+
+    sysmelb_Value_t result = {
+        .kind = SysmelValueKindStringReference,
+        .type = sysmelb_getBasicTypes()->string,
+        .stringSize = fileSize,
+        .string = fileData
+    };
+    return result;
+}
+
+
 static sysmelb_Value_t sysmelb_abort(size_t argumentCount, sysmelb_Value_t *arguments)
 {
     (void)argumentCount;
@@ -745,6 +784,16 @@ sysmelb_Environment_t *sysmelb_getOrCreateIntrinsicsEnvironment()
         function->kind = SysmelFunctionKindPrimitive;
         function->name = sysmelb_internSymbolC("printLine");
         function->primitiveFunction = sysmelb_printLine;
+
+        sysmelb_Environment_setLocalSymbolBinding(&sysmelb_IntrinsicsEnvironment, function->name, sysmelb_createSymbolFunctionBinding(function));
+    }
+
+    // File reading
+    {
+        sysmelb_function_t *function = sysmelb_allocate(sizeof(sysmelb_function_t));
+        function->kind = SysmelFunctionKindPrimitive;
+        function->name = sysmelb_internSymbolC("readWholeFileAsText:");
+        function->primitiveFunction = sysmelb_readWholeFileAsText;
 
         sysmelb_Environment_setLocalSymbolBinding(&sysmelb_IntrinsicsEnvironment, function->name, sysmelb_createSymbolFunctionBinding(function));
     }

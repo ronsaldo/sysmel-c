@@ -108,19 +108,4 @@ public: [
     }
 ]
 
-$module := MakeModuleWithName("Test module").
-$evaluateString($(String)text :: Value) := {
-    $sourceCode := makeSourceCodeForString(text).
-    $tokens := scanSourceCode(sourceCode).
-    $ast := parseTokenList(sourceCode . tokens).
-
-    $environment := module createTopLevelScriptEnvironment.
-
-    TopLevelSemanticsState()
-        analyzeAndEvaluateWithEnvironment: environment script: ast
-}.
-##printLine(evaluateString("Int32")).
-##printLine(evaluateString("42 negated")).
-##printLine(evaluateString("42 bitInvert")).
-##printLine(evaluateString("10 >= 2")).
 }

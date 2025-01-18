@@ -1,7 +1,46 @@
 namespace: SysmelC definition: {
 public: [
+    $printHelp( :: Void) := {
+        printLine("sysmelc [options] <input files>.")
+    }.
+    $printVersion( :: Void) := {
+        printLine("sysmelc v0.1")
+    }.
+
+    $evaluateFileContents($(Module)module $(String)fileName $(String)fileContents :: Void) := {
+        $sourceCode := SourceCode#{
+            directory: extractDirname(fileName).
+            name: extractBasename(fileName).
+            text: fileContents.
+        }.
+        $tokens := scanSourceCode(sourceCode).
+        $ast := parseTokenList(sourceCode . tokens).
+        $environment := module createTopLevelScriptEnvironment.
+        TopLevelSemanticsState()
+            analyzeAndEvaluateWithEnvironment: environment script: ast
+    }.
+
     $MainFrontEnd($(Array)arguments :: Int32) := {
-        printLine(arguments).
+        $!argumentIndex := 1.
+        $argumentCount := arguments size.
+        $module := MakeModuleWithName(#CLI).
+        while: argumentIndex < argumentCount do: {
+            $argumentValue := arguments at: argumentIndex.
+            if: (argumentValue at: 0) = '-' then: {
+                if: argumentValue = "-h" then: {
+                    printHelp().
+                    return: 0i32
+                }.
+                if: argumentValue = "-v" then: {
+                    printVersion().
+                    return: 0i32
+                }
+            }
+            else: {
+                $fileContents := readWholeFileAsText: argumentValue.
+                evaluateFileContents(module. argumentValue. fileContents).
+            }
+        } continueWith: (argumentIndex := argumentIndex + 1)
         0i32
     }.
 ].

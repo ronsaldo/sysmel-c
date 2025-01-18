@@ -732,6 +732,54 @@ static void sysmelb_createBasicIntegersPrimitives(void)
 
 }
 
+static sysmelb_Value_t sysmelb_primitive_stringEquals(size_t argumentCount, sysmelb_Value_t *arguments)
+{
+    assert(argumentCount == 2);
+    assert(arguments[0].kind == SysmelValueKindStringReference
+        && arguments[1].kind == SysmelValueKindStringReference);
+
+    sysmelb_Value_t result = {
+        .kind = SysmelValueKindBoolean,
+        .type = sysmelb_getBasicTypes()->boolean,
+    };
+
+    if (arguments[0].stringSize == arguments[1].stringSize
+        && memcmp(arguments[0].string, arguments[1].string, arguments[1].stringSize) == 0)
+    {
+        result.boolean = true;
+    }
+    else
+    {
+        result.boolean = false;
+    }
+
+    return result;
+}
+
+static sysmelb_Value_t sysmelb_primitive_stringNotEquals(size_t argumentCount, sysmelb_Value_t *arguments)
+{
+    assert(argumentCount == 2);
+    assert(arguments[0].kind == SysmelValueKindStringReference
+        && arguments[1].kind == SysmelValueKindStringReference);
+
+    sysmelb_Value_t result = {
+        .kind = SysmelValueKindBoolean,
+        .type = sysmelb_getBasicTypes()->boolean,
+    };
+
+    if (arguments[0].stringSize == arguments[1].stringSize
+        && memcmp(arguments[0].string, arguments[1].string, arguments[1].stringSize) == 0)
+    {
+        result.boolean = false;
+    }
+    else
+    {
+        result.boolean = true;
+    }
+
+    return result;
+}
+
 static sysmelb_Value_t sysmelb_primitive_concatenateString(size_t argumentCount, sysmelb_Value_t *arguments)
 {
     assert(argumentCount == 2);
@@ -896,6 +944,8 @@ static sysmelb_Value_t sysmelb_primitive_parseCEscapeSequences(size_t argumentCo
 
 static void sysmelb_createBasicStringPrimitives(void)
 {
+    sysmelb_type_addPrimitiveMethod(sysmelb_BasicTypesData.string, sysmelb_internSymbolC("="), sysmelb_primitive_stringEquals);
+    sysmelb_type_addPrimitiveMethod(sysmelb_BasicTypesData.string, sysmelb_internSymbolC("~="), sysmelb_primitive_stringNotEquals);
     sysmelb_type_addPrimitiveMethod(sysmelb_BasicTypesData.string, sysmelb_internSymbolC("--"), sysmelb_primitive_concatenateString);
     sysmelb_type_addPrimitiveMethod(sysmelb_BasicTypesData.string, sysmelb_internSymbolC("size"), sysmelb_primitive_stringSize);
     sysmelb_type_addPrimitiveMethod(sysmelb_BasicTypesData.string, sysmelb_internSymbolC("at:"), sysmelb_primitive_stringAt);

@@ -43,6 +43,32 @@ public: [
             }
         }.
 
+$extractDirname($(String)string :: String) := {
+    $!lastIndex := 0.
+    $!i := 0.
+    while: i < string size do: {
+        $c := string at: i.
+        if: (c = '/') || (c = '\\') then: {
+            lastIndex := i
+        }
+    } continueWith: (i := i + 1).
+
+    string substringFrom: 0 until: lastIndex + 1.
+}.
+
+$extractBasename($(String)string :: String) := {
+    $!lastIndex := 0.
+    $!i := 0.
+    while: i < string size do: {
+        $c := string at: i.
+        if: (c = '/') || (c = '\\') then: {
+            lastIndex := i
+        }
+    } continueWith: (i := i + 1).
+
+    string substringFrom: lastIndex + 1 until: string size.
+}.
+
 $makeSourceCodeForString($(String)text :: SourceCode)
     := SourceCode#{
         name: "Text String".
