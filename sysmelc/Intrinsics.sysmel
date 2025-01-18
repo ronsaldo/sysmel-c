@@ -4,28 +4,17 @@ $DefaultIntrinsicsEnvironment := IntrinsicsEnvironment#{
     localSymbols: SymbolHashtable().
 }.
 
-IntrinsicsEnvironment
-    withSelector: #addType: addMethod: {
-        |$(IntrinsicsEnvironment)self $(SysmelType)type :: Void |
-        match: type ofType: SysmelType withPatterns: #{
-            $(SysmelBasicType)basicType : {
-                self localSymbols at: basicType common name put: Value(SysmelTypeValue(type))
-            }.
-            _: {
-                printLine("Missing support for type ". type)
-            }
-        }.
-        void
-    }.
-
 public: [
     Record: BasicIntrinsicTypes withFields: #{
         null: SysmelType.
+        boolean: SysmelType.
         integer: SysmelType.
+        float: SysmelType.
         character: SysmelType.
         gradual: SysmelType.
         string: SysmelType.
         symbol: SysmelType.
+        universe: SysmelType.
 
         uint8:  SysmelType.
         uint16: SysmelType.
@@ -50,8 +39,14 @@ $BasicIntrinsicTypesSingleton := BasicIntrinsicTypes#{
     null: SysmelType(SysmelBasicType(SysmelTypeCommon#{
         name: #Null.  isValueType: true. valueAlignment: 0u8. valueSize: 0u8. heapAlignment: 0u8. heapSize: 0u8. methodDict: SymbolHashtable().
     })).
+    boolean: SysmelType(SysmelBasicType(SysmelTypeCommon#{
+        name: #Boolean. isValueType: true. valueAlignment: 1u8. valueSize: 1u8. heapAlignment: 1u8. heapSize: 1u8. methodDict: SymbolHashtable().
+    })).
     integer: SysmelType(SysmelBasicType(SysmelTypeCommon#{
         name: #Integer. isValueType: true. valueAlignment: 8u8. valueSize: 8u8. heapAlignment: 8u8. heapSize: 8u8. methodDict: SymbolHashtable().
+    })).
+    float: SysmelType(SysmelBasicType(SysmelTypeCommon#{
+        name: #Float. isValueType: true. valueAlignment: 8u8. valueSize: 8u8. heapAlignment: 8u8. heapSize: 8u8. methodDict: SymbolHashtable().
     })).
     character: SysmelType(SysmelBasicType(SysmelTypeCommon#{
         name: #Character. isValueType: true. valueAlignment: 8u8. valueSize: 8u8. heapAlignment: 8u8. heapSize: 8u8. methodDict: SymbolHashtable().
@@ -61,6 +56,9 @@ $BasicIntrinsicTypesSingleton := BasicIntrinsicTypes#{
     })).
     symbol: SysmelType(SysmelBasicType(SysmelTypeCommon#{
         name: #Symbol. isValueType: false. valueAlignment: 8u8. valueSize: 8u8. heapAlignment: 8u8. heapSize: 8u8. methodDict: SymbolHashtable().
+    })).
+    universe: SysmelType(SysmelBasicType(SysmelTypeCommon#{
+        name: #TypeUniverse. isValueType: false. valueAlignment: 8u8. valueSize: 8u8. heapAlignment: 8u8. heapSize: 8u8. methodDict: SymbolHashtable().
     })).
     gradual: SysmelType(SysmelBasicType(SysmelTypeCommon#{
         name: #Gradual. isValueType: false. valueAlignment: 8u8. valueSize: 8u8. heapAlignment: 8u8. heapSize: 8u8. methodDict: SymbolHashtable().
@@ -110,12 +108,29 @@ $BasicIntrinsicTypesSingleton := BasicIntrinsicTypes#{
     })).
 }.
 
+IntrinsicsEnvironment
+    withSelector: #addType: addMethod: {
+        |$(IntrinsicsEnvironment)self $(SysmelType)type :: Void |
+        match: type ofType: SysmelType withPatterns: #{
+            $(SysmelBasicType)basicType : {
+                self localSymbols at: basicType common name put: TypedValue(Value(SysmelTypeValue(type)). BasicIntrinsicTypesSingleton universe)
+            }.
+            _: {
+                printLine("Missing support for type ". type)
+            }
+        }.
+        void
+    }.
+
 DefaultIntrinsicsEnvironment
     addType: BasicIntrinsicTypesSingleton null;
+    addType: BasicIntrinsicTypesSingleton boolean;
     addType: BasicIntrinsicTypesSingleton integer;
     addType: BasicIntrinsicTypesSingleton character;
+    addType: BasicIntrinsicTypesSingleton float;
     addType: BasicIntrinsicTypesSingleton string;
     addType: BasicIntrinsicTypesSingleton symbol;
+    addType: BasicIntrinsicTypesSingleton universe;
 
     addType: BasicIntrinsicTypesSingleton gradual;
         
@@ -136,7 +151,236 @@ DefaultIntrinsicsEnvironment
     addType: BasicIntrinsicTypesSingleton float32;
     addType: BasicIntrinsicTypesSingleton float64.
 
+$integerPrimitive_bitInvert($(Array)arguments :: TypedValue) := {
+    assert: arguments size = 1.
+    $argument := arguments at: 0.
+    $argumentValue := argument getIntegerValue.
+
+    $result := TypedValue(Value(IntegerValue(argumentValue bitInvert)). argument type).
+    result
+}.
+
+$integerPrimitive_negated($(Array)arguments :: TypedValue) := {
+    assert: arguments size = 1.
+    $argument := arguments at: 0.
+    $argumentValue := argument getIntegerValue.
+
+    $result := TypedValue(Value(IntegerValue(argumentValue negated)). argument type).
+    result
+}.
+
+$integerPrimitive_add($(Array)arguments :: TypedValue) := {
+    assert: arguments size = 2.
+    $left := arguments at: 0.
+    $leftValue := left getIntegerValue.
+    $rightValue := (arguments at: 1) getIntegerValue.
+
+    $result := TypedValue(Value(IntegerValue(leftValue + rightValue)). left type).
+    result
+}.
+$integerPrimitive_minus($(Array)arguments :: TypedValue) := {
+    assert: arguments size = 2.
+    $left := arguments at: 0.
+    $leftValue := left getIntegerValue.
+    $rightValue := (arguments at: 1) getIntegerValue.
+
+    $result := TypedValue(Value(IntegerValue(leftValue - rightValue)). left type).
+    result
+}.
+$integerPrimitive_times($(Array)arguments :: TypedValue) := {
+    assert: arguments size = 2.
+    $left := arguments at: 0.
+    $leftValue := left getIntegerValue.
+    $rightValue := (arguments at: 1) getIntegerValue.
+
+    $result := TypedValue(Value(IntegerValue(leftValue * rightValue)). left type).
+    result
+}.
+$integerPrimitive_integerDivision($(Array)arguments :: TypedValue) := {
+    assert: arguments size = 2.
+    $left := arguments at: 0.
+    $leftValue := left getIntegerValue.
+    $rightValue := (arguments at: 1) getIntegerValue.
+
+    $result := TypedValue(Value(IntegerValue(leftValue // rightValue)). left type).
+    result
+}.
+$integerPrimitive_integerModulo($(Array)arguments :: TypedValue) := {
+    assert: arguments size = 2.
+    $left := arguments at: 0.
+    $leftValue := left getIntegerValue.
+    $rightValue := (arguments at: 1) getIntegerValue.
+
+    $result := TypedValue(Value(IntegerValue(leftValue % rightValue)). left type).
+    result
+}.
+
+$integerPrimitive_equals($(Array)arguments :: TypedValue) := {
+    assert: arguments size = 2.
+    $left := arguments at: 0.
+    $leftValue := left getIntegerValue.
+    $rightValue := (arguments at: 1) getIntegerValue.
+
+    $result := TypedValue(Value(BooleanValue(leftValue = rightValue)). BasicIntrinsicTypesSingleton boolean).
+    result
+}.
+
+$integerPrimitive_notEquals($(Array)arguments :: TypedValue) := {
+    assert: arguments size = 2.
+    $left := arguments at: 0.
+    $leftValue := left getIntegerValue.
+    $rightValue := (arguments at: 1) getIntegerValue.
+
+    $result := TypedValue(Value(BooleanValue(leftValue ~= rightValue)). BasicIntrinsicTypesSingleton boolean).
+    result
+}.
+
+$integerPrimitive_lessThan($(Array)arguments :: TypedValue) := {
+    assert: arguments size = 2.
+    $left := arguments at: 0.
+    $leftValue := left getIntegerValue.
+    $rightValue := (arguments at: 1) getIntegerValue.
+
+    $result := TypedValue(Value(BooleanValue(leftValue < rightValue)). BasicIntrinsicTypesSingleton boolean).
+    result
+}.
+
+$integerPrimitive_lessOrEquals($(Array)arguments :: TypedValue) := {
+    assert: arguments size = 2.
+    $left := arguments at: 0.
+    $leftValue := left getIntegerValue.
+    $rightValue := (arguments at: 1) getIntegerValue.
+
+    $result := TypedValue(Value(BooleanValue(leftValue <= rightValue)). BasicIntrinsicTypesSingleton boolean).
+    result
+}.
+
+$integerPrimitive_greaterThan($(Array)arguments :: TypedValue) := {
+    assert: arguments size = 2.
+    $left := arguments at: 0.
+    $leftValue := left getIntegerValue.
+    $rightValue := (arguments at: 1) getIntegerValue.
+
+    $result := TypedValue(Value(BooleanValue(leftValue > rightValue)). BasicIntrinsicTypesSingleton boolean).
+    result
+}.
+
+$integerPrimitive_greaterOrEquals($(Array)arguments :: TypedValue) := {
+    assert: arguments size = 2.
+    $left := arguments at: 0.
+    $leftValue := left getIntegerValue.
+    $rightValue := (arguments at: 1) getIntegerValue.
+
+    $result := TypedValue(Value(BooleanValue(leftValue >= rightValue)). BasicIntrinsicTypesSingleton boolean).
+    result
+}.
+
+$addIntegerIntrinsicMethod($(SymbolHashtable)methodDict $(Symbol)name $(Function)primitive $(SysmelType)functionType :: Void) := {
+    $primitiveValue := TypedValue(Value(SysmelFunctionValue(SysmelFunction(SysmelIntrinsicPrimitive#{
+        name: name.
+        implementation: primitive
+    }))). functionType).
+    methodDict at: name put: primitiveValue
+}.
+$addIntegerIntrinsicMethods($(SysmelType)intrinsicType :: Void) := {
+    $commonPart := intrinsicType getCommonSection.
+    $methodDict := commonPart methodDict.
+
+    $unaryFunctionType := SysmelType(SysmelSimpleFunctionType#{
+        common: SysmelTypeCommon#{
+            isValueType: true.
+            valueAlignment: 8u32.
+            valueSize: 8u32.
+            heapAlignment: 8u32.
+            heapSize: 8u32.
+            methodDict: SymbolHashtable().
+        }.
+        isCompileTimePure: true.
+        argumentTypes: [intrinsicType].
+        resultType: intrinsicType.
+    }).
+
+    $binaryFunctionType := SysmelType(SysmelSimpleFunctionType#{
+        common: SysmelTypeCommon#{
+            isValueType: true.
+            valueAlignment: 8u32.
+            valueSize: 8u32.
+            heapAlignment: 8u32.
+            heapSize: 8u32.
+            methodDict: SymbolHashtable().
+        }.
+        isCompileTimePure: true.
+        argumentTypes: [intrinsicType . intrinsicType].
+        resultType: intrinsicType.
+    }).
+
+    $binaryComparisonFunctionType := SysmelType(SysmelSimpleFunctionType#{
+        common: SysmelTypeCommon#{
+            isValueType: true.
+            valueAlignment: 8u32.
+            valueSize: 8u32.
+            heapAlignment: 8u32.
+            heapSize: 8u32.
+            methodDict: SymbolHashtable().
+        }.
+        isCompileTimePure: true.
+        argumentTypes: [intrinsicType . intrinsicType].
+        resultType: BasicIntrinsicTypesSingleton boolean.
+    }).
+
+    addIntegerIntrinsicMethod(methodDict. #bitInvert. integerPrimitive_bitInvert. unaryFunctionType).
+    addIntegerIntrinsicMethod(methodDict. #negated. integerPrimitive_negated. unaryFunctionType).
+
+    addIntegerIntrinsicMethod(methodDict. #+. integerPrimitive_add. binaryFunctionType).
+    addIntegerIntrinsicMethod(methodDict. #-. integerPrimitive_minus. binaryFunctionType).
+    addIntegerIntrinsicMethod(methodDict. #"*". integerPrimitive_times. binaryFunctionType).
+    addIntegerIntrinsicMethod(methodDict. #//. integerPrimitive_integerDivision. binaryFunctionType).
+    addIntegerIntrinsicMethod(methodDict. #%. integerPrimitive_integerModulo. binaryFunctionType).
+
+    addIntegerIntrinsicMethod(methodDict. #=. integerPrimitive_equals. binaryComparisonFunctionType).
+    addIntegerIntrinsicMethod(methodDict. #~=. integerPrimitive_notEquals. binaryComparisonFunctionType).
+    addIntegerIntrinsicMethod(methodDict. #<. integerPrimitive_lessThan. binaryComparisonFunctionType).
+    addIntegerIntrinsicMethod(methodDict. #<=. integerPrimitive_lessOrEquals. binaryComparisonFunctionType).
+    addIntegerIntrinsicMethod(methodDict. #>. integerPrimitive_greaterThan. binaryComparisonFunctionType).
+    addIntegerIntrinsicMethod(methodDict. #>=. integerPrimitive_greaterOrEquals. binaryComparisonFunctionType).
+
+    void
+}.
+
+addIntegerIntrinsicMethods(BasicIntrinsicTypesSingleton integer).
+addIntegerIntrinsicMethods(BasicIntrinsicTypesSingleton character).
+
+addIntegerIntrinsicMethods(BasicIntrinsicTypesSingleton int8).
+addIntegerIntrinsicMethods(BasicIntrinsicTypesSingleton int16).
+addIntegerIntrinsicMethods(BasicIntrinsicTypesSingleton int32).
+addIntegerIntrinsicMethods(BasicIntrinsicTypesSingleton int64).
+
+addIntegerIntrinsicMethods(BasicIntrinsicTypesSingleton uint8).
+addIntegerIntrinsicMethods(BasicIntrinsicTypesSingleton uint16).
+addIntegerIntrinsicMethods(BasicIntrinsicTypesSingleton uint32).
+addIntegerIntrinsicMethods(BasicIntrinsicTypesSingleton uint64).
+
+addIntegerIntrinsicMethods(BasicIntrinsicTypesSingleton char8).
+addIntegerIntrinsicMethods(BasicIntrinsicTypesSingleton char16).
+addIntegerIntrinsicMethods(BasicIntrinsicTypesSingleton char32).
 public: [
+    $getBasicIntrinsicTypes(:: BasicIntrinsicTypes) := BasicIntrinsicTypesSingleton.
     $getDefaultIntrinsicsEnvironment(:: Environment) := Environment(DefaultIntrinsicsEnvironment).
+
+    SysmelType
+        withSelector: #lookupSelector: addMethod: {
+            | $(SysmelType)self $(Symbol)selector :: TypedValue |
+            $commonSection := self getCommonSection.
+            if: (commonSection methodDict includesKey: selector) then: {
+                return: (commonSection methodDict at: selector)
+            }.
+
+            $supertype := self getSupertype.
+            if: supertype ~~ null then: {
+                return: (supertype lookupSelector: selector)
+            }.
+
+            TypedValue(Value(InvalidErrorValue("Failed to find selector.")). getBasicIntrinsicTypes() null).
+        }.
 ].
 }

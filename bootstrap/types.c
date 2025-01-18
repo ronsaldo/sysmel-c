@@ -683,6 +683,8 @@ static void sysmelb_createBasicIntegersPrimitives(void)
         sysmelb_type_addPrimitiveMethod(type, sysmelb_internSymbolC("%"), sysmelb_primitive_integerModule);
         sysmelb_type_addPrimitiveMethod(type, sysmelb_internSymbolC("="), sysmelb_primitive_integerEquals);
         sysmelb_type_addPrimitiveMethod(type, sysmelb_internSymbolC("~="), sysmelb_primitive_integerNotEquals);
+        sysmelb_type_addPrimitiveMethod(type, sysmelb_internSymbolC("=="), sysmelb_primitive_integerEquals);
+        sysmelb_type_addPrimitiveMethod(type, sysmelb_internSymbolC("~~"), sysmelb_primitive_integerNotEquals);
         sysmelb_type_addPrimitiveMethod(type, sysmelb_internSymbolC("<"), sysmelb_primitive_integerLessThan);
         sysmelb_type_addPrimitiveMethod(type, sysmelb_internSymbolC("<="), sysmelb_primitive_integerLessOrEquals);
         sysmelb_type_addPrimitiveMethod(type, sysmelb_internSymbolC(">"), sysmelb_primitive_integerGreaterThan);
@@ -1355,9 +1357,43 @@ static void sysmelb_createBasicBooleanPrimitives(void)
     sysmelb_type_addPrimitiveMacroMethod(sysmelb_BasicTypesData.boolean, sysmelb_internSymbolC("||"), sysmelb_primitive_Boolean_Or);
 }
 
+static sysmelb_Value_t sysmelb_primitive_Null_Equals(size_t argumentCount, sysmelb_Value_t *arguments)
+{
+    assert(argumentCount == 2);
+    assert(arguments[0].kind == SysmelValueKindNull);
+
+    sysmelb_Value_t result = {
+        .kind = SysmelValueKindBoolean,
+        .type = sysmelb_getBasicTypes()->boolean,
+        .boolean = arguments[1].kind == SysmelValueKindNull
+    };
+    return result;
+}
+
+static sysmelb_Value_t sysmelb_primitive_Null_NotEquals(size_t argumentCount, sysmelb_Value_t *arguments)
+{
+    assert(argumentCount == 2);
+    assert(arguments[0].kind == SysmelValueKindNull);
+
+    sysmelb_Value_t result = {
+        .kind = SysmelValueKindBoolean,
+        .type = sysmelb_getBasicTypes()->boolean,
+        .boolean = arguments[1].kind != SysmelValueKindNull
+    };
+    return result;
+}
+
+static void sysmelb_createBasicNullPrimitives(void)
+{
+    sysmelb_type_addPrimitiveMethod(sysmelb_BasicTypesData.null, sysmelb_internSymbolC("=="), sysmelb_primitive_Null_Equals);
+    sysmelb_type_addPrimitiveMethod(sysmelb_BasicTypesData.null, sysmelb_internSymbolC("~~"), sysmelb_primitive_Null_NotEquals);
+}
+
+
 static void sysmelb_createBasicTypesPrimitives(void)
 {
     sysmelb_createBasicBooleanPrimitives();
+    sysmelb_createBasicNullPrimitives();
     sysmelb_createBasicIntegersPrimitives();
     sysmelb_createBasicArrayPrimitives();
     sysmelb_createBasicStringPrimitives();

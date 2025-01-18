@@ -54,28 +54,72 @@ public: [
 
     Inductive: SysmelType withAlternatives: [
         Record: SysmelBasicType withFields: #{
-            common: SysmelTypeCommon
+            common: SysmelTypeCommon.
+            supertype: SysmelType.
         }.
         Record: SysmelTupleAndRecordType withFields: #{
             common: SysmelTypeCommon.
+            supertype: SysmelType.
             fields: Array.
             fieldNames: Array
         }.
         Record: SysmelEnumType withFields: #{
             common: SysmelTypeCommon.
+            supertype: SysmelType.
             valueCount: UInt32.
             values: Array.
             valueNames: Array.
         }.
         Record: SysmelSumType withFields: #{
             common: SysmelTypeCommon.
+            supertype: SysmelType.
             alternativeCount: UInt32.
             alternatives: Array.
         }.
         Record: SysmelSimpleFunctionType withFields: #{
             common: SysmelTypeCommon.
+            supertype: SysmelType.
+            isCompileTimePure: Boolean.
             argumentTypes: Array.
             resultType: SysmelType.
+        }.
+    ].
+
+    SysmelType
+        withSelector: #getCommonSection addMethod: {
+            |$(SysmelType)self :: SysmelTypeCommon|
+            match: self ofType: SysmelType withPatterns: #{
+                $(SysmelBasicType)basicType : basicType common.
+                $(SysmelTupleAndRecordType)tupleAndRecord : tupleAndRecord common.
+                $(SysmelEnumType)enumType : enumType common.
+                $(SysmelSimpleFunctionType)simpleFunctionType : simpleFunctionType common.
+                _: {
+                    printLine("Unsupported type kind").
+                    abort()
+                }
+            }
+        };
+        withSelector: #getSupertype addMethod: {
+            |$(SysmelType)self :: SysmelType|
+            match: self ofType: SysmelType withPatterns: #{
+                $(SysmelBasicType)basicType : basicType supertype.
+                $(SysmelTupleAndRecordType)tupleAndRecord : tupleAndRecord supertype.
+                $(SysmelEnumType)enumType : enumType supertype.
+                $(SysmelSimpleFunctionType)simpleFunctionType : simpleFunctionType supertype.
+                _: {
+                    printLine("Unsupported type kind").
+                    abort()
+                }
+            }
+        }.
+
+
+    Inductive: SysmelFunction withAlternatives: [
+        Record: SysmelIntrinsicPrimitive withFields: #{
+            name: Symbol.
+            implementation: Function
+        }.
+        Record: SysmelInterpretedFunction withFields: #{
         }.
     ].
 
@@ -87,6 +131,9 @@ public: [
         Record: NullValue withFields: #{}.
         Record: IntegerValue withFields: #{
             value: Integer
+        }.
+        Record: BooleanValue withFields: #{
+            value: Boolean
         }.
         Record: FloatValue withFields: #{
             value: Float
@@ -115,6 +162,9 @@ public: [
         Record: SysmelTypeValue withFields: #{
             value: SysmelType
         }.
+        Record: SysmelFunctionValue withFields: #{
+            value: SysmelFunction
+        }.
     ].
     
     ## Typed value
@@ -122,7 +172,7 @@ public: [
         value: Value.
         type: SysmelType
     }.
-
+        
     Value
         withSelector: #isInvalidErrorValue addMethod: {
             |$(Value)self :: Boolean |
@@ -137,6 +187,45 @@ public: [
                 $(InvalidErrorValue)errorValue : errorValue message.
                 _: abort().
             }
+        };withSelector: #getIntegerValue addMethod: {
+            |$(Value)self :: Integer |
+            match: self ofType: Value withPatterns: #{
+                $(IntegerValue)integerValue : integerValue value.
+                _: abort().
+            }.
+        }.
+
+    TypedValue
+        withSelector: #isInvalidErrorValue addMethod: {
+            |$(TypedValue)self :: Boolean |
+            self value isInvalidErrorValue
+        };
+        withSelector: #getInvalidErrorValueMessage addMethod: {
+            |$(TypedValue)self :: String |
+            self value getInvalidErrorValueMessage
+        };
+        withSelector: #getIntegerValue addMethod: {
+            |$(TypedValue)self :: Integer |
+            self value getIntegerValue
+        }.
+
+    $extractSymbolFromValue($(Value)value :: Symbol) := {
+        match: value ofType: Value withPatterns: #{
+            $(SymbolValue)symbolValue : symbolValue value.
+            _: {
+                printLine("Not a valid symbol value")
+                abort()
+            }
+        }.
+    }.
+    $extractFunctionFromValue($(Value)value :: Symbol) := {
+        match: value ofType: Value withPatterns: #{
+            $(SysmelFunctionValue)functionValue : functionValue value.
+            _: {
+                printLine("Not a valid function value")
+                abort()
+            }
         }
+    }.
 ]
 }

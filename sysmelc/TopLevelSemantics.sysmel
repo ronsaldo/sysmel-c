@@ -6,7 +6,7 @@ public: [
 
     TopLevelSemanticsState
         withSelector: #analyzeAndEvaluateWithEnvironment:script: addMethod: {
-        | $(TopLevelSemanticsState)self $(Environment)environment $(ParseTreeNode)ast :: Value |
+        | $(TopLevelSemanticsState)self $(Environment)environment $(ParseTreeNode)ast :: TypedValue |
         match: ast ofType: ParseTreeNode withPatterns: #{
             $(ParseTreeErrorNode)errorNode : {
                 printLine(errorNode errorMessage).
@@ -15,19 +15,19 @@ public: [
 
             ## Literals.
             $(ParseTreeLiteralIntegerNode)literal : {
-                return: Value(IntegerValue(literal value)).
+                return: TypedValue(Value(IntegerValue(literal value)). getBasicIntrinsicTypes() integer).
             }.
             $(ParseTreeLiteralCharacterNode)literal : {
-                return: Value(CharacterValue(literal value)).
+                return: TypedValue(Value(CharacterValue(literal value)). getBasicIntrinsicTypes() character).
             }.
             $(ParseTreeLiteralFloatNode)literal : {
-                return: Value(FloatValue(literal value)).
+                return: TypedValue(Value(FloatValue(literal value)) . getBasicIntrinsicTypes() float).
             }.
             $(ParseTreeLiteralStringNode)literal : {
-                return: Value(StringValue(literal value)).
+                return: TypedValue(Value(StringValue(literal value)). getBasicIntrinsicTypes() string)
             }.
             $(ParseTreeLiteralSymbolNode)literal : {
-                return: Value(SymbolValue(literal value)).
+                return: TypedValue(Value(SymbolValue(literal value)). getBasicIntrinsicTypes() symbol).
             }.
 
             ## Identifier reference
@@ -41,6 +41,45 @@ public: [
             }.
 
             ## Messages
+            $(ParseTreeMessageSendNode)messageSend : {
+                $receiverTypedValue := self analyzeAndEvaluateWithEnvironment: environment script: messageSend receiver.
+                $selectorTypedValue := self analyzeAndEvaluateWithEnvironment: environment script: messageSend selector.
+
+                $receiverType := receiverTypedValue type.
+                $selector := extractSymbolFromValue(selectorTypedValue value).
+
+                $method := receiverType lookupSelector: selector.
+                ##printLine("Receiver type: ". receiverType).
+                ##printLine("Selector: ". selector).
+                ##printLine("method: ". method).
+                if: method value isInvalidErrorValue then: {
+                    printLine(method value getInvalidErrorValueMessage. " " . selector).
+                    abort()
+                }.
+
+                ## TODO: add support for macros
+                ##printLine(method type).
+                $methodFunction := extractFunctionFromValue(method value).
+                ##printLine(methodFunction).
+
+                $invocationArguments := OrderedCollection().
+                invocationArguments add: receiverTypedValue.
+                $i := 0. while:(i < messageSend arguments size) do: {
+                    $argument := messageSend arguments at: i.
+                    $analyzedArgument := self analyzeAndEvaluateWithEnvironment: environment script: argument.
+                    invocationArguments add: analyzedArgument.
+                } continueWith:(i := i + 1).
+
+                match: methodFunction ofType: SysmelFunction withPatterns: #{
+                    $(SysmelIntrinsicPrimitive)intrinsic : {
+                        return: intrinsic implementation(invocationArguments asArray)
+                    }.
+                    _: {
+                        printLine("Unsupported method function kind. " . methodFunction).
+                        abort()
+                    }
+                }
+            }.
             $(ParseTreeBinaryOperatorSequenceNode)binopSequence : {
                 if: binopSequence elements size = 1 then: {
                     return: (self analyzeAndEvaluateWithEnvironment: environment script: (binopSequence elements at: 0))
@@ -80,7 +119,8 @@ $evaluateString($(String)text :: Value) := {
     TopLevelSemanticsState()
         analyzeAndEvaluateWithEnvironment: environment script: ast
 }.
-
-printLine(evaluateString("Int32")).
-
+##printLine(evaluateString("Int32")).
+##printLine(evaluateString("42 negated")).
+##printLine(evaluateString("42 bitInvert")).
+##printLine(evaluateString("10 >= 2")).
 }
