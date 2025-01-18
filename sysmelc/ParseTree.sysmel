@@ -204,4 +204,10 @@ public: [
             definition: ParseTreeNode.
         }.
     ].
+
+$getSourcePositionFromNode($(ParseTreeNode)node :: SourcePosition) := {
+    match: node ofType: ParseTreeNode withPatterns: #{
+        _: SourcePosition().
+    }
+}
 ]}.

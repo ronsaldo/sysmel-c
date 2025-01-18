@@ -8,6 +8,11 @@ public: [
         withSelector: #analyzeAndEvaluateWithEnvironment:script: addMethod: {
         | $(TopLevelSemanticsState)self $(Environment)environment $(ParseTreeNode)ast :: Value |
         match: ast ofType: ParseTreeNode withPatterns: #{
+            $(ParseTreeErrorNode)errorNode : {
+                printLine(errorNode errorMessage).
+                abort()
+            }.
+
             ## Literals.
             $(ParseTreeLiteralIntegerNode)literal : {
                 return: Value(IntegerValue(literal value)).
@@ -35,6 +40,27 @@ public: [
                 return: value.
             }.
 
+            ## Messages
+            $(ParseTreeBinaryOperatorSequenceNode)binopSequence : {
+                if: binopSequence elements size = 1 then: {
+                    return: (self analyzeAndEvaluateWithEnvironment: environment script: (binopSequence elements at: 0))
+                }.
+
+                $!receiver := binopSequence elements at: 0.
+                $i := 1.
+                while: i < binopSequence elements size do: {
+                    $selector := binopSequence elements at: i.
+                    $operand := binopSequence elements at: i + 1.
+                    receiver := ParseTreeNode(ParseTreeMessageSendNode#{
+                        sourcePosition: getSourcePositionFromNode(operand).
+                        receiver: receiver.
+                        selector: selector.
+                        arguments: [operand]
+                    })
+                } continueWith: (i := i + 2).
+
+                return: (self analyzeAndEvaluateWithEnvironment: environment script: receiver)
+            }.
             _: {
                 printLine("Unsupported parse-tree node: ". ast).
                 abort()
@@ -55,6 +81,6 @@ $evaluateString($(String)text :: Value) := {
         analyzeAndEvaluateWithEnvironment: environment script: ast
 }.
 
-printLine(evaluateString("Integer")).
+printLine(evaluateString("Int32")).
 
 }

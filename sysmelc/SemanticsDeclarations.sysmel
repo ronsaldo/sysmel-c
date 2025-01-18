@@ -40,39 +40,42 @@ public: [
         }.
     ].
     
-    ## Basic types
-    Inductive: BasicType withAlternatives: [
-        Record: NullType withFields: #{}.
-        Record: IntegerType withFields: #{}.
-        Record: CharacterType withFields: #{}.
-        Record: SymbolType withFields: #{}.
-        Record: GradualType withFields: #{}.
+    ## Type
+    Record: SysmelTypeCommon withFields: #{
+        name: Symbol.
+        printingSuffix: String.
+        isValueType: Boolean.
+        valueAlignment: UInt32.
+        valueSize: UInt32.
+        heapAlignment: UInt32.
+        heapSize: UInt32.
+        methodDict: SymbolHashtable.
+    }.
 
-        Record: Int8Type withFields: #{}.
-        Record: Int16Type withFields: #{}.
-        Record: Int32Type withFields: #{}.
-        Record: Int64Type withFields: #{}.
-
-        Record: UInt8Type withFields: #{}.
-        Record: UInt16Type withFields: #{}.
-        Record: UInt32Type withFields: #{}.
-        Record: UInt64Type withFields: #{}.
-
-        Record: Char8Type withFields: #{}.
-        Record: Char16Type withFields: #{}.
-        Record: Char32Type withFields: #{}.
-
-        Record: Float32Type withFields: #{}.
-        Record: Float64Type withFields: #{}.
-
-        Record: ConstType withFields: #{
-            baseType: Type
+    Inductive: SysmelType withAlternatives: [
+        Record: SysmelBasicType withFields: #{
+            common: SysmelTypeCommon
         }.
-        Record: PointerType withFields: #{
-            baseType: Type
+        Record: SysmelTupleAndRecordType withFields: #{
+            common: SysmelTypeCommon.
+            fields: Array.
+            fieldNames: Array
         }.
-        Record: ReferenceType withFields: #{
-            baseType: Type
+        Record: SysmelEnumType withFields: #{
+            common: SysmelTypeCommon.
+            valueCount: UInt32.
+            values: Array.
+            valueNames: Array.
+        }.
+        Record: SysmelSumType withFields: #{
+            common: SysmelTypeCommon.
+            alternativeCount: UInt32.
+            alternatives: Array.
+        }.
+        Record: SysmelSimpleFunctionType withFields: #{
+            common: SysmelTypeCommon.
+            argumentTypes: Array.
+            resultType: SysmelType.
         }.
     ].
 
@@ -109,10 +112,16 @@ public: [
         Record: ModuleValue withFields: #{
             value: Module
         }.
-        Record: BasicTypeValue withFields: #{
-            value: BasicType
+        Record: SysmelTypeValue withFields: #{
+            value: SysmelType
         }.
     ].
+    
+    ## Typed value
+    Record: TypedValue withFields: #{
+        value: Value.
+        type: SysmelType
+    }.
 
     Value
         withSelector: #isInvalidErrorValue addMethod: {

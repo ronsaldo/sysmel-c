@@ -3,30 +3,138 @@ $DefaultIntrinsicsEnvironment := IntrinsicsEnvironment#{
     parent: Environment(EmptyEnvironment()).
     localSymbols: SymbolHashtable().
 }.
-DefaultIntrinsicsEnvironment localSymbols
-    at: #Null  put: Value(BasicTypeValue(BasicType(NullType())));
-    at: #Integer  put: Value(BasicTypeValue(BasicType(IntegerType())));
-    at: #Character  put: Value(BasicTypeValue(BasicType(CharacterType())));
-    at: #Symbol  put: Value(BasicTypeValue(BasicType(SymbolType())));
 
-    at: #Gradual  put: Value(BasicTypeValue(BasicType(GradualType())));
+IntrinsicsEnvironment
+    withSelector: #addType: addMethod: {
+        |$(IntrinsicsEnvironment)self $(SysmelType)type :: Void |
+        match: type ofType: SysmelType withPatterns: #{
+            $(SysmelBasicType)basicType : {
+                self localSymbols at: basicType common name put: Value(SysmelTypeValue(type))
+            }.
+            _: {
+                printLine("Missing support for type ". type)
+            }
+        }.
+        void
+    }.
 
-    at: #Int8  put: Value(BasicTypeValue(BasicType(Int8Type())));
-    at: #Int16 put: Value(BasicTypeValue(BasicType(Int16Type())));
-    at: #Int32 put: Value(BasicTypeValue(BasicType(Int32Type())));
-    at: #Int64 put: Value(BasicTypeValue(BasicType(Int64Type())));
+public: [
+    Record: BasicIntrinsicTypes withFields: #{
+        null: SysmelType.
+        integer: SysmelType.
+        character: SysmelType.
+        gradual: SysmelType.
+        string: SysmelType.
+        symbol: SysmelType.
 
-    at: #UInt8  put: Value(BasicTypeValue(BasicType(UInt8Type())));
-    at: #UInt16 put: Value(BasicTypeValue(BasicType(UInt16Type())));
-    at: #UInt32 put: Value(BasicTypeValue(BasicType(UInt32Type())));
-    at: #UInt64 put: Value(BasicTypeValue(BasicType(UInt64Type())));
+        uint8:  SysmelType.
+        uint16: SysmelType.
+        uint32: SysmelType.
+        uint64: SysmelType.
 
-    at: #Char8  put: Value(BasicTypeValue(BasicType(Char8Type())));
-    at: #Char16 put: Value(BasicTypeValue(BasicType(Char16Type())));
-    at: #Char32 put: Value(BasicTypeValue(BasicType(Char32Type())));
+        int8:  SysmelType.
+        int16: SysmelType.
+        int32: SysmelType.
+        int64: SysmelType.
 
-    at: #Float32 put: Value(BasicTypeValue(BasicType(Float32Type())));
-    at: #Float64 put: Value(BasicTypeValue(BasicType(Float64Type()))).
+        char8:  SysmelType.
+        char16: SysmelType.
+        char32: SysmelType.
+
+        float32: SysmelType.
+        float64: SysmelType.
+    }
+].
+
+$BasicIntrinsicTypesSingleton := BasicIntrinsicTypes#{
+    null: SysmelType(SysmelBasicType(SysmelTypeCommon#{
+        name: #Null.  isValueType: true. valueAlignment: 0u8. valueSize: 0u8. heapAlignment: 0u8. heapSize: 0u8. methodDict: SymbolHashtable().
+    })).
+    integer: SysmelType(SysmelBasicType(SysmelTypeCommon#{
+        name: #Integer. isValueType: true. valueAlignment: 8u8. valueSize: 8u8. heapAlignment: 8u8. heapSize: 8u8. methodDict: SymbolHashtable().
+    })).
+    character: SysmelType(SysmelBasicType(SysmelTypeCommon#{
+        name: #Character. isValueType: true. valueAlignment: 8u8. valueSize: 8u8. heapAlignment: 8u8. heapSize: 8u8. methodDict: SymbolHashtable().
+    })).
+    string: SysmelType(SysmelBasicType(SysmelTypeCommon#{
+        name: #String. isValueType: false. valueAlignment: 8u8. valueSize: 8u8. heapAlignment: 8u8. heapSize: 8u8. methodDict: SymbolHashtable().
+    })).
+    symbol: SysmelType(SysmelBasicType(SysmelTypeCommon#{
+        name: #Symbol. isValueType: false. valueAlignment: 8u8. valueSize: 8u8. heapAlignment: 8u8. heapSize: 8u8. methodDict: SymbolHashtable().
+    })).
+    gradual: SysmelType(SysmelBasicType(SysmelTypeCommon#{
+        name: #Gradual. isValueType: false. valueAlignment: 8u8. valueSize: 8u8. heapAlignment: 8u8. heapSize: 8u8. methodDict: SymbolHashtable().
+    })).
+
+    uint8: SysmelType(SysmelBasicType(SysmelTypeCommon#{
+        name: #UInt8.  printingSuffix: #u8.  isValueType: true. valueAlignment: 1u8. valueSize: 1u8. heapAlignment: 1u8. heapSize: 1u8. methodDict: SymbolHashtable().
+    })).
+    uint16: SysmelType(SysmelBasicType(SysmelTypeCommon#{
+        name: #UInt16. printingSuffix: #u16. isValueType: true. valueAlignment: 2u8. valueSize: 2u8. heapAlignment: 2u8. heapSize: 2u8. methodDict: SymbolHashtable().
+    })).
+    uint32: SysmelType(SysmelBasicType(SysmelTypeCommon#{
+        name: #UInt32. printingSuffix: #u32. isValueType: true. valueAlignment: 4u8. valueSize: 4u8. heapAlignment: 4u8. heapSize: 4u8. methodDict: SymbolHashtable().
+    })).
+    uint64: SysmelType(SysmelBasicType(SysmelTypeCommon#{
+        name: #UInt64. printingSuffix: #u64. isValueType: true. valueAlignment: 8u8. valueSize: 8u8. heapAlignment: 8u8. heapSize: 8u8. methodDict: SymbolHashtable().
+    })).
+
+    int8: SysmelType(SysmelBasicType(SysmelTypeCommon#{
+        name: #Int8.  printingSuffix: #i8.  isValueType: true. valueAlignment: 1u8. valueSize: 1u8. heapAlignment: 1u8. heapSize: 1u8. methodDict: SymbolHashtable().
+    })).
+    int16: SysmelType(SysmelBasicType(SysmelTypeCommon#{
+        name: #Int16. printingSuffix: #i16. isValueType: true. valueAlignment: 2u8. valueSize: 2u8. heapAlignment: 2u8. heapSize: 2u8. methodDict: SymbolHashtable().
+    })).
+    int32: SysmelType(SysmelBasicType(SysmelTypeCommon#{
+        name: #Int32. printingSuffix: #i32. isValueType: true. valueAlignment: 4u8. valueSize: 4u8. heapAlignment: 4u8. heapSize: 4u8. methodDict: SymbolHashtable().
+    })).
+    int64: SysmelType(SysmelBasicType(SysmelTypeCommon#{
+        name: #Int64. printingSuffix: #i64. isValueType: true. valueAlignment: 8u8. valueSize: 8u8. heapAlignment: 8u8. heapSize: 8u8. methodDict: SymbolHashtable().
+    })).
+
+    char8: SysmelType(SysmelBasicType(SysmelTypeCommon#{
+        name: #Char8.  printingSuffix: #c8.  isValueType: true. valueAlignment: 1u8. valueSize: 1u8. heapAlignment: 1u8. heapSize: 1u8. methodDict: SymbolHashtable().
+    })).
+    char16: SysmelType(SysmelBasicType(SysmelTypeCommon#{
+        name: #Char16. printingSuffix: #c16. isValueType: true. valueAlignment: 2u8. valueSize: 2u8. heapAlignment: 2u8. heapSize: 2u8. methodDict: SymbolHashtable().
+    })).
+    char32: SysmelType(SysmelBasicType(SysmelTypeCommon#{
+        name: #Char32. printingSuffix: #c32. isValueType: true. valueAlignment: 4u8. valueSize: 4u8. heapAlignment: 4u8. heapSize: 4u8. methodDict: SymbolHashtable().
+    })).
+
+    float32: SysmelType(SysmelBasicType(SysmelTypeCommon#{
+        name: #Float32. printingSuffix: #f32. isValueType: true. valueAlignment: 4u8. valueSize: 4u8. heapAlignment: 4u8. heapSize: 4u8. methodDict: SymbolHashtable().
+    })).
+    float64: SysmelType(SysmelBasicType(SysmelTypeCommon#{
+        name: #Float64. printingSuffix: #f64. isValueType: true. valueAlignment: 8u8. valueSize: 8u8. heapAlignment: 8u8. heapSize: 8u8. methodDict: SymbolHashtable().
+    })).
+}.
+
+DefaultIntrinsicsEnvironment
+    addType: BasicIntrinsicTypesSingleton null;
+    addType: BasicIntrinsicTypesSingleton integer;
+    addType: BasicIntrinsicTypesSingleton character;
+    addType: BasicIntrinsicTypesSingleton string;
+    addType: BasicIntrinsicTypesSingleton symbol;
+
+    addType: BasicIntrinsicTypesSingleton gradual;
+        
+    addType: BasicIntrinsicTypesSingleton int8;
+    addType: BasicIntrinsicTypesSingleton int16;
+    addType: BasicIntrinsicTypesSingleton int32;
+    addType: BasicIntrinsicTypesSingleton int64;
+
+    addType: BasicIntrinsicTypesSingleton uint8;
+    addType: BasicIntrinsicTypesSingleton uint16;
+    addType: BasicIntrinsicTypesSingleton uint32;
+    addType: BasicIntrinsicTypesSingleton uint64;
+
+    addType: BasicIntrinsicTypesSingleton char8;
+    addType: BasicIntrinsicTypesSingleton char16;
+    addType: BasicIntrinsicTypesSingleton char32;
+
+    addType: BasicIntrinsicTypesSingleton float32;
+    addType: BasicIntrinsicTypesSingleton float64.
 
 public: [
     $getDefaultIntrinsicsEnvironment(:: Environment) := Environment(DefaultIntrinsicsEnvironment).
