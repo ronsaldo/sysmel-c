@@ -1,6 +1,21 @@
 Inductive: Arithmetic withAlternatives: [
     Record: LiteralInteger withFields: #{value: Integer}.
-    Record: Plus withFields: #{leftOperand: Arithmetic. rightOperand: Arithmetic}
+    Record: Plus withFields: #{leftOperand: Arithmetic. rightOperand: Arithmetic}.
+    Record: Minus withFields: #{leftOperand: Arithmetic. rightOperand: Arithmetic}.
 ].
 
-printLine(Arithmetic(LiteralInteger{42})).
+$sumExpression := Arithmetic(Plus#{
+    leftOperand: Arithmetic(LiteralInteger{42}).
+    rightOperand: Arithmetic(LiteralInteger{5})
+}).
+printLine(sumExpression).
+
+$evaluateExpression($(Arithmetic)expression :: Integer) := {
+    match: expression ofType: Arithmetic withPatterns: #{
+        $(LiteralInteger)literal : literal value.
+        $(Plus)plus : evaluateExpression(plus leftOperand) + evaluateExpression(plus rightOperand).
+        $(Minus)minus : evaluateExpression(minus leftOperand) - evaluateExpression(minus rightOperand).
+    }
+}.
+
+printLine(evaluateExpression(sumExpression)).

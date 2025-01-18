@@ -133,6 +133,7 @@ sysmelb_Type_t *sysmelb_allocateEnumType(sysmelb_symbol_t *name, sysmelb_Type_t 
 
 int sysmelb_findIndexOfFieldNamed(sysmelb_Type_t *type, sysmelb_symbol_t *name);
 bool sysmelb_findEnumValueWithName(sysmelb_Type_t *type, sysmelb_symbol_t *name, sysmelb_Value_t *outValue);
+int sysmelb_findSumTypeIndexForType(sysmelb_Type_t *sumType, sysmelb_Type_t *injectedType);
 
 sysmelb_Value_t sysmelb_instantiateTypeWithArguments(sysmelb_Type_t *type, size_t argumentCount, sysmelb_Value_t *arguments);
 const sysmelb_BasicTypes_t *sysmelb_getBasicTypes(void);
