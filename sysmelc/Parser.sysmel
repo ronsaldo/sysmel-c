@@ -856,9 +856,102 @@ public: [
                 arguments: arguments asArray.
             })
         };
+        withSelector: #parseCascadedMessage addMethod: {|$(Parser)self :: ParseTreeNode |
+            $startingPosition := self state position.
+            $token := self state peek.
+            if: token kind = TokenKind Identifier then: {
+                self state advance.
+
+                $selectorSymbol := token getText asSymbol.
+                $selectorNode := ParseTreeNode(ParseTreeLiteralSymbolNode#{
+                    sourcePosition: token sourcePosition.
+                    value: selectorSymbol
+                }).
+
+                return: ParseTreeNode(ParseTreeCascadedMessageNode#{
+                    sourcePosition: (self state sourcePositionFrom: startingPosition).
+                    selector: selectorNode.
+                    arguments: []
+                })
+            }.
+            if: token kind = TokenKind Keyword then: {
+                $!selectorText := "".
+                $arguments := OrderedCollection().
+
+                while: (self state peekKind = TokenKind Keyword) do: {
+                    $keywordToken := self state next.
+                    selectorText := selectorText -- keywordToken getText.
+
+                    $argument := self parseBinaryExpressionSequence.
+                    arguments add: argument.
+                }.
+
+                $selectorSymbol := selectorText asSymbol.
+                $selectorNode := ParseTreeNode(ParseTreeLiteralSymbolNode#{
+                    sourcePosition: (self state sourcePositionFrom: startingPosition).
+                    value: selectorSymbol
+                }).
+
+                return: ParseTreeNode(ParseTreeCascadedMessageNode#{
+                    sourcePosition: (self state sourcePositionFrom: startingPosition).
+                    selector: selectorNode.
+                    arguments: arguments asArray
+                })
+            }.
+            if: (self isBinaryExpressionOperator: token kind) then: {
+                self state advance.
+                $selectorSymbol := token getText asSymbol.
+                $selectorNode := ParseTreeNode(ParseTreeLiteralSymbolNode#{
+                    sourcePosition: token sourcePosition.
+                    value: selectorSymbol
+                }).
+
+                $argument := self parseUnaryPostfixExpression.
+
+                return: ParseTreeNode(ParseTreeCascadedMessageNode#{
+                    sourcePosition: (self state sourcePositionFrom: startingPosition).
+                    selector: selectorNode.
+                    arguments: [argument]
+                })
+            }.
+
+            self state makeErrorAtCurrentSourcePosition: "Expected a cascaded message."
+        };
         withSelector: #parseMessageCascade addMethod: {|$(Parser)self :: ParseTreeNode |
-            self parseKeywordMessageSend
-            ## TODO: Implement this part.
+            $startingPosition := self state position.
+            $receiverOrFirstMessage := self parseKeywordMessageSend.
+            if: self state peekKind ~= TokenKind Semicolon then: {
+                return: receiverOrFirstMessage
+            }
+
+            $!receiver := receiverOrFirstMessage.
+            $cascadedMessages := OrderedCollection().
+            
+            match: receiverOrFirstMessage ofType: ParseTreeNode withPatterns: #{
+                $(ParseTreeMessageSendNode)messageNode : {
+                    receiver := messageNode receiver.
+                    cascadedMessages add: ParseTreeNode(ParseTreeCascadedMessageNode#{
+                        sourcePosition: messageNode sourcePosition.
+                        selector: messageNode selector.
+                        arguments: messageNode arguments.
+                    })
+                }.
+                _: {
+                    ## Nothing required in this case.
+                }
+            }.
+
+            while: (self state peekKind = TokenKind Semicolon) do: {
+                self state advance.
+                $cascaded := self parseCascadedMessage.
+                cascadedMessages add: cascaded.
+            }.
+
+            ParseTreeNode(ParseTreeMessageCascadeNode#{
+                sourcePosition: (self state sourcePositionFrom: startingPosition).
+                receiver: receiver.
+                cascadedMessages: cascadedMessages asArray.
+            })
         };
         withSelector: #parseLowPrecedenceExpression addMethod: {|$(Parser)self :: ParseTreeNode |
             if: self state peekKind = TokenKind Keyword then: {
@@ -1003,4 +1096,6 @@ $parseString($(String)text :: ParseTreeNode) := {
 
 ##printLine(parseString("a(1 . 2)")).
 
+##printLine(parseString("a first: 1")).
+##printLine(parseString("a first: 1; second; second: 2; yourself")).
 }.

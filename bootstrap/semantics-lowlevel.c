@@ -597,7 +597,18 @@ static void sysmelb_analyzeAndCompileClosureBody(sysmelb_Environment_t *environm
                 }
             }
             
-            sysmelb_analyzeAndCompileClosureBody(lexicalEnvironment, function, caseAssoc->value);
+            if(caseAssoc->value)
+            {
+                sysmelb_analyzeAndCompileClosureBody(lexicalEnvironment, function, caseAssoc->value);
+            }
+            else
+            {
+                sysmelb_Value_t voidValue = {
+                    .kind = SysmelValueKindVoid,
+                    .type = sysmelb_getBasicTypes()->voidType
+                };
+                sysmelb_bytecode_pushLiteral(&function->bytecode, &voidValue);
+            }
 
             casesMergeJumps[i] = sysmelb_bytecode_jump(&function->bytecode);
         }
