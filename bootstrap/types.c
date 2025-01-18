@@ -250,6 +250,7 @@ sysmelb_Value_t sysmelb_instantiateTypeWithArguments(sysmelb_Type_t *type, size_
         {
             sysmelb_SourcePosition_t emptyPosition = {0};
             sysmelb_errorPrintf(emptyPosition, "Failed to inject value of a type into a sum type.");
+            abort();
         }
 
         sysmelb_SumTypeValue_t *sumValue = sysmelb_allocate(sizeof(sysmelb_SumTypeValue_t));

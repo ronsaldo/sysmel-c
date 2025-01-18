@@ -1,5 +1,15 @@
 namespace: SysmelC definition: {
+public: [
     Record: Namespace withFields: #{
-        name: Symbol
+        name: Symbol.
+        exportedObjectTable: SymbolHashtable.
+        exportedObjectList: OrderedCollection.
     }.
+
+    $MakeNamespaceNamed($(Symbol)name :: Namespace) := Namespace#{
+        name: name.
+        exportedObjectTable: SymbolHashtable().
+        exportedObjectList: OrderedCollection().
+    }
+]
 }

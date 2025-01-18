@@ -15,10 +15,12 @@ public: [
         }.
         Record: LexicalEnvironment withFields: #{
             parent: Environment.
+            localSymbols: SymbolHashtable.
         }.
         Record: FunctionAnalysisEnvironment withFields: #{
             parent: Environment.
+            localSymbols: SymbolHashtable.
         }.
-    ]
+    ].
 ]
 }

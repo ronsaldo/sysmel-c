@@ -1,0 +1,48 @@
+namespace: SysmelC definition: {
+public: [
+    Record: TopLevelSemanticsState withFields: #{
+        currentExpectedType: Type
+    }.
+
+    TopLevelSemanticsState
+        withSelector: #analyzeAndEvaluateWithEnvironment:script: addMethod: {
+        | $(TopLevelSemanticsState)self $(Environment)environment $(ParseTreeNode)ast :: Value |
+        match: ast ofType: ParseTreeNode withPatterns: #{
+            ## Literals.
+            $(ParseTreeLiteralIntegerNode)literal : {
+                return: Value(IntegerValue(literal value)).
+            }.
+            $(ParseTreeLiteralCharacterNode)literal : {
+                return: Value(CharacterValue(literal value)).
+            }.
+            $(ParseTreeLiteralFloatNode)literal : {
+                return: Value(FloatValue(literal value)).
+            }.
+            $(ParseTreeLiteralStringNode)literal : {
+                return: Value(StringValue(literal value)).
+            }.
+            $(ParseTreeLiteralSymbolNode)literal : {
+                return: Value(SymbolValue(literal value)).
+            }.
+
+            ## Identifier reference
+            $(ParseTreeIdentifierReferenceNode)identifier : {
+                return: Value(SymbolValue(identifier value)).
+            }.
+        }
+    }
+]
+
+$evaluateString($(String)text :: Value) := {
+    $sourceCode := makeSourceCodeForString(text).
+    $tokens := scanSourceCode(sourceCode).
+    $environment := Environment(EmptyEnvironment()).
+    $ast := parseTokenList(sourceCode . tokens).
+
+    TopLevelSemanticsState()
+        analyzeAndEvaluateWithEnvironment: environment script: ast
+}.
+
+printLine(evaluateString("2.5")).
+
+}

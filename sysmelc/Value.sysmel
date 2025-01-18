@@ -1,0 +1,21 @@
+namespace: SysmelC definition: {
+public: [
+    Inductive: Value withAlternatives: [
+        Record: NullValue withFields: #{}.
+        Record: IntegerValue withFields: #{
+            value: Integer
+        }.
+        Record: FloatValue withFields: #{
+            value: Float
+        }.
+        Record: CharacterValue withFields: #{
+            value: Character
+        }.
+        Record: StringValue withFields: #{
+            value: String
+        }.
+        Record: SymbolValue withFields: #{
+            value: Symbol
+        }.
+    ]
+]}

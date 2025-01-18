@@ -181,6 +181,17 @@ public: [
             continueExpression: ParseTreeNode.
             condition: ParseTreeNode
         }.
+        Record: ParseTreeSwitchNode withFields: #{
+            sourcePosition: SourcePosition.
+            value: ParseTreeNode.
+            cases: ParseTreeNode.
+        }.
+        Record: ParseTreeSwitchPatternMatchingNode withFields: #{
+            sourcePosition: SourcePosition.
+            value: ParseTreeNode.
+            valueSumType: ParseTreeNode.
+            cases: ParseTreeNode
+        }.
         Record: ParseTreeReturnNode withFields: #{
             sourcePosition: SourcePosition.
             valueExpression: ParseTreeNode.

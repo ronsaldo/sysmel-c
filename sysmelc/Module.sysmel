@@ -1,7 +1,15 @@
 namespace: SysmelC definition: {
 public: [
     Record: Module withFields: #{
-        globalNamespace: Namespace
+        name: Symbol.
+        globalNamespace: Namespace.
     }.
+
+    $MakeModuleWithName($(Symbol)name :: Module) := {
+        Module#{
+            name: name.
+            globalNamespace: MakeNamespaceNamed(#__global).
+        }
+    }
 ]
 }.

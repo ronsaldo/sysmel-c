@@ -1,8 +1,13 @@
 loadFileOnce: "Namespace.sysmel".
 loadFileOnce: "Module.sysmel".
 loadFileOnce: "Environment.sysmel".
+loadFileOnce: "BasicTypes.sysmel".
+loadFileOnce: "Value.sysmel".
+loadFileOnce: "Intrinsics.sysmel".
 
 loadFileOnce: "SourceCode.sysmel".
 loadFileOnce: "Scanner.sysmel".
 loadFileOnce: "ParseTree.sysmel".
 loadFileOnce: "Parser.sysmel".
+
+loadFileOnce: "TopLevelSemantics.sysmel".
