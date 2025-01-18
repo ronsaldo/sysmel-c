@@ -624,6 +624,62 @@ public: [
 
                     receiver := unaryMessage.
                 }.
+                if: token kind = TokenKind LeftParent then: {
+                    self state advance.
+                    
+                    $!arguments := self parseExpressionListUntilEndOrDelimiter: TokenKind RightParent.
+                    if: self state peekKind = TokenKind RightParent then: {
+                        self state advance
+                    } else: {
+                        arguments := arguments -- [self state makeErrorAtCurrentSourcePosition: "Expected a right parent."]
+                    }.
+
+                    receiver := ParseTreeNode(ParseTreeFunctionApplicationNode#{
+                        sourcePosition: (self state sourcePositionFrom: startingPosition).
+                        functional: receiver.
+                        arguments: arguments
+                    })
+                }.
+                if: token kind = TokenKind LeftBracket then: {
+                    $argument := self parseArray.
+                    $arguments := [argument].
+
+                    receiver := ParseTreeNode(ParseTreeFunctionApplicationNode#{
+                        sourcePosition: (self state sourcePositionFrom: startingPosition).
+                        functional: receiver.
+                        arguments: arguments
+                    })
+                }.
+                if: token kind = TokenKind ByteArrayStart then: {
+                    $argument := self parseByteArray.
+                    $arguments := [argument].
+                    
+                    receiver := ParseTreeNode(ParseTreeFunctionApplicationNode#{
+                        sourcePosition: (self state sourcePositionFrom: startingPosition).
+                        functional: receiver.
+                        arguments: arguments
+                    })
+                }.
+                if: token kind = TokenKind LeftCurlyBracket then: {
+                    $argument := self parseBlock.
+                    $arguments := [argument].
+                    
+                    receiver := ParseTreeNode(ParseTreeFunctionApplicationNode#{
+                        sourcePosition: (self state sourcePositionFrom: startingPosition).
+                        functional: receiver.
+                        arguments: arguments
+                    })
+                }.
+                if: token kind = TokenKind DictionaryStart then: {
+                    $argument := self parseDictionary.
+                    $arguments := [argument].
+                    
+                    receiver := ParseTreeNode(ParseTreeFunctionApplicationNode#{
+                        sourcePosition: (self state sourcePositionFrom: startingPosition).
+                        functional: receiver.
+                        arguments: arguments
+                    })
+                }. 
 
             }.
             receiver
@@ -943,5 +999,7 @@ $parseString($(String)text :: ParseTreeNode) := {
 
 ##printLine(parseString("#{}")).
 ##printLine(parseString("#{First: 1}")).
+
+##printLine(parseString("a(1 . 2)")).
 
 }.
