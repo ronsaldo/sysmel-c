@@ -56,7 +56,7 @@ bool sysmelb_value_equals(sysmelb_Value_t a, sysmelb_Value_t b)
     case SysmelValueKindAssociationReference:
         return a.associationReference == b.associationReference;
     case SysmelValueKindImmutableDictionaryReference:
-        return a.dictionaryReference == b.dictionaryReference;
+        return a.immutableDictionaryReference == b.immutableDictionaryReference;
     case SysmelValueKindValueBoxReference:
         return a.valueBoxReference == b.valueBoxReference;
     default:
@@ -151,13 +151,13 @@ void sysmelb_printValue(sysmelb_Value_t value)
         break;
     case SysmelValueKindImmutableDictionaryReference:
         {
-            size_t dictionarySize = value.dictionaryReference->size;
+            size_t dictionarySize = value.immutableDictionaryReference->size;
             printf("#{");
             for(size_t i = 0; i < dictionarySize; ++i)
             {
                 if(i != 0)
                     printf(". ");
-                sysmelb_Association_t *assoc = value.dictionaryReference->elements[i];
+                sysmelb_Association_t *assoc = value.immutableDictionaryReference->elements[i];
                 sysmelb_printValue(assoc->key);
                 printf(" : ");
                 sysmelb_printValue(assoc->value);

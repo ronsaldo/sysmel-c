@@ -454,8 +454,8 @@ sysmelb_Value_t sysmelb_analyzeAndEvaluateScript(sysmelb_Environment_t *environm
             
             sysmelb_Value_t result = {
                 .kind = SysmelValueKindImmutableDictionaryReference,
-                .type = sysmelb_getBasicTypes()->dictionary,
-                .dictionaryReference = dictionary
+                .type = sysmelb_getBasicTypes()->immutableDictionary,
+                .immutableDictionaryReference = dictionary
             };
             return result;
         }

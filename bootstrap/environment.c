@@ -307,7 +307,7 @@ static sysmelb_Value_t sysmelb_RecordWithFieldsMacro(sysmelb_MacroContext_t *mac
         abort();
     }
 
-    sysmelb_Type_t *recordType = sysmelb_allocateRecordType(name, dictionaryWithFieldAndType.dictionaryReference);
+    sysmelb_Type_t *recordType = sysmelb_allocateRecordType(name, dictionaryWithFieldAndType.immutableDictionaryReference);
     sysmelb_Value_t result = {
         .kind = SysmelValueKindTypeReference,
         .type = sysmelb_getBasicTypes()->universe,
@@ -406,7 +406,7 @@ static sysmelb_Value_t sysmelb_EnumWithBaseTypeAndValuesMacro(sysmelb_MacroConte
         abort();
     }
 
-    sysmelb_Type_t *enumType = sysmelb_allocateEnumType(name, baseTypeValue.typeReference, dictionaryWithFieldAndType.dictionaryReference);
+    sysmelb_Type_t *enumType = sysmelb_allocateEnumType(name, baseTypeValue.typeReference, dictionaryWithFieldAndType.immutableDictionaryReference);
     sysmelb_Value_t result = {
         .kind = SysmelValueKindTypeReference,
         .type = sysmelb_getBasicTypes()->universe,

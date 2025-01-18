@@ -185,7 +185,7 @@ sysmelb_Value_t sysmelb_instantiateTypeWithArguments(sysmelb_Type_t *type, size_
 
         if(argumentCount == 1 && arguments[0].kind == SysmelValueKindImmutableDictionaryReference)
         {
-            sysmelb_ImmutableDictionary_t *dict = arguments[0].dictionaryReference;
+            sysmelb_ImmutableDictionary_t *dict = arguments[0].immutableDictionaryReference;
             for (size_t i = 0; i < dict->size; ++i)
             {
                 sysmelb_Association_t *assoc = dict->elements[i];
@@ -283,7 +283,8 @@ static void sysmelb_createBasicTypes(void)
     sysmelb_BasicTypesData.sum            = sysmelb_allocateValueType(SysmelTypeKindSum, sysmelb_internSymbolC("Sum"), pointerSize, pointerAlignment);
     sysmelb_BasicTypesData.enumType       = sysmelb_allocateValueType(SysmelTypeKindEnum, sysmelb_internSymbolC("Enum"), 4, 4);
     sysmelb_BasicTypesData.association    = sysmelb_allocateValueType(SysmelTypeKindAssociation, sysmelb_internSymbolC("Association"), pointerSize, pointerAlignment);
-    sysmelb_BasicTypesData.dictionary     = sysmelb_allocateValueType(SysmelTypeKindImmutableDictionary, sysmelb_internSymbolC("ImmutableImmutableDictionary"), pointerSize, pointerAlignment);
+    sysmelb_BasicTypesData.immutableDictionary = sysmelb_allocateValueType(SysmelTypeKindImmutableDictionary, sysmelb_internSymbolC("ImmutableDictionary"), pointerSize, pointerAlignment);
+    sysmelb_BasicTypesData.identityDictionary  = sysmelb_allocateValueType(SysmelTypeKindIdentityDictionary, sysmelb_internSymbolC("IdentityDictionary"), pointerSize, pointerAlignment);
     sysmelb_BasicTypesData.parseTreeNode  = sysmelb_allocateValueType(SysmelTypeKindParseTreeNode, sysmelb_internSymbolC("ParseTreeNode"), pointerSize, pointerAlignment);
     sysmelb_BasicTypesData.valueReference = sysmelb_allocateValueType(SysmelTypeKindValueReference, sysmelb_internSymbolC("ValueReference"), pointerSize, pointerAlignment);
     sysmelb_BasicTypesData.function       = sysmelb_allocateValueType(SysmelTypeKindSimpleFunction, sysmelb_internSymbolC("Function"), pointerSize, pointerAlignment);
@@ -1026,11 +1027,11 @@ static sysmelb_Value_t sysmelb_primitive_dictionaryAssocAt(size_t argumentCount,
     assert(arguments[0].kind == SysmelValueKindImmutableDictionaryReference
         && (arguments[1].kind == SysmelValueKindInteger || arguments[1].kind == SysmelValueKindUnsignedInteger));
 
-    size_t dictionarySize = arguments[0].dictionaryReference->size;
+    size_t dictionarySize = arguments[0].immutableDictionaryReference->size;
     unsigned int dictionaryIndex = arguments[1].unsignedInteger;
     assert(dictionaryIndex < dictionarySize);
 
-    sysmelb_Association_t *assoc = arguments[0].dictionaryReference->elements[dictionaryIndex];
+    sysmelb_Association_t *assoc = arguments[0].immutableDictionaryReference->elements[dictionaryIndex];
     sysmelb_Value_t result = {
         .kind = SysmelValueKindAssociationReference,
         .type = sysmelb_getBasicTypes()->association,
@@ -1044,7 +1045,7 @@ static sysmelb_Value_t sysmelb_primitive_dictionarySize(size_t argumentCount, sy
     assert(argumentCount == 1);
     assert(arguments[0].kind == SysmelValueKindImmutableDictionaryReference);
 
-    size_t dictionarySize = arguments[0].dictionaryReference->size;
+    size_t dictionarySize = arguments[0].immutableDictionaryReference->size;
     sysmelb_Value_t result = {
         .kind = SysmelValueKindUnsignedInteger,
         .type = sysmelb_getBasicTypes()->integer,
@@ -1058,10 +1059,10 @@ static sysmelb_Value_t sysmelb_primitive_dictionaryIncludesKey(size_t argumentCo
      assert(argumentCount == 2);
     assert(arguments[0].kind == SysmelValueKindImmutableDictionaryReference);
 
-    size_t dictionarySize = arguments[0].dictionaryReference->size;
+    size_t dictionarySize = arguments[0].immutableDictionaryReference->size;
     for (size_t i = 0; i < dictionarySize; ++i)
     {
-        sysmelb_Association_t *assoc = arguments[0].dictionaryReference->elements[i];
+        sysmelb_Association_t *assoc = arguments[0].immutableDictionaryReference->elements[i];
         if(sysmelb_value_equals(arguments[1], assoc->key))
         {
             sysmelb_Value_t result = {
@@ -1086,10 +1087,10 @@ static sysmelb_Value_t sysmelb_primitive_dictionaryAt(size_t argumentCount, sysm
     assert(argumentCount == 2);
     assert(arguments[0].kind == SysmelValueKindImmutableDictionaryReference);
 
-    size_t dictionarySize = arguments[0].dictionaryReference->size;
+    size_t dictionarySize = arguments[0].immutableDictionaryReference->size;
     for (size_t i = 0; i < dictionarySize; ++i)
     {
-        sysmelb_Association_t *assoc = arguments[0].dictionaryReference->elements[i];
+        sysmelb_Association_t *assoc = arguments[0].immutableDictionaryReference->elements[i];
         if(sysmelb_value_equals(arguments[1], assoc->key))
             return assoc->value;
     }
@@ -1116,10 +1117,10 @@ static sysmelb_Value_t sysmelb_primitive_withSelectorAddMethod(size_t argumentCo
 
 static void sysmelb_createBasicImmutableDictionaryPrimitives(void)
 {
-    sysmelb_type_addPrimitiveMethod(sysmelb_BasicTypesData.dictionary, sysmelb_internSymbolC("size"), sysmelb_primitive_dictionarySize);
-    sysmelb_type_addPrimitiveMethod(sysmelb_BasicTypesData.dictionary, sysmelb_internSymbolC("associationAt:"), sysmelb_primitive_dictionaryAssocAt);
-    sysmelb_type_addPrimitiveMethod(sysmelb_BasicTypesData.dictionary, sysmelb_internSymbolC("includesKey:"), sysmelb_primitive_dictionaryIncludesKey);
-    sysmelb_type_addPrimitiveMethod(sysmelb_BasicTypesData.dictionary, sysmelb_internSymbolC("at:"), sysmelb_primitive_dictionaryAt);
+    sysmelb_type_addPrimitiveMethod(sysmelb_BasicTypesData.immutableDictionary, sysmelb_internSymbolC("size"), sysmelb_primitive_dictionarySize);
+    sysmelb_type_addPrimitiveMethod(sysmelb_BasicTypesData.immutableDictionary, sysmelb_internSymbolC("associationAt:"), sysmelb_primitive_dictionaryAssocAt);
+    sysmelb_type_addPrimitiveMethod(sysmelb_BasicTypesData.immutableDictionary, sysmelb_internSymbolC("includesKey:"), sysmelb_primitive_dictionaryIncludesKey);
+    sysmelb_type_addPrimitiveMethod(sysmelb_BasicTypesData.immutableDictionary, sysmelb_internSymbolC("at:"), sysmelb_primitive_dictionaryAt);
 }
 
 static void sysmelb_createBasicTypeUniversePrimitives(void)

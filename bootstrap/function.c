@@ -619,8 +619,8 @@ sysmelb_Value_t sysmelb_interpretBytecodeFunction(sysmelb_function_t *function, 
 
             sysmelb_Value_t dictionaryValue = {
                 .kind = SysmelValueKindImmutableDictionaryReference,
-                .type = sysmelb_getBasicTypes()->dictionary,
-                .dictionaryReference = dictionary
+                .type = sysmelb_getBasicTypes()->immutableDictionary,
+                .immutableDictionaryReference = dictionary
             };
             sysmelb_bytecodeActivationContext_push(&context, dictionaryValue);
         }
