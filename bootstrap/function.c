@@ -581,8 +581,7 @@ sysmelb_Value_t sysmelb_interpretBytecodeFunction(sysmelb_function_t *function, 
                     }
                     if(!isSynthetic)
                     {
-                        sysmelb_SourcePosition_t noPosition = {0};
-                        sysmelb_errorPrintf(noPosition, "Message not understood. #%.*s", currentInstruction->messageSendSelector->size, currentInstruction->messageSendSelector->string);
+                        sysmelb_errorPrintf(function->sourcePosition, "Message not understood. #%.*s", currentInstruction->messageSendSelector->size, currentInstruction->messageSendSelector->string);
                         abort();
                     }
                 }

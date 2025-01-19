@@ -220,6 +220,7 @@ $isOperatorCharacter($(UInt32)character :: Boolean) := {
 $skipWhite($(ScannerState)state :: ScannedToken) := {
     $!hasSeenComments := false.
     do: {
+        hasSeenComments := false.
         ## Skip whitespaces.
         while: (state atEnd not && (state peek <= ' 'u32)) do: {
             state advance
@@ -262,7 +263,6 @@ $skipWhite($(ScannerState)state :: ScannedToken) := {
         }
 
     } while: (hasSeenComments && state atEnd not).
-
     ScannedToken(TokenKind NullToken)
 }.
 

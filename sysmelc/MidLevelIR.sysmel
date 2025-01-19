@@ -28,17 +28,25 @@ public: [
     }.
 
 
-    Class: MidRegionNode withSuperclass: MidValue fields: #{
+    Class: MidControlNode withSuperclass: MidValue fields: #{
+    }.
+
+    Class: MidStartNode withSuperclass: MidControlNode fields: #{
+        arguments: Array.
+        captures: Array.
+    }.
+
+    Class: MidStopNode withSuperclass: MidControlNode fields: #{
+        exitPoints: Array
     }.
 
     Class: MidClosureFunction withSuperclass: MidGlobalValue fields: #{
         captures: Array.
         arguments: Array.
-        entryRegion: MidRegionNode.
-        exitPoints: Array
+        startNode: MidStartNode.
+        stopNode: MidStopNode
     }.
     
-
     Class: MidFunctionLocalValue withSuperclass: MidValue fields: #{
         owner: MidClosureFunction
     }.
@@ -54,52 +62,49 @@ public: [
         typeExpression: MidValue
     }.
 
-    Class: MidInstruction withSuperclass: MidFunctionLocalValue fields: #{
-    }.
-
-    Class: MidReturnInstruction withSuperclass: MidInstruction fields: #{
+    Class: MidReturn withSuperclass: MidControlNode fields: #{
         resultValue: MidValue
     }.
 
     Record: MidFunctionBuilder withFields: #{
         midFunction: MidClosureFunction.
-        currentRegion: MidRegionNode.
-        regions: OrderedCollection.
+        currentControlNode: MidControlNode.
+        exitPoints: OrderedCollection.
         sourcePosition: SourcePosition.
     }.
 ].
 
 MidValue
     withSelector: #addUser: addMethod: {
-        | $(MidValue)self |
-
+        | $(MidValue)self $(MidValue)user |
+        self users add: user
     }.
 
 MidClosureFunction
     withSelector: #makeBuilder addMethod: {
         | $(MidClosureFunction) self :: MidFunctionBuilder |
-        $entryRegion := MidRegionNode#{}.
-        self entryRegion: entryRegion.
+        $startNode := MidStartNode#{}.
+        self startNode: startNode.
 
         $builder := MidFunctionBuilder#{
             midFunction: self.
-            currentRegion: entryRegion.
-            regions: OrderedCollection()
+            currentControlNode: startNode.
+            exitPoints: OrderedCollection()
         }.
-        builder regions add: entryRegion.
         builder
     }.
 
 MidFunctionBuilder
     withSelector: #returnValue: addMethod: {
         | $(MidFunctionBuilder)self $(MidValue)resultValue :: MidReturnInstruction |
-        $instruction := MidReturnInstruction#{
+        $instruction := MidReturn#{
             sourcePosition: self sourcePosition.
             users: OrderedCollection().
             type: getBasicIntrinsicTypes() voidType.
             resultValue: resultValue.
         }.
         resultValue addUser: instruction.
+        self exitPoints add: instruction.
         return: instruction
     };
     withSelector: #constantInteger: addMethod: {
