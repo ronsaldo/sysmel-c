@@ -37,6 +37,7 @@ public: [
         }.
         Record: FunctionAnalysisEnvironment withFields: #{
             parent: Environment.
+            localSymbols: SymbolHashtable.
         }.
     ].
     
@@ -174,6 +175,9 @@ public: [
         Record: SysmelFunctionValue withFields: #{
             value: SysmelFunction
         }.
+        Record: SysmelMidValue withFields: #{
+            value: MidValue
+        }.
     ].
     $extractValueForPrinting($(Value)value :: Gradual) := {
         match: value ofType: Value withPatterns: #{
@@ -240,7 +244,16 @@ public: [
             }
         }.
     }.
-    $extractFunctionFromValue($(Value)value :: Symbol) := {
+    $extractTypeFromValue($(Value)value :: SysmelType) := {
+        match: value ofType: Value withPatterns: #{
+            $(SysmelTypeValue)typeValue : typeValue value.
+            _: {
+                printLine("Not a valid sysmel type value")
+                abort()
+            }
+        }.
+    }.
+    $extractFunctionFromValue($(Value)value :: SysmelFunction) := {
         match: value ofType: Value withPatterns: #{
             $(SysmelFunctionValue)functionValue : functionValue value.
             _: {

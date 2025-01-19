@@ -32,8 +32,32 @@ public: [
                         return: (lexical parent lookupSymbolRecursively: symbol)
                     }
                 }.
+                $(FunctionAnalysisEnvironment)functionalEnv : {
+                    if: (functionalEnv localSymbols includesKey: symbol) then: {
+                        functionalEnv localSymbols at: symbol
+                    }
+                    else: {
+                        return: (functionalEnv parent lookupSymbolRecursively: symbol)
+                    }
+                }.
                 _: Value(InvalidErrorValue("Symbol not found"))
             }
+        };
+        withSelector: #addLocalSymbol:withValue: addMethod: {
+            | $(Environment)self $(Symbol)symbol $(Value)value :: Void |
+            match: self ofType: Environment withPatterns: #{
+                $(IntrinsicsEnvironment)intrinsics : {
+                    intrinsics localSymbols at: symbol put: value.
+                }.
+                $(LexicalEnvironment)lexical : {
+                    lexical localSymbols at: symbol put: value.
+                }.
+                $(FunctionAnalysisEnvironment)functionalEnv : {
+                    functionalEnv localSymbols at: symbol put: value.
+                }.
+                _: Value(InvalidErrorValue("Cannot add a local symbol to this environment"))
+            }.
+            void
         }
 ]
 }

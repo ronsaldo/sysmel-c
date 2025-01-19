@@ -223,5 +223,13 @@ ParseTreeNode
             $(ParseTreeFunctionalDependentTypeNode)funtype : funtype.
             _: abort()
         }
+    };
+    withSelector: #extractBindableNameNode addMethod: {
+        |$(ParseTreeNode)self :: ParseTreeBindableNameNode | 
+        match: self ofType: ParseTreeNode withPatterns: #{
+            $(ParseTreeBindableNameNode)bindable : bindable.
+            _: abort()
+        }
     }.
+    
 }

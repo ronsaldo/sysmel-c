@@ -71,6 +71,7 @@ typedef struct sysmelb_function_s
 {
     sysmelb_FunctionKind_t kind;
     sysmelb_symbol_t *name;
+    sysmelb_SourcePosition_t sourcePosition;
 
     union
     {

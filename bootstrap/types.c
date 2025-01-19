@@ -1448,6 +1448,34 @@ static sysmelb_Value_t sysmelb_primitive_Boolean_Not(size_t argumentCount, sysme
     return result;
 }
 
+static sysmelb_Value_t sysmelb_primitive_Boolean_Equals(size_t argumentCount, sysmelb_Value_t *arguments)
+{
+    assert(argumentCount == 2);
+    assert(arguments[0].kind == SysmelValueKindBoolean);
+    assert(arguments[1].kind == SysmelValueKindBoolean);
+
+    sysmelb_Value_t result = {
+        .kind = SysmelValueKindBoolean,
+        .type = sysmelb_getBasicTypes()->boolean,
+        .boolean = arguments[0].boolean == arguments[1].boolean
+    };
+    return result;
+}
+
+static sysmelb_Value_t sysmelb_primitive_Boolean_NotEquals(size_t argumentCount, sysmelb_Value_t *arguments)
+{
+    assert(argumentCount == 2);
+    assert(arguments[0].kind == SysmelValueKindBoolean);
+    assert(arguments[1].kind == SysmelValueKindBoolean);
+
+    sysmelb_Value_t result = {
+        .kind = SysmelValueKindBoolean,
+        .type = sysmelb_getBasicTypes()->boolean,
+        .boolean = arguments[0].boolean != arguments[1].boolean
+    };
+    return result;
+}
+
 static sysmelb_Value_t sysmelb_primitive_Boolean_And(sysmelb_MacroContext_t *context, size_t argumentCount, sysmelb_Value_t *arguments)
 {
     assert(argumentCount == 2);
@@ -1498,6 +1526,8 @@ static sysmelb_Value_t sysmelb_primitive_Boolean_Or(sysmelb_MacroContext_t *cont
 
 static void sysmelb_createBasicBooleanPrimitives(void)
 {
+    sysmelb_type_addPrimitiveMethod(sysmelb_BasicTypesData.boolean, sysmelb_internSymbolC("="), sysmelb_primitive_Boolean_Equals);
+    sysmelb_type_addPrimitiveMethod(sysmelb_BasicTypesData.boolean, sysmelb_internSymbolC("~="), sysmelb_primitive_Boolean_NotEquals);
     sysmelb_type_addPrimitiveMethod(sysmelb_BasicTypesData.boolean, sysmelb_internSymbolC("not"), sysmelb_primitive_Boolean_Not);
     sysmelb_type_addPrimitiveMacroMethod(sysmelb_BasicTypesData.boolean, sysmelb_internSymbolC("&&"), sysmelb_primitive_Boolean_And);
     sysmelb_type_addPrimitiveMacroMethod(sysmelb_BasicTypesData.boolean, sysmelb_internSymbolC("||"), sysmelb_primitive_Boolean_Or);

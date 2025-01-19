@@ -229,7 +229,7 @@ $skipWhite($(ScannerState)state :: ScannedToken) := {
             ## Singleline
             if:((state peekAt: 1u32) = '#'u32) then: {
                 state advance: 2u32.
-                while: (state atEnd not && state peek ~= '\n' && state peek ~= '\r' ) do: {
+                while: (state atEnd not && (state peek ~= '\n') && (state peek ~= '\r') ) do: {
                     state advance
                 }.
 
@@ -261,7 +261,7 @@ $skipWhite($(ScannerState)state :: ScannedToken) := {
             
         }
 
-    } while: (hasSeenComments).
+    } while: (hasSeenComments && state atEnd not).
 
     ScannedToken(TokenKind NullToken)
 }.

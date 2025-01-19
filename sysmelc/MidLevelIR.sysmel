@@ -17,7 +17,9 @@ public: [
     Class: MidConstantSymbol withSuperclass: MidConstant fields: #{
         value: String
     }.
-
+    Class: MidConstantType withSuperclass: MidConstant fields: #{
+        value: SysmelType
+    }.
     Class: MidGlobalValue withSuperclass: MidConstant fields: #{
         name: Symbol
     }.
@@ -25,13 +27,17 @@ public: [
     Class: MidClosureFunction withSuperclass: MidGlobalValue fields: #{
         captures: Array.
         arguments: Array.
+        entryPoint: Array.
+        exitPoints: Array
     }.
 
     Class: MidFunctionLocalValue withSuperclass: MidValue fields: #{
+        owner: MidClosureFunction
     }.
 
     Class: MidArgument withSuperclass: MidFunctionLocalValue fields: #{
         index: UInt32.
         name: Symbol.
+        typeExpression: MidValue
     }.
 ]}

@@ -20,6 +20,7 @@ public: [
         byteArray: SysmelType.
         association: SysmelType.
         immutableDictionary: SysmelType.
+        function: SysmelType.
         universe: SysmelType.
 
         uint8:  SysmelType.
@@ -80,6 +81,9 @@ $BasicIntrinsicTypesSingleton := BasicIntrinsicTypes#{
     })).
     immutableDictionary: SysmelType(SysmelBasicType(SysmelTypeCommon#{
         name: #ImmutableDictionary. isValueType: false. valueAlignment: 8u8. valueSize: 8u8. heapAlignment: 8u8. heapSize: 8u8. methodDict: SymbolHashtable().
+    })).
+    function: SysmelType(SysmelBasicType(SysmelTypeCommon#{
+        name: #Function. isValueType: false. valueAlignment: 8u8. valueSize: 8u8. heapAlignment: 8u8. heapSize: 8u8. methodDict: SymbolHashtable().
     })).
     universe: SysmelType(SysmelBasicType(SysmelTypeCommon#{
         name: #TypeUniverse. isValueType: false. valueAlignment: 8u8. valueSize: 8u8. heapAlignment: 8u8. heapSize: 8u8. methodDict: SymbolHashtable().
