@@ -121,6 +121,17 @@ public: [
 
                 return: (self analyzeAndEvaluateWithEnvironment: environment script: receiver)
             }.
+            ## Sequences, array, tuples
+            $(ParseTreeSequenceNode)sequenceNode : {
+                $!result := TypedValue(Value(VoidValue()). getBasicIntrinsicTypes() voidType)
+                $!i := 0.
+                while: i < sequenceNode elements size do: {
+                    $element := sequenceNode elements at: i.
+                    result := (self analyzeAndEvaluateWithEnvironment: environment script: element)
+                } continueWith: (i := i + 1).
+                return: result
+            }.
+            
             _: {
                 printLine("Unsupported parse-tree node: ". ast).
                 abort()

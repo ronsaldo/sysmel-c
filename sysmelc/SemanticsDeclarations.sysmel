@@ -130,6 +130,7 @@ public: [
             message: String
         }.
         Record: NullValue withFields: #{}.
+        Record: VoidValue withFields: #{}.
         Record: IntegerValue withFields: #{
             value: Integer
         }.

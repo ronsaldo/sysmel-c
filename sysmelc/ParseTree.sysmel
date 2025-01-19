@@ -75,10 +75,6 @@ public: [
             sourcePosition: SourcePosition.
             elements: Array
         }.
-        Record: ParseTreeSequenceNode withFields: #{
-            sourcePosition: SourcePosition.
-            elements: Array
-        }.
         Record: ParseTreeTupleNode withFields: #{
             sourcePosition: SourcePosition.
             elements: Array
