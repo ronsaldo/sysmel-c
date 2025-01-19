@@ -185,6 +185,24 @@ DefaultIntrinsicsEnvironment
     addType: BasicIntrinsicTypesSingleton float32;
     addType: BasicIntrinsicTypesSingleton float64.
 
+$addGlobalIntrinsicMethod($(Symbol)name $(Function)primitive $(SysmelType)functionType :: Void) := {
+    $primitiveValue := TypedValue(Value(SysmelFunctionValue(SysmelFunction(SysmelIntrinsicPrimitive#{
+        name: name.
+        implementation: primitive.
+        isMacro: false
+    }))). functionType).
+    DefaultIntrinsicsEnvironment localSymbols at: name put: primitiveValue
+}.
+
+$addGlobalMacroIntrinsicMethod($(Symbol)name $(Function)primitive $(SysmelType)functionType :: Void) := {
+    $primitiveValue := TypedValue(Value(SysmelFunctionValue(SysmelFunction(SysmelIntrinsicPrimitive#{
+        name: name.
+        implementation: primitive.
+        isMacro: true
+    }))). functionType).
+    DefaultIntrinsicsEnvironment localSymbols at: name put: primitiveValue
+}.
+
 $primitive_print($(Array) arguments :: Void) := {
     $!i := 0.
     while: i < arguments size do: {
@@ -197,14 +215,6 @@ $primitive_printLine($(Array) arguments :: Void) := {
     primitive_print(arguments).
     printLine().
     void
-}.
-
-$addGlobalIntrinsicMethod($(Symbol)name $(Function)primitive $(SysmelType)functionType :: Void) := {
-    $primitiveValue := TypedValue(Value(SysmelFunctionValue(SysmelFunction(SysmelIntrinsicPrimitive#{
-        name: name.
-        implementation: primitive
-    }))). functionType).
-    DefaultIntrinsicsEnvironment localSymbols at: name put: primitiveValue
 }.
 
 addGlobalIntrinsicMethod(#print. primitive_print.
@@ -238,6 +248,59 @@ addGlobalIntrinsicMethod(#printLine. primitive_printLine.
         isVariadic: true.
         argumentTypes: [BasicIntrinsicTypesSingleton array].
         resultType: BasicIntrinsicTypesSingleton voidType.
+    })
+).
+
+$primitive_ifThenElse_Macro($(MacroContext)context $(Array)arguments :: ParseTreeNode) := {
+    assert: arguments size = 3.
+    ParseTreeNode(ParseTreeIfSelectionNode#{
+        sourcePosition: context sourcePosition.
+        condition: (arguments at: 0).
+        trueExpression: (arguments at: 1).
+        falseExpression: (arguments at: 2).
+    }).
+}.
+
+$primitive_ifThen_Macro($(MacroContext)context $(Array)arguments :: ParseTreeNode) := {
+    assert: arguments size = 2.
+    ParseTreeNode(ParseTreeIfSelectionNode#{
+        sourcePosition: context sourcePosition.
+        condition: (arguments at: 0).
+        trueExpression: (arguments at: 1).
+    }).
+}.
+
+addGlobalMacroIntrinsicMethod(#if:then:else:. primitive_ifThenElse_Macro.
+    SysmelType(SysmelSimpleFunctionType#{
+        common: SysmelTypeCommon#{
+            isValueType: true.
+            valueAlignment: 8u32.
+            valueSize: 8u32.
+            heapAlignment: 8u32.
+            heapSize: 8u32.
+            methodDict: SymbolHashtable().
+        }.
+        isCompileTimePure: false.
+        isVariadic: true.
+        argumentTypes: [MacroContext . BasicIntrinsicTypesSingleton array].
+        resultType: ParseTreeNode.
+    })
+).
+
+addGlobalMacroIntrinsicMethod(#if:then:. primitive_ifThen_Macro.
+    SysmelType(SysmelSimpleFunctionType#{
+        common: SysmelTypeCommon#{
+            isValueType: true.
+            valueAlignment: 8u32.
+            valueSize: 8u32.
+            heapAlignment: 8u32.
+            heapSize: 8u32.
+            methodDict: SymbolHashtable().
+        }.
+        isCompileTimePure: false.
+        isVariadic: true.
+        argumentTypes: [MacroContext . BasicIntrinsicTypesSingleton array].
+        resultType: ParseTreeNode.
     })
 ).
 

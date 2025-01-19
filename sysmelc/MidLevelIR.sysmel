@@ -116,7 +116,7 @@ MidActivationContext
         $instructionCount := self scheduledInstructions size.
         while: (self pc < instructionCount) && (self hasReachedExitPoint not) do: {
             $instruction := self scheduledInstructions at: self pc.
-            printLine(instruction).
+            ##printLine(instruction).
             instruction evaluateInActivationContext: self
         }.
         if: self hasReachedExitPoint then: {

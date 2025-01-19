@@ -125,13 +125,20 @@ public: [
     Inductive: SysmelFunction withAlternatives: [
         Record: SysmelIntrinsicPrimitive withFields: #{
             name: Symbol.
-            implementation: Function
+            implementation: Function.
+            isMacro: Boolean.
         }.
         Record: SysmelCompiledFunction withFields: #{
             name: Symbol.
-            midIR: MidValue
+            midIR: MidValue.
+            isMacro: Boolean.
         }.
     ].
+
+    Record: MacroContext withFields: #{
+        sourcePosition: SourcePosition.
+        environment: Environment.
+    }.
 
     ## A value with its different alternatives.
     Inductive: Value withAlternatives: [
@@ -276,6 +283,12 @@ public: [
                 printLine("Not a valid function value")
                 abort()
             }
+        }
+    }.
+    $sysmelFunctionIsMacro($(SysmelFunction)function :: Boolean) := {
+        match: function ofType: SysmelFunction withPatterns: #{
+            $(SysmelIntrinsicPrimitive)intrinsic : intrinsic isMacro.
+            $(SysmelCompiledFunction)compiled : compiled isMacro.
         }
     }.
 ]

@@ -7,7 +7,6 @@ loadFileOnce: "Parser.sysmel".
 ## Middle-end. Semantics analysis
 loadFileOnce: "SemanticsDeclarations.sysmel".
 
-
 loadFileOnce: "Environment.sysmel".
 loadFileOnce: "Intrinsics.sysmel".
 loadFileOnce: "Module.sysmel".

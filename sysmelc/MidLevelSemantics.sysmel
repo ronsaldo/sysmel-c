@@ -125,7 +125,7 @@ public: [
                         return: value value getMidValue 
                     }.
 
-                    midBuilder sourcePosition: identifier sourcePosition
+                    midBuilder sourcePosition: identifier sourcePosition.
                     return: (midBuilder constantValue: value value).
                 }.
     
@@ -146,9 +146,30 @@ public: [
                 }.
                 $(ParseTreeFunctionApplicationNode)functionApplication : {
                     $functional := self analyzeWithEnvironment: environment andCompileClosure: midBuilder withBody: functionApplication functional.
+                    $functionalValue := extractFunctionFromValue(functional value).
+                    $functionalIsMacro := sysmelFunctionIsMacro(functionalValue).
 
-                    ## TODO: Handle the macro case.
+                    if: functionalIsMacro then: {
+                        $macroContext := MacroContext#{
+                            sourcePosition: functionApplication.
+                            environment: environment.
+                        }.
 
+                        $macroResult := match: functionalValue ofType: SysmelFunction withPatterns: #{
+                            $(SysmelIntrinsicPrimitive)intrinsic : {
+                                intrinsic implementation(macroContext . functionApplication arguments)
+                            }.
+                            $(SysmelCompiledFunction)compiledFunction : {
+                                (compiledFunction midIR evaluateWithArguments: [macroContext] -- functionApplication arguments)
+                            }.
+                            _: {
+                                printLine("Unsupported method function kind. " . functionalValue).
+                                abort()
+                            }
+                        }.
+
+                        return: (self analyzeWithEnvironment: environment andCompileClosure: midBuilder withBody: macroResult).
+                    }.
                     $invocationArguments := OrderedCollection().
                     $i := 0. while:(i < functionApplication arguments size) do: {
                         $argument := functionApplication arguments at: i.
