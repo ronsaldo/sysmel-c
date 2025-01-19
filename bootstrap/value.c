@@ -144,6 +144,20 @@ void sysmelb_printValue(sysmelb_Value_t value)
             printf(")");
         }
         break;
+    case SysmelValueKindObjectReference:
+        if(value.type->name)
+            printf("%.*s", value.type->name->size, value.type->name->string);
+        printf("#{");
+        for(uint32_t i = 0; i < value.type->clazz.fieldCount; ++i)
+        {
+            if(i != 0) printf(" ");
+            sysmelb_symbol_t *fieldName = value.type->clazz.fieldNames[i];
+            printf("%.*s: ", fieldName->size, fieldName->string);
+            sysmelb_printValue(value.objectReference->elements[i]);
+            printf(".");
+        }
+        printf("}");
+        break;
     case SysmelValueKindAssociationReference:
         sysmelb_printValue(value.associationReference->key);
         printf(" : ");
@@ -205,6 +219,7 @@ void sysmelb_printValue(sysmelb_Value_t value)
         // TODO: print the elements
         printf("]");
         break;
+
     default: abort();
     }
 }

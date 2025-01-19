@@ -385,6 +385,94 @@ static sysmelb_Value_t sysmelb_RecordWithFieldsMacro(sysmelb_MacroContext_t *mac
     return result;
 }
 
+static sysmelb_Value_t sysmelb_ClassWithFieldsMacro(sysmelb_MacroContext_t *macroContext, size_t argumentCount, sysmelb_Value_t *arguments)
+{
+    assert(argumentCount == 2);
+    sysmelb_symbol_t *name = NULL;
+
+    if (arguments[0].parseTreeReference->kind == ParseTreeIdentifierReference)
+        name = arguments[0].parseTreeReference->identifierReference.identifier;
+    else if (arguments[0].parseTreeReference->kind == ParseTreeLiteralSymbolNode)
+        name = arguments[0].parseTreeReference->literalSymbol.internedSymbol;
+    else
+    {
+        sysmelb_Value_t nameValue = sysmelb_analyzeAndEvaluateScript(macroContext->environment, arguments[0].parseTreeReference);
+        if(nameValue.kind != SysmelValueKindSymbolReference)
+            sysmelb_errorPrintf(macroContext->sourcePosition, "A non-valid name object is being passed.");
+        name = nameValue.symbolReference;
+    }
+
+    sysmelb_Value_t dictionaryWithFieldAndType = sysmelb_analyzeAndEvaluateScript(macroContext->environment, arguments[1].parseTreeReference);
+    if(dictionaryWithFieldAndType.kind != SysmelValueKindImmutableDictionaryReference)
+    {
+        sysmelb_errorPrintf(arguments[1].parseTreeReference->sourcePosition, "An ImmutableDictionar with field names and types is expected.");
+        abort();
+    }
+
+    sysmelb_Type_t *classType = sysmelb_allocateClassType(name, NULL, dictionaryWithFieldAndType.immutableDictionaryReference);
+    sysmelb_Value_t result = {
+        .kind = SysmelValueKindTypeReference,
+        .type = sysmelb_getBasicTypes()->universe,
+        .typeReference = classType
+    };
+    
+    if(name)
+    {
+        sysmelb_SymbolBinding_t *resultBinding = sysmelb_createSymbolValueBinding(result);
+        sysmelb_Environment_setLocalSymbolBinding(macroContext->environment, name, resultBinding);
+    }
+    
+    return result;
+}
+
+
+static sysmelb_Value_t sysmelb_ClassWithSuperclassFieldsMacro(sysmelb_MacroContext_t *macroContext, size_t argumentCount, sysmelb_Value_t *arguments)
+{
+    assert(argumentCount == 3);
+    sysmelb_symbol_t *name = NULL;
+
+    if (arguments[0].parseTreeReference->kind == ParseTreeIdentifierReference)
+        name = arguments[0].parseTreeReference->identifierReference.identifier;
+    else if (arguments[0].parseTreeReference->kind == ParseTreeLiteralSymbolNode)
+        name = arguments[0].parseTreeReference->literalSymbol.internedSymbol;
+    else
+    {
+        sysmelb_Value_t nameValue = sysmelb_analyzeAndEvaluateScript(macroContext->environment, arguments[0].parseTreeReference);
+        if(nameValue.kind != SysmelValueKindSymbolReference)
+            sysmelb_errorPrintf(macroContext->sourcePosition, "A non-valid name object is being passed.");
+        name = nameValue.symbolReference;
+    }
+
+    sysmelb_Value_t superclassValue = sysmelb_analyzeAndEvaluateScript(macroContext->environment, arguments[1].parseTreeReference);
+    if(superclassValue.kind != SysmelValueKindTypeReference)
+    {
+        sysmelb_errorPrintf(arguments[1].parseTreeReference->sourcePosition, "A superclass type is expected.");
+        abort();
+
+    }
+    sysmelb_Value_t dictionaryWithFieldAndType = sysmelb_analyzeAndEvaluateScript(macroContext->environment, arguments[2].parseTreeReference);
+    if(dictionaryWithFieldAndType.kind != SysmelValueKindImmutableDictionaryReference)
+    {
+        sysmelb_errorPrintf(arguments[2].parseTreeReference->sourcePosition, "An ImmutableDictionar with field names and types is expected.");
+        abort();
+    }
+
+    sysmelb_Type_t *classType = sysmelb_allocateClassType(name, superclassValue.typeReference, dictionaryWithFieldAndType.immutableDictionaryReference);
+    sysmelb_Value_t result = {
+        .kind = SysmelValueKindTypeReference,
+        .type = sysmelb_getBasicTypes()->universe,
+        .typeReference = classType
+    };
+    
+    if(name)
+    {
+        sysmelb_SymbolBinding_t *resultBinding = sysmelb_createSymbolValueBinding(result);
+        sysmelb_Environment_setLocalSymbolBinding(macroContext->environment, name, resultBinding);
+    }
+    
+    return result;
+}
+
 static sysmelb_Value_t sysmelb_InductiveWithAlternativesMacro(sysmelb_MacroContext_t *macroContext, size_t argumentCount, sysmelb_Value_t *arguments)
 {
     assert(argumentCount == 2);
@@ -840,6 +928,24 @@ sysmelb_Environment_t *sysmelb_getOrCreateIntrinsicsEnvironment()
         function->kind = SysmelFunctionKindPrimitiveMacro;
         function->name = sysmelb_internSymbolC("Record:withFields:");
         function->primitiveMacroFunction = sysmelb_RecordWithFieldsMacro;
+
+        sysmelb_Environment_setLocalSymbolBinding(&sysmelb_IntrinsicsEnvironment, function->name, sysmelb_createSymbolFunctionBinding(function));
+    }
+
+    // Class type
+    {
+        sysmelb_function_t *function = sysmelb_allocate(sizeof(sysmelb_function_t));
+        function->kind = SysmelFunctionKindPrimitiveMacro;
+        function->name = sysmelb_internSymbolC("Class:withFields:");
+        function->primitiveMacroFunction = sysmelb_ClassWithFieldsMacro;
+
+        sysmelb_Environment_setLocalSymbolBinding(&sysmelb_IntrinsicsEnvironment, function->name, sysmelb_createSymbolFunctionBinding(function));
+    }
+    {
+        sysmelb_function_t *function = sysmelb_allocate(sizeof(sysmelb_function_t));
+        function->kind = SysmelFunctionKindPrimitiveMacro;
+        function->name = sysmelb_internSymbolC("Class:withSuperclass:fields:");
+        function->primitiveMacroFunction = sysmelb_ClassWithSuperclassFieldsMacro;
 
         sysmelb_Environment_setLocalSymbolBinding(&sysmelb_IntrinsicsEnvironment, function->name, sysmelb_createSymbolFunctionBinding(function));
     }

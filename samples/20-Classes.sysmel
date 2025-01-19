@@ -1,0 +1,40 @@
+Class: Arithmetic withFields: #{
+}.
+
+Class: LiteralInteger withSuperclass: Arithmetic fields: #{
+    value: Integer
+}.
+
+Class: Plus withSuperclass: Arithmetic fields: #{
+    leftOperand: Arithmetic. rightOperand: Arithmetic.
+}.
+
+Class: Minus withSuperclass: Arithmetic fields: #{
+    leftOperand: Arithmetic. rightOperand: Arithmetic.
+}.
+
+$sumExpression := Minus(Plus(LiteralInteger(42). LiteralInteger(5)) . LiteralInteger(7)).
+printLine(sumExpression).
+
+Arithmetic
+    withSelector: #evaluate addMethod: {
+        |$(Arithmetic)self :: Integer|
+        printLine("subclassResponsibility").
+        abort().
+    }.
+LiteralInteger
+    withSelector: #evaluate addMethod: {
+        |$(LiteralInteger)self :: Integer|
+        self value
+    }.
+Plus
+    withSelector: #evaluate addMethod: {
+        |$(Plus)self :: Integer|
+        self leftOperand evaluate + self rightOperand evaluate
+    }.
+Minus
+    withSelector: #evaluate addMethod: {
+        |$(Plus)self :: Integer|
+        self leftOperand evaluate - self rightOperand evaluate
+    }.
+printLine(sumExpression evaluate).

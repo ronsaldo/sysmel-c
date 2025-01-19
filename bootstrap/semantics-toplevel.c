@@ -228,6 +228,34 @@ sysmelb_Value_t sysmelb_analyzeAndEvaluateScript(sysmelb_Environment_t *environm
                 }
             }
 
+            if(receiver.kind == SysmelValueKindObjectReference && receiver.objectReference->clazz->kind == SysmelTypeKindClass)
+            {
+                if (ast->messageSend.arguments.size == 0)
+                {
+                    int objectFieldIndex = sysmelb_findIndexOfFieldNamedInClass(receiver.objectReference->clazz, selector.symbolReference);
+                    if(objectFieldIndex >= 0)
+                    {
+                        sysmelb_Value_t fieldValue = receiver.objectReference->elements[objectFieldIndex];
+                        return fieldValue;
+                    }
+                }
+                else if(ast->messageSend.arguments.size == 1)
+                {
+                    // Remove the trailing:
+                    sysmelb_symbol_t *fieldName = selector.symbolReference;
+                    if(fieldName->size > 0 && fieldName->string[fieldName->size -1] == ':')
+                        fieldName = sysmelb_internSymbol(fieldName->size - 1, fieldName->string);
+
+                    int objectFieldIndex = sysmelb_findIndexOfFieldNamedInClass(receiver.objectReference->clazz, fieldName);
+                    if(objectFieldIndex >= 0)
+                    {
+                        sysmelb_Value_t newFieldValue = sysmelb_analyzeAndEvaluateScript(environment, ast->messageSend.arguments.elements[0]);
+                        receiver.objectReference->elements[objectFieldIndex] = newFieldValue;
+                        return receiver;
+                    }
+                }
+            }
+
             if(receiver.kind == SysmelValueKindTypeReference)
             {
                 if(receiver.typeReference->kind == SysmelTypeKindEnum)

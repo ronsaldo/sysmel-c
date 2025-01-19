@@ -30,6 +30,7 @@ typedef enum sysmelb_TypeKind_e {
     SysmelTypeKindByteArray,
     SysmelTypeKindTuple,
     SysmelTypeKindRecord,
+    SysmelTypeKindClass,
     SysmelTypeKindSum,
     SysmelTypeKindEnum,
     SysmelTypeKindInteger,
@@ -65,6 +66,13 @@ struct sysmelb_Type_s {
         }tupleAndRecords;
 
         struct {
+            uint32_t superFieldCount;
+            uint32_t fieldCount;
+            sysmelb_Type_t **fields;
+            sysmelb_symbol_t **fieldNames;
+        } clazz;
+
+        struct {
             sysmelb_Type_t *baseType;
             uint32_t valueCount;
             sysmelb_Value_t *values;
@@ -95,6 +103,7 @@ typedef struct sysmelb_BasicTypes_s {
     sysmelb_Type_t *byteArray;
     sysmelb_Type_t *tuple;
     sysmelb_Type_t *record;
+    sysmelb_Type_t *clazz;
     sysmelb_Type_t *enumType;
     sysmelb_Type_t *sum;
     sysmelb_Type_t *association;
@@ -130,10 +139,12 @@ sysmelb_function_t *sysmelb_type_lookupSelector(sysmelb_Type_t *type, sysmelb_sy
 
 sysmelb_Type_t *sysmelb_allocateValueType(sysmelb_TypeKind_t kind, sysmelb_symbol_t *name, uint32_t size, uint32_t alignment);
 sysmelb_Type_t *sysmelb_allocateRecordType(sysmelb_symbol_t *name, sysmelb_ImmutableDictionary_t *fieldsAndTypes);
+sysmelb_Type_t *sysmelb_allocateClassType(sysmelb_symbol_t *name, sysmelb_Type_t *superclass, sysmelb_ImmutableDictionary_t *fieldsAndTypes);
 sysmelb_Type_t *sysmelb_allocateSumType(sysmelb_symbol_t *name, size_t alternativeCount);
 sysmelb_Type_t *sysmelb_allocateEnumType(sysmelb_symbol_t *name, sysmelb_Type_t *baseType, sysmelb_ImmutableDictionary_t *namesAndValues);
 
 int sysmelb_findIndexOfFieldNamed(sysmelb_Type_t *type, sysmelb_symbol_t *name);
+int sysmelb_findIndexOfFieldNamedInClass(sysmelb_Type_t *type, sysmelb_symbol_t *name);
 bool sysmelb_findEnumValueWithName(sysmelb_Type_t *type, sysmelb_symbol_t *name, sysmelb_Value_t *outValue);
 int sysmelb_findSumTypeIndexForType(sysmelb_Type_t *sumType, sysmelb_Type_t *injectedType);
 

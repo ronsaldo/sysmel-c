@@ -537,6 +537,36 @@ sysmelb_Value_t sysmelb_interpretBytecodeFunction(sysmelb_function_t *function, 
                         }
                     }
 
+                    if(receiver.kind == SysmelValueKindObjectReference && receiver.objectReference->clazz->kind == SysmelTypeKindClass)
+                    {
+                        if (messageArgumentCount == 0)
+                        {
+                            int objectFieldIndex = sysmelb_findIndexOfFieldNamedInClass(receiver.objectReference->clazz, currentInstruction->messageSendSelector);
+                            if(objectFieldIndex >= 0)
+                            {
+                                sysmelb_Value_t fieldValue = receiver.objectReference->elements[objectFieldIndex];
+                                sysmelb_bytecodeActivationContext_push(&context, fieldValue);
+                                isSynthetic = true;
+                            }
+                        }
+                        else if(messageArgumentCount == 1)
+                        {
+                            // Remove the trailing:
+                            sysmelb_symbol_t *fieldName = currentInstruction->messageSendSelector;
+                            if(fieldName->size > 0 && fieldName->string[fieldName->size -1] == ':')
+                                fieldName = sysmelb_internSymbol(fieldName->size - 1, fieldName->string);
+
+                            int objectFieldIndex = sysmelb_findIndexOfFieldNamedInClass(receiver.objectReference->clazz, fieldName);
+                            if(objectFieldIndex >= 0)
+                            {
+                                sysmelb_Value_t newFieldValue = context.calloutArguments[1];
+                                receiver.objectReference->elements[objectFieldIndex] = newFieldValue;
+                                sysmelb_bytecodeActivationContext_push(&context, receiver);
+                                isSynthetic = true;
+                            }
+                        }
+                    }
+
                     if(receiver.kind == SysmelValueKindTypeReference)
                     {
                         if(receiver.typeReference->kind == SysmelTypeKindEnum)

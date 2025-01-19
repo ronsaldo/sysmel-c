@@ -23,6 +23,7 @@ typedef enum sysmelb_ValueKind_e
     SysmelValueKindArrayReference,
     SysmelValueKindByteArrayReference,
     SysmelValueKindTupleReference,
+    SysmelValueKindObjectReference,
     SysmelValueKindAssociationReference,
     SysmelValueKindImmutableDictionaryReference,
     SysmelValueKindSymbolHashtableReference,
@@ -44,6 +45,7 @@ typedef struct sysmelb_ParseTreeNode_s sysmelb_ParseTreeNode_t;
 typedef struct sysmelb_ArrayHeader_s sysmelb_ArrayHeader_t;
 typedef struct sysmelb_ByteArrayHeader_s sysmelb_ByteArrayHeader_t;
 typedef struct sysmelb_TupleHeader_s sysmelb_TupleHeader_t;
+typedef struct sysmelb_ObjectHeader_s sysmelb_ObjectHeader_t;
 
 typedef struct sysmelb_Association_s sysmelb_Association_t;
 typedef struct sysmelb_ImmutableDictionary_s sysmelb_ImmutableDictionary_t;
@@ -72,6 +74,7 @@ struct sysmelb_Value_s
         sysmelb_ArrayHeader_t *arrayReference;
         sysmelb_ByteArrayHeader_t *byteArrayReference;
         sysmelb_TupleHeader_t *tupleReference;
+        sysmelb_ObjectHeader_t *objectReference;
         sysmelb_Association_t *associationReference;
         sysmelb_ImmutableDictionary_t *immutableDictionaryReference;
         sysmelb_IdentityDictionary_t *identityDictionaryReference;
@@ -108,6 +111,13 @@ struct sysmelb_ByteArrayHeader_s
 struct sysmelb_TupleHeader_s
 {
     size_t size;
+    sysmelb_Value_t elements[];
+};
+
+struct sysmelb_ObjectHeader_s
+{
+    size_t size;
+    sysmelb_Type_t *clazz;
     sysmelb_Value_t elements[];
 };
 

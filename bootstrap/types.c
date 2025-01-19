@@ -76,6 +76,35 @@ sysmelb_Type_t *sysmelb_allocateRecordType(sysmelb_symbol_t *name, sysmelb_Immut
     return type;
 }
 
+sysmelb_Type_t *sysmelb_allocateClassType(sysmelb_symbol_t *name, sysmelb_Type_t *superclass, sysmelb_ImmutableDictionary_t *fieldsAndTypes)
+{
+    sysmelb_Type_t *type = sysmelb_allocate(sizeof(sysmelb_Type_t));
+    type->kind = SysmelTypeKindClass;
+    type->name = name;
+    type->valueAlignment = 1;
+    type->valueSize = 0;
+    type->supertype = superclass ? superclass : sysmelb_getBasicTypes()->clazz;
+
+    size_t fieldCount = fieldsAndTypes->size;
+    type->clazz.superFieldCount = 0;
+    if(superclass)
+        type->clazz.superFieldCount = superclass->clazz.superFieldCount + superclass->clazz.fieldCount;
+
+    type->clazz.fieldCount = fieldCount;
+    type->clazz.fields = sysmelb_allocate(sizeof(sysmelb_Type_t*)*fieldCount);
+    type->clazz.fieldNames = sysmelb_allocate(sizeof(sysmelb_symbol_t*)*fieldCount);
+
+    for(size_t i = 0; i < fieldCount; ++i)
+    {
+        sysmelb_Association_t *assoc = fieldsAndTypes->elements[i];
+        assert(assoc->key.kind == SysmelValueKindSymbolReference);
+        assert(assoc->value.kind == SysmelValueKindTypeReference);
+        type->clazz.fieldNames[i] = assoc->key.symbolReference;
+        type->clazz.fields[i] = assoc->value.typeReference;
+    }
+    return type;
+}
+
 sysmelb_Type_t *sysmelb_allocateSumType(sysmelb_symbol_t *name, size_t alternativeCount)
 {
     sysmelb_Type_t *type = sysmelb_allocate(sizeof(sysmelb_Type_t));
@@ -158,6 +187,23 @@ int sysmelb_findIndexOfFieldNamed(sysmelb_Type_t *type, sysmelb_symbol_t *name)
 
     return -1;
 }
+
+int sysmelb_findIndexOfFieldNamedInClass(sysmelb_Type_t *type, sysmelb_symbol_t *name)
+{
+    if(!type->clazz.fields || !type->clazz.fieldNames || type->kind != SysmelTypeKindClass)
+        return -1;
+
+    for(uint32_t i = 0; i < type->clazz.fieldCount; ++i)
+    {
+        if(type->clazz.fieldNames[i] == name)
+            return (int)(i + type->clazz.superFieldCount);
+    }
+    if(type->supertype)
+        return sysmelb_findIndexOfFieldNamedInClass(type->supertype, name);
+
+    return -1;
+}
+
 int sysmelb_findSumTypeIndexForType(sysmelb_Type_t *sumType, sysmelb_Type_t *injectedType)
 {
     for(uint32_t i = 0; i < sumType->sumType.alternativeCount; ++i)
@@ -213,6 +259,54 @@ sysmelb_Value_t sysmelb_instantiateTypeWithArguments(sysmelb_Type_t *type, size_
             .kind = SysmelValueKindTupleReference,
             .type = type,
             .tupleReference = tupleOrRecord,
+        };
+
+        return result;
+    }
+    if(type->kind == SysmelTypeKindClass)
+    {
+        assert(argumentCount <= type->clazz.fieldCount);
+        sysmelb_ObjectHeader_t *object = sysmelb_allocate(sizeof(sysmelb_ObjectHeader_t) + sizeof(sysmelb_Value_t)*type->clazz.fieldCount);
+        object->size = type->clazz.fieldCount;
+        object->clazz = type;
+        
+        // Prefill with null values.
+        sysmelb_Value_t nullValue = {
+            .kind = SysmelValueKindNull,
+            .type = sysmelb_getBasicTypes()->null
+        };
+        for(size_t i = 0; i < object->size; ++i)
+            object->elements[i] = nullValue;
+
+        if(argumentCount == 1 && arguments[0].kind == SysmelValueKindImmutableDictionaryReference)
+        {
+            sysmelb_ImmutableDictionary_t *dict = arguments[0].immutableDictionaryReference;
+            for (size_t i = 0; i < dict->size; ++i)
+            {
+                sysmelb_Association_t *assoc = dict->elements[i];
+                assert(assoc->key.kind == SysmelValueKindSymbolReference);
+                sysmelb_symbol_t *fieldName = assoc->key.symbolReference;
+                int fieldIndex = sysmelb_findIndexOfFieldNamedInClass(type, assoc->key.symbolReference);
+                if(fieldIndex < 0)
+                {
+                    sysmelb_SourcePosition_t nullPosition = {};
+                    sysmelb_errorPrintf(nullPosition, "Failed to find field %.*s in class.", fieldName->size, fieldName->string);
+                    abort();
+                }
+
+                object->elements[fieldIndex] = assoc->value;
+            }
+        }
+        else
+        {
+            for(size_t i = 0; i < argumentCount; ++i)
+                object->elements[i] = arguments[i];
+        }
+
+        sysmelb_Value_t result = {
+            .kind = SysmelValueKindObjectReference,
+            .type = type,
+            .objectReference = object,
         };
 
         return result;
@@ -291,6 +385,7 @@ static void sysmelb_createBasicTypes(void)
     sysmelb_BasicTypesData.tuple          = sysmelb_allocateValueType(SysmelTypeKindTuple, sysmelb_internSymbolC("Tuple"), pointerSize, pointerAlignment);
     sysmelb_BasicTypesData.record         = sysmelb_allocateValueType(SysmelTypeKindRecord, sysmelb_internSymbolC("Record"), pointerSize, pointerAlignment);
     sysmelb_BasicTypesData.record->supertype = sysmelb_BasicTypesData.tuple;
+    sysmelb_BasicTypesData.clazz          = sysmelb_allocateValueType(SysmelTypeKindClass, sysmelb_internSymbolC("Class"), pointerSize, pointerAlignment);
     sysmelb_BasicTypesData.sum            = sysmelb_allocateValueType(SysmelTypeKindSum, sysmelb_internSymbolC("Sum"), pointerSize, pointerAlignment);
     sysmelb_BasicTypesData.enumType       = sysmelb_allocateValueType(SysmelTypeKindEnum, sysmelb_internSymbolC("Enum"), 4, 4);
     sysmelb_BasicTypesData.association    = sysmelb_allocateValueType(SysmelTypeKindAssociation, sysmelb_internSymbolC("Association"), pointerSize, pointerAlignment);
