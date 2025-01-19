@@ -100,20 +100,70 @@ public: [
                     midBuilder sourcePosition: literal sourcePosition.
                     midBuilder constantCharacter: literal value.
                 }.
-                #*
-        }.
-        Record: ParseTreeLiteralFloatNode withFields: #{
-            sourcePosition: SourcePosition.
-            value: Float.
-        }.
-        Record: ParseTreeLiteralStringNode withFields: #{
-            sourcePosition: SourcePosition.
-            value: String.
-        }.
-        Record: ParseTreeLiteralSymbolNode withFields: #{
-            sourcePosition: SourcePosition.
-            value: Symbol.
-        }.*#
+                $(ParseTreeLiteralFloatNode)literal : {
+                    midBuilder sourcePosition: literal sourcePosition.
+                    midBuilder constantFloat: literal value.
+                }.
+                $(ParseTreeLiteralStringNode)literal : {
+                    midBuilder sourcePosition: literal sourcePosition.
+                    midBuilder constantString: literal value.
+                }.
+                $(ParseTreeLiteralSymbolNode)literal : {
+                    midBuilder sourcePosition: literal sourcePosition.
+                    midBuilder constantString: literal value.
+                }.
+                
+                ## Identifiers
+                $(ParseTreeIdentifierReferenceNode)identifier : {
+                    $value := environment lookupSymbolRecursively: identifier value.
+                    if: value isInvalidErrorValue then: {
+                        printLine(value getInvalidErrorValueMessage).
+                        abort()
+                    }.
+
+                    if: value value isMidValue then: {
+                        return: value value getMidValue 
+                    }.
+
+                    midBuilder sourcePosition: identifier sourcePosition
+                    return: (midBuilder constantValue: value value).
+                }.
+    
+                ## Messages and applications
+                $(ParseTreeMessageSendNode)messageSend : {
+                    $receiverValue := self analyzeWithEnvironment: environment andCompileClosure: midBuilder withBody: messageSend receiver.
+                    $selectorValue := self analyzeWithEnvironment: environment andCompileClosure: midBuilder withBody: messageSend selector.
+
+                    $invocationArguments := OrderedCollection().
+                    $i := 0. while:(i < messageSend arguments size) do: {
+                        $argument := messageSend arguments at: i.
+                        $analyzedArgument := self analyzeWithEnvironment: environment andCompileClosure: midBuilder withBody: argument.
+                        invocationArguments add: analyzedArgument.
+                    } continueWith:(i := i + 1).
+
+                    midBuilder sourcePosition: messageSend sourcePosition.
+                    return: (midBuilder send: selectorValue to: receiverValue withArguments: invocationArguments asArray)
+                }.
+                $(ParseTreeBinaryOperatorSequenceNode)binopSequence : {
+                    if: binopSequence elements size = 1 then: {
+                        return: (self analyzeWithEnvironment: environment andCompileClosure: midBuilder withBody: (binopSequence elements at: 0))
+                    }.
+
+                    $!receiver := binopSequence elements at: 0.
+                    $i := 1.
+                    while: i < binopSequence elements size do: {
+                        $selector := binopSequence elements at: i.
+                        $operand := binopSequence elements at: i + 1.
+                        receiver := ParseTreeNode(ParseTreeMessageSendNode#{
+                            sourcePosition: getSourcePositionFromNode(operand).
+                            receiver: receiver.
+                            selector: selector.
+                            arguments: [operand]
+                        })
+                    } continueWith: (i := i + 2).
+
+                    return: (self analyzeWithEnvironment: environment andCompileClosure: midBuilder withBody: receiver)
+                }.
                 _: {
                     printLine("Unsupported node for compilation. ". ast).
                     abort()

@@ -213,7 +213,22 @@ public: [
                 $(InvalidErrorValue)errorValue : errorValue message.
                 _: abort().
             }
-        };withSelector: #getIntegerValue addMethod: {
+        };
+        withSelector: #isMidValue addMethod: {
+            |$(Value)self :: Boolean |
+            match: self ofType: Value withPatterns: #{
+                $(SysmelMidValue)midValue : true.
+                _: false.
+            }
+        };
+        withSelector: #getMidValue addMethod: {
+            |$(Value)self :: MidValue |
+            match: self ofType: Value withPatterns: #{
+                $(SysmelMidValue)midValue : midValue value.
+                _: abort().
+            }
+        };
+        withSelector: #getIntegerValue addMethod: {
             |$(Value)self :: Integer |
             match: self ofType: Value withPatterns: #{
                 $(IntegerValue)integerValue : integerValue value.

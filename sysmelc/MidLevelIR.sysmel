@@ -23,6 +23,9 @@ public: [
     Class: MidConstantType withSuperclass: MidConstant fields: #{
         value: SysmelType
     }.
+    Class: MidConstantValue withSuperclass: MidConstant fields: #{
+        value: Value
+    }.
     Class: MidGlobalValue withSuperclass: MidConstant fields: #{
         name: Symbol
     }.
@@ -66,6 +69,20 @@ public: [
         resultValue: MidValue
     }.
 
+    Class: MidCallFunction withSuperclass: MidControlNode fields: #{
+        previousControl: MidValue.
+        functional: MidValue.
+        selector: MidValue.
+        arguments: Array.
+    }.
+
+    Class: MidSendMessage withSuperclass: MidControlNode fields: #{
+        previousControl: MidValue.
+        receiver: MidValue.
+        selector: MidValue.
+        arguments: Array.
+    }.
+
     Record: MidFunctionBuilder withFields: #{
         midFunction: MidClosureFunction.
         currentControlNode: MidControlNode.
@@ -77,13 +94,70 @@ public: [
 MidValue
     withSelector: #addUser: addMethod: {
         | $(MidValue)self $(MidValue)user |
+        if: self users isNull then: {
+            self users: OrderedCollection()
+        }.
         self users add: user
+    }.
+
+MidStartNode
+    withSelector: #connectWithUsed addMethod: {
+        | $(MidStartNode)self :: Void |
+        {
+            $!i := 0.
+            $argumentCount := self arguments size.
+            while: (i < argumentCount) do:
+            {
+                (self arguments at: i) addUser: self
+            } continueWith: (i := i + 1).
+        }.
+        {
+            $!i := 0.
+            $captureCount := self captures size.
+            while: (i < captureCount) do:
+            {
+                (self captures at: i) addUser: self
+            } continueWith: (i := i + 1).
+        }
+    }.
+
+MidCallFunction
+    withSelector: #connectWithUsed addMethod: {
+        | $(MidCallFunction)self :: Void |
+        self functional addUser: self.
+        {
+            $!i := 0.
+            $argumentCount := self arguments size.
+            while: (i < argumentCount) do:
+            {
+                (self arguments at: i) addUser: self
+            } continueWith: (i := i + 1).
+        }.
+    }.
+
+MidSendMessage
+    withSelector: #connectWithUsed addMethod: {
+        | $(MidSendMessage)self :: Void |
+        self receiver addUser: self.
+        self selector addUser: self.
+        {
+            $!i := 0.
+            $argumentCount := self arguments size.
+            while: (i < argumentCount) do:
+            {
+                (self arguments at: i) addUser: self
+            } continueWith: (i := i + 1).
+        }.
     }.
 
 MidClosureFunction
     withSelector: #makeBuilder addMethod: {
         | $(MidClosureFunction) self :: MidFunctionBuilder |
-        $startNode := MidStartNode#{}.
+        $startNode := MidStartNode#{
+            captures: self captures.
+            arguments: self arguments.
+        }.
+        startNode connectWithUsed.
         self startNode: startNode.
 
         $builder := MidFunctionBuilder#{
@@ -111,7 +185,6 @@ MidFunctionBuilder
         | $(MidFunctionBuilder)self $(Integer)constantValue :: MidConstantInteger |
         MidConstantInteger#{
             sourcePosition: self sourcePosition.
-            users: OrderedCollection().
             type: getBasicIntrinsicTypes() integer.
             value: constantValue
         }.
@@ -120,13 +193,74 @@ MidFunctionBuilder
         | $(MidFunctionBuilder)self $(Character)constantValue :: MidConstantCharacter |
         MidConstantCharacter#{
             sourcePosition: self sourcePosition.
-            users: OrderedCollection().
             type: getBasicIntrinsicTypes() character.
             value: constantValue
         }.
     };
+    withSelector: #constantFloat: addMethod: {
+        | $(MidFunctionBuilder)self $(Float)constantValue :: MidConstantFloat |
+        MidConstantFloat#{
+            sourcePosition: self sourcePosition.
+            type: getBasicIntrinsicTypes() float.
+            value: constantValue
+        }.
+    };
+    withSelector: #constantString: addMethod: {
+        | $(MidFunctionBuilder)self $(String)constantValue :: MidConstantString |
+        MidConstantString#{
+            sourcePosition: self sourcePosition.
+            type: getBasicIntrinsicTypes() string.
+            value: constantValue
+        }.
+    };
+    withSelector: #constantSymbol: addMethod: {
+        | $(MidFunctionBuilder)self $(Symbol)constantValue :: MidConstantSymbol |
+        MidConstantSymbol#{
+            sourcePosition: self sourcePosition.
+            type: getBasicIntrinsicTypes() symbol.
+            value: constantValue
+        }.
+    };
+    withSelector: #constantValue: addMethod: {
+        | $(MidFunctionBuilder)self $(Value)constantValue :: MidConstantValue |
+        MidConstantValue#{
+            sourcePosition: self sourcePosition.
+            type: getBasicIntrinsicTypes() symbol.
+            value: constantValue
+        }.
+    };
+
+    withSelector: #call:withArguments: addMethod: {
+        | $(MidFunctionBuilder)self $(MidValue)functional $(Array)arguments :: MidCallFunction |
+        $node := MidCallFunction#{
+            previousControl: self currentControlNode.
+            sourcePosition: self sourcePosition.
+            functional: functional.
+            arguments: arguments.
+        }.
+        node connectWithUsed.
+        self currentControlNode: node.
+        node
+    };    
+    withSelector: #send:to:withArguments: addMethod: {
+        | $(MidFunctionBuilder)self $(MidValue)selector $(MidValue)receiver $(Array)arguments  :: MidSendMessage |
+        $node := MidSendMessage#{
+            previousControl: self currentControlNode.
+            sourcePosition: self sourcePosition.
+            receiver: receiver.
+            selector: selector.
+            arguments: arguments.
+        }.
+        node connectWithUsed.
+        self currentControlNode: node.
+        node
+    };
+
     withSelector: #finish addMethod: {
         | $(MidFunctionBuilder)self :: Void |
+        self midFunction stopNode: MidStopNode#{
+            exitPoints: self exitPoints asArray
+        }
     }.
 }
 

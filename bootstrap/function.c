@@ -507,6 +507,30 @@ sysmelb_Value_t sysmelb_interpretBytecodeFunction(sysmelb_function_t *function, 
                 bool isSynthetic = false;
                 if(!method)
                 {
+                    if(!strcmp("isNull", currentInstruction->messageSendSelector->string))
+                    {
+                        bool isNull = receiver.kind == SysmelValueKindNull;
+                        sysmelb_Value_t result = {
+                            .kind = SysmelValueKindBoolean,
+                            .boolean = isNull,
+                            .type = sysmelb_getBasicTypes()->boolean
+                        };
+                        sysmelb_bytecodeActivationContext_push(&context, result);
+                        isSynthetic = true;
+                    }
+                    else if (!strcmp("isNotNull", currentInstruction->messageSendSelector->string))
+                    {
+                        bool isNotNull = receiver.kind != SysmelValueKindNull;
+                        sysmelb_Value_t result = {
+                            .kind = SysmelValueKindBoolean,
+                            .boolean = isNotNull,
+                            .type = sysmelb_getBasicTypes()->boolean
+                        };
+                        sysmelb_bytecodeActivationContext_push(&context, result);
+                        isSynthetic = true;
+                    }
+                    
+
                     if(receiver.kind == SysmelValueKindTupleReference && receiver.type->kind == SysmelTypeKindRecord)
                     {
                         if (messageArgumentCount == 0)
