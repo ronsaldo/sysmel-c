@@ -80,6 +80,7 @@ public: [
             common: SysmelTypeCommon.
             supertype: SysmelType.
             isCompileTimePure: Boolean.
+            isVariadic: Boolean.
             argumentTypes: Array.
             resultType: SysmelType.
         }.
@@ -166,7 +167,20 @@ public: [
             value: SysmelFunction
         }.
     ].
-    
+    $extractValueForPrinting($(Value)value :: Gradual) := {
+        match: value ofType: Value withPatterns: #{
+            $(IntegerValue)value : value value.
+            $(BooleanValue)value : value value.
+            $(FloatValue)value : value value.
+            $(CharacterValue)value : value value.
+            $(StringValue)value : value value.
+            $(SymbolValue)value : value value.
+            _: {
+                value
+            }
+        }
+    }.
+
     ## Typed value
     Record: TypedValue withFields: #{
         value: Value.

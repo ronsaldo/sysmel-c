@@ -40,7 +40,28 @@ public: [
                 return: value.
             }.
 
-            ## Messages
+            ## Functions and messages
+            $(ParseTreeFunctionApplicationNode)functionApplication : {
+                $functional := self analyzeAndEvaluateWithEnvironment: environment script: functionApplication functional.
+                $functionalValue := extractFunctionFromValue(functional value).
+                $invocationArguments := OrderedCollection().
+                $argumentCount := functionApplication arguments size.
+                $!i := 0. while: (i < argumentCount) do: {
+                    $argumentValue := self analyzeAndEvaluateWithEnvironment: environment script: (functionApplication arguments at: i).
+                    invocationArguments add: argumentValue
+                } continueWith: (i := i + 1).
+
+                match: functionalValue ofType: SysmelFunction withPatterns: #{
+                    $(SysmelIntrinsicPrimitive)intrinsic : {
+                        return: intrinsic implementation(invocationArguments asArray)
+                    }.
+                    _: {
+                        printLine("Unsupported method function kind. " . functionalValue).
+                        abort()
+                    }
+                }.
+                abort()
+            }.
             $(ParseTreeMessageSendNode)messageSend : {
                 $receiverTypedValue := self analyzeAndEvaluateWithEnvironment: environment script: messageSend receiver.
                 $selectorTypedValue := self analyzeAndEvaluateWithEnvironment: environment script: messageSend selector.

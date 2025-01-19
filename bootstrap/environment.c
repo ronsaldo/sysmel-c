@@ -264,6 +264,22 @@ static sysmelb_Value_t sysmelb_MatchOfTypeWithPatterns(sysmelb_MacroContext_t *m
     abort();
 }
 
+static sysmelb_Value_t sysmelb_print(size_t argumentCount, sysmelb_Value_t *arguments)
+{
+    for(size_t i = 0; i < argumentCount; ++i)
+    {
+        if(arguments[i].kind == SysmelValueKindStringReference)
+            printf("%.*s", (int)arguments[i].stringSize, arguments[i].string);
+        else
+            sysmelb_printValue(arguments[i]);
+    }
+        
+    sysmelb_Value_t result = {
+        .kind = SysmelValueKindVoid,
+        .type = sysmelb_getBasicTypes()->null
+    };
+    return result;
+}
 
 static sysmelb_Value_t sysmelb_printLine(size_t argumentCount, sysmelb_Value_t *arguments)
 {
@@ -774,6 +790,16 @@ sysmelb_Environment_t *sysmelb_getOrCreateIntrinsicsEnvironment()
         function->kind = SysmelFunctionKindPrimitiveMacro;
         function->name = sysmelb_internSymbolC("match:ofType:withPatterns:");
         function->primitiveMacroFunction = sysmelb_MatchOfTypeWithPatterns;
+
+        sysmelb_Environment_setLocalSymbolBinding(&sysmelb_IntrinsicsEnvironment, function->name, sysmelb_createSymbolFunctionBinding(function));
+    }
+
+    // Console printing
+    {
+        sysmelb_function_t *function = sysmelb_allocate(sizeof(sysmelb_function_t));
+        function->kind = SysmelFunctionKindPrimitive;
+        function->name = sysmelb_internSymbolC("print");
+        function->primitiveFunction = sysmelb_print;
 
         sysmelb_Environment_setLocalSymbolBinding(&sysmelb_IntrinsicsEnvironment, function->name, sysmelb_createSymbolFunctionBinding(function));
     }

@@ -7,6 +7,7 @@ $DefaultIntrinsicsEnvironment := IntrinsicsEnvironment#{
 public: [
     Record: BasicIntrinsicTypes withFields: #{
         null: SysmelType.
+        voidType: SysmelType.
         boolean: SysmelType.
         integer: SysmelType.
         float: SysmelType.
@@ -14,6 +15,11 @@ public: [
         gradual: SysmelType.
         string: SysmelType.
         symbol: SysmelType.
+        array: SysmelType.
+        tuple: SysmelType.
+        byteArray: SysmelType.
+        association: SysmelType.
+        immutableDictionary: SysmelType.
         universe: SysmelType.
 
         uint8:  SysmelType.
@@ -39,6 +45,9 @@ $BasicIntrinsicTypesSingleton := BasicIntrinsicTypes#{
     null: SysmelType(SysmelBasicType(SysmelTypeCommon#{
         name: #Null.  isValueType: true. valueAlignment: 0u8. valueSize: 0u8. heapAlignment: 0u8. heapSize: 0u8. methodDict: SymbolHashtable().
     })).
+    voidType: SysmelType(SysmelBasicType(SysmelTypeCommon#{
+        name: #Void.  isValueType: true. valueAlignment: 0u8. valueSize: 0u8. heapAlignment: 0u8. heapSize: 0u8. methodDict: SymbolHashtable().
+    })).
     boolean: SysmelType(SysmelBasicType(SysmelTypeCommon#{
         name: #Boolean. isValueType: true. valueAlignment: 1u8. valueSize: 1u8. heapAlignment: 1u8. heapSize: 1u8. methodDict: SymbolHashtable().
     })).
@@ -56,6 +65,21 @@ $BasicIntrinsicTypesSingleton := BasicIntrinsicTypes#{
     })).
     symbol: SysmelType(SysmelBasicType(SysmelTypeCommon#{
         name: #Symbol. isValueType: false. valueAlignment: 8u8. valueSize: 8u8. heapAlignment: 8u8. heapSize: 8u8. methodDict: SymbolHashtable().
+    })).
+    array: SysmelType(SysmelBasicType(SysmelTypeCommon#{
+        name: #Array. isValueType: false. valueAlignment: 8u8. valueSize: 8u8. heapAlignment: 8u8. heapSize: 8u8. methodDict: SymbolHashtable().
+    })).
+    tuple: SysmelType(SysmelBasicType(SysmelTypeCommon#{
+        name: #Tuple. isValueType: false. valueAlignment: 8u8. valueSize: 8u8. heapAlignment: 8u8. heapSize: 8u8. methodDict: SymbolHashtable().
+    })).
+    byteArray: SysmelType(SysmelBasicType(SysmelTypeCommon#{
+        name: #ByteArray. isValueType: false. valueAlignment: 8u8. valueSize: 8u8. heapAlignment: 8u8. heapSize: 8u8. methodDict: SymbolHashtable().
+    })).
+    association: SysmelType(SysmelBasicType(SysmelTypeCommon#{
+        name: #Association. isValueType: false. valueAlignment: 8u8. valueSize: 8u8. heapAlignment: 8u8. heapSize: 8u8. methodDict: SymbolHashtable().
+    })).
+    immutableDictionary: SysmelType(SysmelBasicType(SysmelTypeCommon#{
+        name: #ImmutableDictionary. isValueType: false. valueAlignment: 8u8. valueSize: 8u8. heapAlignment: 8u8. heapSize: 8u8. methodDict: SymbolHashtable().
     })).
     universe: SysmelType(SysmelBasicType(SysmelTypeCommon#{
         name: #TypeUniverse. isValueType: false. valueAlignment: 8u8. valueSize: 8u8. heapAlignment: 8u8. heapSize: 8u8. methodDict: SymbolHashtable().
@@ -121,6 +145,7 @@ IntrinsicsEnvironment
         }.
         void
     }.
+    
 
 DefaultIntrinsicsEnvironment
     addType: BasicIntrinsicTypesSingleton null;
@@ -130,6 +155,11 @@ DefaultIntrinsicsEnvironment
     addType: BasicIntrinsicTypesSingleton float;
     addType: BasicIntrinsicTypesSingleton string;
     addType: BasicIntrinsicTypesSingleton symbol;
+    addType: BasicIntrinsicTypesSingleton array;
+    addType: BasicIntrinsicTypesSingleton tuple;
+    addType: BasicIntrinsicTypesSingleton byteArray;
+    addType: BasicIntrinsicTypesSingleton association;
+    addType: BasicIntrinsicTypesSingleton immutableDictionary;
     addType: BasicIntrinsicTypesSingleton universe;
 
     addType: BasicIntrinsicTypesSingleton gradual;
@@ -150,6 +180,62 @@ DefaultIntrinsicsEnvironment
 
     addType: BasicIntrinsicTypesSingleton float32;
     addType: BasicIntrinsicTypesSingleton float64.
+
+$primitive_print($(Array) arguments :: Void) := {
+    $!i := 0.
+    while: i < arguments size do: {
+        print(extractValueForPrinting((arguments at: i) value))
+    } continueWith: (i := i + 1).
+    void
+}.
+
+$primitive_printLine($(Array) arguments :: Void) := {
+    primitive_print(arguments).
+    printLine().
+    void
+}.
+
+$addGlobalIntrinsicMethod($(Symbol)name $(Function)primitive $(SysmelType)functionType :: Void) := {
+    $primitiveValue := TypedValue(Value(SysmelFunctionValue(SysmelFunction(SysmelIntrinsicPrimitive#{
+        name: name.
+        implementation: primitive
+    }))). functionType).
+    DefaultIntrinsicsEnvironment localSymbols at: name put: primitiveValue
+}.
+
+addGlobalIntrinsicMethod(#print. primitive_print.
+    SysmelType(SysmelSimpleFunctionType#{
+        common: SysmelTypeCommon#{
+            isValueType: false.
+            valueAlignment: 8u32.
+            valueSize: 8u32.
+            heapAlignment: 8u32.
+            heapSize: 8u32.
+            methodDict: SymbolHashtable().
+        }.
+        isCompileTimePure: false.
+        isVariadic: true.
+        argumentTypes: [BasicIntrinsicTypesSingleton array].
+        resultType: BasicIntrinsicTypesSingleton voidType.
+    })
+).
+
+addGlobalIntrinsicMethod(#printLine. primitive_printLine.
+    SysmelType(SysmelSimpleFunctionType#{
+        common: SysmelTypeCommon#{
+            isValueType: true.
+            valueAlignment: 8u32.
+            valueSize: 8u32.
+            heapAlignment: 8u32.
+            heapSize: 8u32.
+            methodDict: SymbolHashtable().
+        }.
+        isCompileTimePure: false.
+        isVariadic: true.
+        argumentTypes: [BasicIntrinsicTypesSingleton array].
+        resultType: BasicIntrinsicTypesSingleton voidType.
+    })
+).
 
 $integerPrimitive_bitInvert($(Array)arguments :: TypedValue) := {
     assert: arguments size = 1.
