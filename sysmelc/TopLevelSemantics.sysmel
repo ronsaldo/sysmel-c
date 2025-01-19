@@ -145,6 +145,7 @@ public: [
                                 sourcePosition: getSourcePositionFromNode(ast).
                                 functionDependentType: bindable typeExpression.
                                 bodyExpression: value.
+                                isAnonymous: bindable isAnonymous.
                             }.
                             if: bindable isAnonymous not then: {
                                 functionNode name: name.

@@ -8,6 +8,9 @@ public: [
     Class: MidConstantInteger withSuperclass: MidConstant fields: #{
         value: Integer
     }.
+    Class: MidConstantCharacter withSuperclass: MidConstant fields: #{
+        value: Integer
+    }.
     Class: MidConstantFloat withSuperclass: MidConstant fields: #{
         value: Float
     }.
@@ -15,7 +18,7 @@ public: [
         value: String
     }.
     Class: MidConstantSymbol withSuperclass: MidConstant fields: #{
-        value: String
+        value: Symbol
     }.
     Class: MidConstantType withSuperclass: MidConstant fields: #{
         value: SysmelType
@@ -24,12 +27,17 @@ public: [
         name: Symbol
     }.
 
+
+    Class: MidRegionNode withSuperclass: MidValue fields: #{
+    }.
+
     Class: MidClosureFunction withSuperclass: MidGlobalValue fields: #{
         captures: Array.
         arguments: Array.
-        entryPoint: Array.
+        entryRegion: MidRegionNode.
         exitPoints: Array
     }.
+    
 
     Class: MidFunctionLocalValue withSuperclass: MidValue fields: #{
         owner: MidClosureFunction
@@ -40,4 +48,80 @@ public: [
         name: Symbol.
         typeExpression: MidValue
     }.
-]}
+
+    Class: MidCapture withSuperclass: MidFunctionLocalValue fields: #{
+        index: UInt32.
+        typeExpression: MidValue
+    }.
+
+    Class: MidInstruction withSuperclass: MidFunctionLocalValue fields: #{
+    }.
+
+    Class: MidReturnInstruction withSuperclass: MidInstruction fields: #{
+        resultValue: MidValue
+    }.
+
+    Record: MidFunctionBuilder withFields: #{
+        midFunction: MidClosureFunction.
+        currentRegion: MidRegionNode.
+        regions: OrderedCollection.
+        sourcePosition: SourcePosition.
+    }.
+].
+
+MidValue
+    withSelector: #addUser: addMethod: {
+        | $(MidValue)self |
+
+    }.
+
+MidClosureFunction
+    withSelector: #makeBuilder addMethod: {
+        | $(MidClosureFunction) self :: MidFunctionBuilder |
+        $entryRegion := MidRegionNode#{}.
+        self entryRegion: entryRegion.
+
+        $builder := MidFunctionBuilder#{
+            midFunction: self.
+            currentRegion: entryRegion.
+            regions: OrderedCollection()
+        }.
+        builder regions add: entryRegion.
+        builder
+    }.
+
+MidFunctionBuilder
+    withSelector: #returnValue: addMethod: {
+        | $(MidFunctionBuilder)self $(MidValue)resultValue :: MidReturnInstruction |
+        $instruction := MidReturnInstruction#{
+            sourcePosition: self sourcePosition.
+            users: OrderedCollection().
+            type: getBasicIntrinsicTypes() voidType.
+            resultValue: resultValue.
+        }.
+        resultValue addUser: instruction.
+        return: instruction
+    };
+    withSelector: #constantInteger: addMethod: {
+        | $(MidFunctionBuilder)self $(Integer)constantValue :: MidConstantInteger |
+        MidConstantInteger#{
+            sourcePosition: self sourcePosition.
+            users: OrderedCollection().
+            type: getBasicIntrinsicTypes() integer.
+            value: constantValue
+        }.
+    };
+    withSelector: #constantCharacter: addMethod: {
+        | $(MidFunctionBuilder)self $(Character)constantValue :: MidConstantCharacter |
+        MidConstantCharacter#{
+            sourcePosition: self sourcePosition.
+            users: OrderedCollection().
+            type: getBasicIntrinsicTypes() character.
+            value: constantValue
+        }.
+    };
+    withSelector: #finish addMethod: {
+        | $(MidFunctionBuilder)self :: Void |
+    }.
+}
+

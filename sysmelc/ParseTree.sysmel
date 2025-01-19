@@ -156,7 +156,8 @@ public: [
             sourcePosition: SourcePosition.
             functionDependentType: ParseTreeNode.
             bodyExpression: ParseTreeNode.
-            name: Symbol
+            name: Symbol.
+            isAnonymous: Boolean
         }.
 
         ## Control flow. Exposed via macros

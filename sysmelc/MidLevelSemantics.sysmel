@@ -58,13 +58,13 @@ public: [
         | $(SemanticsState)self $(Environment)environment $(ParseTreeFunctionNode)ast :: TypedValue |
 
             $midFunction := MidClosureFunction#{
+                sourcePosition: ast sourcePosition.
                 name: ast name.
                 captures: [].
                 arguments: []
             }.
 
             $interpretedFunction := SysmelCompiledFunction#{
-                name: ast name.
                 midIR: midFunction.
             }.
 
@@ -73,11 +73,52 @@ public: [
                 localSymbols: SymbolHashtable().
             }.
 
-            self processDependentType: ast functionDependentType withEnvironment: analysisEnvironment forClosureFunction: midFunction.
-            
-            ##printLine(Value(SysmelFunctionValue(interpretedFunction))).
-            printLine("Todo implement mid-level: #analyzeWithEnvironment:andCompileClosure:").
-            abort()
-        }
+            $functionType := self processDependentType: ast functionDependentType withEnvironment: analysisEnvironment forClosureFunction: midFunction.
+
+            if: ast isAnonymous not then: {
+                interpretedFunction name: ast name.
+                environment addLocalSymbol: ast name withValue: TypedValue(Value(SysmelFunctionValue(SysmelFunction(interpretedFunction))). functionType).
+            }.
+
+            $midBuilder := midFunction makeBuilder.
+            $bodyResult := self analyzeWithEnvironment: Environment(analysisEnvironment)
+                andCompileClosure: midBuilder withBody: ast bodyExpression.
+            midBuilder returnValue: bodyResult.
+            midBuilder finish.
+
+            $functionValue := TypedValue(Value(SysmelFunctionValue(SysmelFunction(interpretedFunction))). functionType).
+        };
+        withSelector: #analyzeWithEnvironment:andCompileClosure:withBody: addMethod: {
+            | $(SemanticsState)self $(Environment)environment $(MidFunctionBuilder)midBuilder $(ParseTreeNode)ast :: MidValue |
+            match: ast ofType: ParseTreeNode withPatterns: #{
+                ## Literals.
+                $(ParseTreeLiteralIntegerNode)literal : {
+                    midBuilder sourcePosition: literal sourcePosition.
+                    midBuilder constantInteger: literal value.
+                }.
+                $(ParseTreeLiteralCharacterNode)literal : {
+                    midBuilder sourcePosition: literal sourcePosition.
+                    midBuilder constantCharacter: literal value.
+                }.
+                #*
+        }.
+        Record: ParseTreeLiteralFloatNode withFields: #{
+            sourcePosition: SourcePosition.
+            value: Float.
+        }.
+        Record: ParseTreeLiteralStringNode withFields: #{
+            sourcePosition: SourcePosition.
+            value: String.
+        }.
+        Record: ParseTreeLiteralSymbolNode withFields: #{
+            sourcePosition: SourcePosition.
+            value: Symbol.
+        }.*#
+                _: {
+                    printLine("Unsupported node for compilation. ". ast).
+                    abort()
+                }
+            }.
+        }.
 ]
 }

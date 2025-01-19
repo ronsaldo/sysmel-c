@@ -1,7 +1,8 @@
-$sum($(Integer)x $(Integer)y :: Integer) := x + y.
+$five(:: Integer) := 5.
+##$id($(Integer)x :: Integer) := x.
+##$sum($(Integer)x $(Integer)y :: Integer) := x + y.
 
-$id($(Integer)x :: Integer) := x.
-
+printLine(five()).
 ##printLine(id(42)).
 ##printLine(id(sum(42 . 5))).
 

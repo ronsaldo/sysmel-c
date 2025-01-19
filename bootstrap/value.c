@@ -153,7 +153,7 @@ void sysmelb_printValue(sysmelb_Value_t value)
             if(i != 0) printf(" ");
             sysmelb_symbol_t *fieldName = value.type->clazz.fieldNames[i];
             printf("%.*s: ", fieldName->size, fieldName->string);
-            sysmelb_printValue(value.objectReference->elements[i]);
+            sysmelb_printValue(value.objectReference->elements[value.type->clazz.superFieldCount + i]);
             printf(".");
         }
         printf("}");

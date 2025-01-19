@@ -6,12 +6,13 @@ loadFileOnce: "Parser.sysmel".
 
 ## Middle-end. Semantics analysis
 loadFileOnce: "SemanticsDeclarations.sysmel".
-loadFileOnce: "MidLevelIR.sysmel".
+
 
 loadFileOnce: "Environment.sysmel".
 loadFileOnce: "Intrinsics.sysmel".
 loadFileOnce: "Module.sysmel".
 loadFileOnce: "Namespace.sysmel".
+loadFileOnce: "MidLevelIR.sysmel".
 
 loadFileOnce: "Semantics.sysmel".
 loadFileOnce: "TopLevelSemantics.sysmel".
