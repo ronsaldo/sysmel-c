@@ -1,10 +1,37 @@
 namespace: SysmelC definition: {
 public: [
-    Inductive: MidIRValue withAlternatives: [
-        Record: EmptyValue withFields: #{}.
-        Record: ConstantInteger withFields: #{
-            sourcePosition: SourcePosition.
-            value: Integer
-        }
-    ]
+
+
+    Class: MidConstant withSuperclass: MidValue fields: #{
+    }.
+
+    Class: MidConstantInteger withSuperclass: MidConstant fields: #{
+        value: Integer
+    }.
+    Class: MidConstantFloat withSuperclass: MidConstant fields: #{
+        value: Float
+    }.
+    Class: MidConstantString withSuperclass: MidConstant fields: #{
+        value: String
+    }.
+    Class: MidConstantSymbol withSuperclass: MidConstant fields: #{
+        value: String
+    }.
+
+    Class: MidGlobalValue withSuperclass: MidConstant fields: #{
+        name: Symbol
+    }.
+
+    Class: MidClosureFunction withSuperclass: MidGlobalValue fields: #{
+        captures: Array.
+        arguments: Array.
+    }.
+
+    Class: MidFunctionLocalValue withSuperclass: MidValue fields: #{
+    }.
+
+    Class: MidArgument withSuperclass: MidFunctionLocalValue fields: #{
+        index: UInt32.
+        name: Symbol.
+    }.
 ]}

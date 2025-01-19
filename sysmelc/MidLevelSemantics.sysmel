@@ -3,7 +3,18 @@ public: [
     SemanticsState
         withSelector: #analyzeWithEnvironment:andCompileClosure: addMethod: {
         | $(SemanticsState)self $(Environment)environment $(ParseTreeFunctionNode)ast :: TypedValue |
-            printLine("Todo implement mid-level: ". ast).
+
+            $midFunction := MidClosureFunction#{
+                name: ast name.
+                captures: [].
+                arguments: []
+            }.
+
+            $interpretedFunction := SysmelFunction(SysmelCompiledFunction#{
+                name: ast name.
+                midIR: midFunction.
+            }).
+            printLine("Todo implement mid-level: #analyzeWithEnvironment:andCompileClosure:").
             abort()
         }
 ]

@@ -1,4 +1,5 @@
 Class: Arithmetic withFields: #{
+    multiplier: Integer
 }.
 
 Class: LiteralInteger withSuperclass: Arithmetic fields: #{
@@ -13,7 +14,7 @@ Class: Minus withSuperclass: Arithmetic fields: #{
     leftOperand: Arithmetic. rightOperand: Arithmetic.
 }.
 
-$sumExpression := Minus(Plus(LiteralInteger(42). LiteralInteger(5)) . LiteralInteger(7)).
+$sumExpression := Minus(2. Plus(1. LiteralInteger(1. 42). LiteralInteger(1, 5)) . LiteralInteger(7)).
 printLine(sumExpression).
 
 Arithmetic

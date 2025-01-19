@@ -114,13 +114,20 @@ public: [
             }
         }.
 
+    Class: MidValue withFields: #{
+        sourcePosition: SourcePosition.
+        users: OrderedCollection.
+        type: SysmelType.
+    }.
 
     Inductive: SysmelFunction withAlternatives: [
         Record: SysmelIntrinsicPrimitive withFields: #{
             name: Symbol.
             implementation: Function
         }.
-        Record: SysmelInterpretedFunction withFields: #{
+        Record: SysmelCompiledFunction withFields: #{
+            name: Symbol.
+            midIR: MidValue
         }.
     ].
 

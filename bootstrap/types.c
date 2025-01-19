@@ -265,9 +265,10 @@ sysmelb_Value_t sysmelb_instantiateTypeWithArguments(sysmelb_Type_t *type, size_
     }
     if(type->kind == SysmelTypeKindClass)
     {
-        assert(argumentCount <= type->clazz.fieldCount);
-        sysmelb_ObjectHeader_t *object = sysmelb_allocate(sizeof(sysmelb_ObjectHeader_t) + sizeof(sysmelb_Value_t)*type->clazz.fieldCount);
-        object->size = type->clazz.fieldCount;
+        size_t totalFieldCount = type->clazz.superFieldCount + type->clazz.fieldCount;
+        assert(argumentCount <= totalFieldCount);
+        sysmelb_ObjectHeader_t *object = sysmelb_allocate(sizeof(sysmelb_ObjectHeader_t) + sizeof(sysmelb_Value_t)*totalFieldCount);
+        object->size = totalFieldCount;
         object->clazz = type;
         
         // Prefill with null values.
