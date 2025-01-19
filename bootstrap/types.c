@@ -398,6 +398,7 @@ static void sysmelb_createBasicTypes(void)
     sysmelb_BasicTypesData.namespace      = sysmelb_allocateValueType(SysmelTypeKindNamespace, sysmelb_internSymbolC("Namespace"), pointerSize, pointerAlignment);
     
     sysmelb_BasicTypesData.orderedCollection = sysmelb_allocateValueType(SysmelTypeKindOrderedCollection, sysmelb_internSymbolC("OrderedCollection"), pointerSize, pointerAlignment);
+    sysmelb_BasicTypesData.identityHashset = sysmelb_allocateValueType(SysmelTypeKindIdentityHashset, sysmelb_internSymbolC("IdentityHashset"), pointerSize, pointerAlignment);
 
     sysmelb_BasicTypesData.char8    = sysmelb_allocateValueType(SysmelTypeKindPrimitiveCharacter, sysmelb_internSymbolC("Int8"), 1, 1);
     sysmelb_BasicTypesData.char16   = sysmelb_allocateValueType(SysmelTypeKindPrimitiveCharacter, sysmelb_internSymbolC("Int16"), 2, 2);
@@ -1435,6 +1436,36 @@ static void sysmelb_createBasicSymbolHashtablePrimitives(void)
     sysmelb_type_addPrimitiveMethod(sysmelb_BasicTypesData.symbolHashtable, sysmelb_internSymbolC("at:put:"), sysmelb_primitive_SymbolHashtable_atPut);
 }
 
+static sysmelb_Value_t sysmelb_primitive_IdentityHashset_add(size_t argumentCount, sysmelb_Value_t *arguments)
+{
+    assert(argumentCount == 2);
+    assert(arguments[0].kind == SysmelValueKindIdentityHashsetReference);
+
+    sysmelb_IdentityHashset_add(arguments[0].identityHashsetReference, sysmelb_getValuePointer(arguments[1]));
+    return arguments[1];
+}
+
+static sysmelb_Value_t sysmelb_primitive_IdentityHashset_includes(size_t argumentCount, sysmelb_Value_t *arguments)
+{
+    assert(argumentCount == 2);
+    assert(arguments[0].kind == SysmelValueKindIdentityHashsetReference);
+
+    bool includesResult = sysmelb_IdentityHashset_includes(arguments[0].identityHashsetReference, sysmelb_getValuePointer(arguments[1]));
+    sysmelb_Value_t result = {
+        .kind = SysmelValueKindBoolean,
+        .type = sysmelb_getBasicTypes()->boolean,
+        .boolean = includesResult
+    };
+
+    return result;
+}
+
+static void sysmelb_createBasicIdentityHashsetPrimitives(void)
+{
+    sysmelb_type_addPrimitiveMethod(sysmelb_BasicTypesData.identityHashset, sysmelb_internSymbolC("add:"), sysmelb_primitive_IdentityHashset_add);
+    sysmelb_type_addPrimitiveMethod(sysmelb_BasicTypesData.identityHashset, sysmelb_internSymbolC("includes:"), sysmelb_primitive_IdentityHashset_includes);
+}
+
 static sysmelb_Value_t sysmelb_primitive_Boolean_Not(size_t argumentCount, sysmelb_Value_t *arguments)
 {
     assert(argumentCount == 1);
@@ -1578,6 +1609,7 @@ static void sysmelb_createBasicTypesPrimitives(void)
     sysmelb_createBasicImmutableDictionaryPrimitives();
     sysmelb_createBasicOrderedCollectionPrimitives();
     sysmelb_createBasicSymbolHashtablePrimitives();
+    sysmelb_createBasicIdentityHashsetPrimitives();
     sysmelb_createBasicTypeUniversePrimitives();
 }
 

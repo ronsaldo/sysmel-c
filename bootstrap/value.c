@@ -247,3 +247,30 @@ void sysmelb_OrderedCollection_add(sysmelb_OrderedCollection_t *collection, sysm
         sysmelb_OrderedCollection_increaseCapacity(collection);
     collection->elements[collection->size++] = value;
 }
+
+void *sysmelb_getValuePointer(sysmelb_Value_t value)
+{
+    switch(value.kind)
+    {
+    case SysmelValueKindTypeReference:
+    case SysmelValueKindFunctionReference:
+    case SysmelValueKindParseTreeReference:
+    case SysmelValueKindSymbolReference:
+    case SysmelValueKindStringReference:
+    case SysmelValueKindArrayReference:
+    case SysmelValueKindByteArrayReference:
+    case SysmelValueKindTupleReference:
+    case SysmelValueKindObjectReference:
+    case SysmelValueKindAssociationReference:
+    case SysmelValueKindImmutableDictionaryReference:
+    case SysmelValueKindSymbolHashtableReference:
+    case SysmelValueKindValueBoxReference:
+    case SysmelValueKindNamespaceReference:
+    case SysmelValueKindOrderedCollectionReference:
+    case SysmelValueKindSumValueReference:
+    case SysmelValueKindIdentityHashsetReference:
+        return value.objectReference;
+    default:
+        return NULL;
+    }
+}

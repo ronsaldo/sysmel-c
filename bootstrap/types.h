@@ -39,6 +39,7 @@ typedef enum sysmelb_TypeKind_e {
     SysmelTypeKindSimpleFunction,
     SysmelTypeKindNamespace,
     SysmelTypeKindOrderedCollection,
+    SysmelTypeKindIdentityHashset,
     SysmelTypeKindParseTreeNode,
     SysmelTypeKindValueReference,
     SysmelTypeKindPrimitiveCharacter,
@@ -114,6 +115,7 @@ typedef struct sysmelb_BasicTypes_s {
     sysmelb_Type_t *function;
     sysmelb_Type_t *namespace;
     sysmelb_Type_t *orderedCollection;
+    sysmelb_Type_t *identityHashset;
 
     sysmelb_Type_t *char8;
     sysmelb_Type_t *char16;

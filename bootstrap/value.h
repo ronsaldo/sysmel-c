@@ -31,6 +31,7 @@ typedef enum sysmelb_ValueKind_e
     SysmelValueKindNamespaceReference,
     SysmelValueKindOrderedCollectionReference,
     SysmelValueKindSumValueReference,
+    SysmelValueKindIdentityHashsetReference,
 } sysmelb_ValueKind_t;
 
 typedef struct sysmelb_Value_s sysmelb_Value_t;
@@ -85,6 +86,7 @@ struct sysmelb_Value_s
 
         sysmelb_OrderedCollection_t *orderedCollectionReference;
         sysmelb_SymbolHashtable_t *symbolHashtableReference;
+        sysmelb_IdentityHashset_t *identityHashsetReference;
         
         sysmelb_SumTypeValue_t *sumTypeValueReference;
 
@@ -157,5 +159,6 @@ sysmelb_Value_t *sysmelb_allocateValue(void);
 sysmelb_Value_t sysmelb_decayValue(sysmelb_Value_t value);
 bool sysmelb_value_equals(sysmelb_Value_t a, sysmelb_Value_t b);
 void sysmelb_printValue(sysmelb_Value_t value);
+void *sysmelb_getValuePointer(sysmelb_Value_t value);
 
 #endif // SYSMELB_VALUE_H
