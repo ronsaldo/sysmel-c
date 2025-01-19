@@ -332,6 +332,16 @@ sysmelb_Value_t sysmelb_instantiateTypeWithArguments(sysmelb_Type_t *type, size_
         };
         return result;
     }
+    if(type->kind == SysmelTypeKindIdentityHashset)
+    {
+        sysmelb_IdentityHashset_t *set = sysmelb_allocate(sizeof(sysmelb_IdentityHashset_t));
+        sysmelb_Value_t result = {
+            .kind = SysmelValueKindIdentityHashsetReference,
+            .type = sysmelb_getBasicTypes()->identityHashset,
+            .identityHashsetReference = set
+        };
+        return result;
+    }
     if(type->kind == SysmelTypeKindSum)
     {
         if(argumentCount != 1)
@@ -1121,7 +1131,7 @@ static void sysmelb_createBasicArrayPrimitives(void)
     sysmelb_type_addPrimitiveMethod(sysmelb_BasicTypesData.array, sysmelb_internSymbolC("--"), sysmelb_primitive_concatenateArrays);
     sysmelb_type_addPrimitiveMethod(sysmelb_BasicTypesData.array, sysmelb_internSymbolC("size"), sysmelb_primitive_arraySize);
     sysmelb_type_addPrimitiveMethod(sysmelb_BasicTypesData.array, sysmelb_internSymbolC("at:"), sysmelb_primitive_arrayAt);
-    sysmelb_type_addPrimitiveMethod(sysmelb_BasicTypesData.array, sysmelb_internSymbolC("at:put"), sysmelb_primitive_arrayAtPut);
+    sysmelb_type_addPrimitiveMethod(sysmelb_BasicTypesData.array, sysmelb_internSymbolC("at:put:"), sysmelb_primitive_arrayAtPut);
 }
 
 static sysmelb_Value_t sysmelb_primitive_tupleSize(size_t argumentCount, sysmelb_Value_t *arguments)
@@ -1283,9 +1293,28 @@ static void sysmelb_createBasicImmutableDictionaryPrimitives(void)
     sysmelb_type_addPrimitiveMethod(sysmelb_BasicTypesData.immutableDictionary, sysmelb_internSymbolC("at:"), sysmelb_primitive_dictionaryAt);
 }
 
+static sysmelb_Value_t sysmelb_primitive_newWithSize(size_t argumentCount, sysmelb_Value_t *arguments)
+{
+    assert(argumentCount == 2);
+    assert(arguments[0].kind == SysmelValueKindTypeReference);
+    assert(arguments[0].typeReference->kind == SysmelTypeKindArray);
+    assert(arguments[1].kind == SysmelValueKindInteger || arguments[1].kind == SysmelValueKindUnsignedInteger);
+
+    size_t arraySize = arguments[1].integer;
+    sysmelb_ArrayHeader_t *array = sysmelb_allocate(sizeof(sysmelb_ArrayHeader_t) + sizeof(sysmelb_Value_t)*arraySize);
+    array->size = arraySize;
+    sysmelb_Value_t result = {
+        .kind = SysmelValueKindArrayReference,
+        .type = sysmelb_getBasicTypes()->array,
+        .arrayReference = array
+    };
+    return result;
+}
+
 static void sysmelb_createBasicTypeUniversePrimitives(void)
 {
     sysmelb_type_addPrimitiveMethod(sysmelb_BasicTypesData.universe, sysmelb_internSymbolC("withSelector:addMethod:"), sysmelb_primitive_withSelectorAddMethod);
+    sysmelb_type_addPrimitiveMethod(sysmelb_BasicTypesData.universe, sysmelb_internSymbolC("new:"), sysmelb_primitive_newWithSize);
 }
 
 static sysmelb_Value_t sysmelb_primitive_OrderedCollection_add(size_t argumentCount, sysmelb_Value_t *arguments)

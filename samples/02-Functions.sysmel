@@ -3,6 +3,6 @@ $id($(Integer)x :: Integer) := x.
 $sum($(Integer)x $(Integer)y :: Integer) := x + y.
 
 printLine(five()).
-##printLine(id(42)).
-##printLine(id(sum(42 . 5))).
+printLine(id(42)).
+printLine(id(sum(42 . 5))).
 

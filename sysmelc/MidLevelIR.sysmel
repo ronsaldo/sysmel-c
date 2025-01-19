@@ -32,6 +32,7 @@ public: [
 
 
     Class: MidControlNode withSuperclass: MidValue fields: #{
+        previousControl: MidValue.
     }.
 
     Class: MidStartNode withSuperclass: MidControlNode fields: #{
@@ -47,7 +48,8 @@ public: [
         captures: Array.
         arguments: Array.
         startNode: MidStartNode.
-        stopNode: MidStopNode
+        stopNode: MidStopNode.
+        instructionSchedule: Array
     }.
     
     Class: MidFunctionLocalValue withSuperclass: MidValue fields: #{
@@ -70,14 +72,12 @@ public: [
     }.
 
     Class: MidCallFunction withSuperclass: MidControlNode fields: #{
-        previousControl: MidValue.
         functional: MidValue.
         selector: MidValue.
         arguments: Array.
     }.
 
     Class: MidSendMessage withSuperclass: MidControlNode fields: #{
-        previousControl: MidValue.
         receiver: MidValue.
         selector: MidValue.
         arguments: Array.
@@ -88,6 +88,15 @@ public: [
         currentControlNode: MidControlNode.
         exitPoints: OrderedCollection.
         sourcePosition: SourcePosition.
+    }.
+
+    Record: MidActivationContext withFields: #{
+        arguments: Array.
+        scheduledInstructions: Array.
+        scheduledInstructionValues: Array.
+        pc: UInt32.
+        hasReachedExitPoint: Boolean.
+        exitPointValue: TypedValue.
     }.
 ].
 
@@ -100,7 +109,48 @@ MidValue
         self users add: user
     }.
 
+MidActivationContext
+    withSelector: #evaluate addMethod: {
+        | $(MidActivationContext)self :: TypedValue |
+        self hasReachedExitPoint: false.
+        $instructionCount := self scheduledInstructions size.
+        while: (self pc < instructionCount) && (self hasReachedExitPoint not) do: {
+            $instruction := self scheduledInstructions at: self pc.
+            printLine(instruction).
+            instruction evaluateInActivationContext: self
+        }.
+        if: self hasReachedExitPoint then: {
+            return: self exitPointValue
+        }.
+        abort()
+    };
+    withSelector: #setValueInCurrentPC: addMethod: {
+        | $(MidActivationContext)self $(TypedValue)value :: Void |
+        self scheduledInstructionValues at: self pc put: value
+    };
+    withSelector: #getValueFromPC: addMethod: {
+        | $(MidActivationContext)self $(UInt32)pc :: TypedValue |
+        self scheduledInstructionValues at: pc
+    };
+    
+    withSelector: #advancePC addMethod: {
+        | $(MidActivationContext)self :: Void |
+        self pc: self pc + 1.
+        void
+    }.
+
+MidArgument
+    withSelector: #evaluateInActivationContext: addMethod: {
+        | $(MidStartNode)self $(MidActivationContext)context :: Void |
+        context setValueInCurrentPC: (context arguments at: self index).
+        context advancePC.
+    }.
+
 MidStartNode
+    withSelector: #usedValues addMethod: {
+        | $(MidStartNode)self :: Array |
+        self arguments -- self captures
+    };
     withSelector: #connectWithUsed addMethod: {
         | $(MidStartNode)self :: Void |
         {
@@ -119,9 +169,65 @@ MidStartNode
                 (self captures at: i) addUser: self
             } continueWith: (i := i + 1).
         }
+    };
+    withSelector: #evaluateInActivationContext: addMethod: {
+        | $(MidStartNode)self $(MidActivationContext)context :: Void |
+        context advancePC.
+    }.
+
+MidConstantInteger
+    withSelector: #evaluateInActivationContext: addMethod: {
+        | $(MidConstantInteger)self $(MidActivationContext)context :: Void |
+        context setValueInCurrentPC: TypedValue(Value(IntegerValue(self value)). self type).
+        context advancePC.
+    }.
+MidConstantFloat
+    withSelector: #evaluateInActivationContext: addMethod: {
+        | $(MidConstantFloat)self $(MidActivationContext)context :: Void |
+        context setValueInCurrentPC: TypedValue(Value(FloatValue(self value)). self type).
+        context advancePC.
+    }.
+MidConstantString
+    withSelector: #evaluateInActivationContext: addMethod: {
+        | $(MidConstantString)self $(MidActivationContext)context :: Void |
+        context setValueInCurrentPC: TypedValue(Value(StringValue(self value)). self type).
+        context advancePC.
+    }.
+MidConstantSymbol
+    withSelector: #evaluateInActivationContext: addMethod: {
+        | $(MidConstantString)self $(MidActivationContext)context :: Void |
+        context setValueInCurrentPC: TypedValue(Value(SymbolValue(self value)). self type).
+        context advancePC.
+    }.
+MidConstantValue
+    withSelector: #evaluateInActivationContext: addMethod: {
+        | $(MidConstantValue)self $(MidActivationContext)context :: Void |
+        context setValueInCurrentPC: TypedValue(self value. self type).
+        context advancePC.
+    }.
+
+MidStopNode
+    withSelector: #usedValues addMethod: {
+        | $(MidStopNode)self :: Array |
+        self exitPoints
+    };
+    withSelector: #connectWithUsed addMethod: {
+        | $(MidStopNode)self :: Void |
+        {
+            $!i := 0.
+            $exitPointCount := self exitPoints size.
+            while: (i < exitPointCount) do:
+            {
+                (self exitPoints at: i) addUser: self
+            } continueWith: (i := i + 1).
+        }.
     }.
 
 MidCallFunction
+    withSelector: #usedValues addMethod: {
+        | $(MidCallFunction)self :: Array |
+        [self previousControl . self functional] -- self arguments 
+    };
     withSelector: #connectWithUsed addMethod: {
         | $(MidCallFunction)self :: Void |
         self functional addUser: self.
@@ -136,6 +242,10 @@ MidCallFunction
     }.
 
 MidSendMessage
+    withSelector: #usedValues addMethod: {
+        | $(MidSendMessage)self :: Array |
+        [self previousControl . self receiver . self selector] -- self arguments 
+    };
     withSelector: #connectWithUsed addMethod: {
         | $(MidSendMessage)self :: Void |
         self receiver addUser: self.
@@ -148,8 +258,91 @@ MidSendMessage
                 (self arguments at: i) addUser: self
             } continueWith: (i := i + 1).
         }.
+    };
+    withSelector: #evaluateInActivationContext: addMethod: {
+        | $(MidSendMessage)self $(MidActivationContext)context :: Void |
+        $receiverTypedValue := context getValueFromPC: self receiver scheduleIndex.
+        $selectorTypedValue := context getValueFromPC: self selector scheduleIndex.
+
+        $receiverType := receiverTypedValue type.
+        $selector := extractSymbolFromValue(selectorTypedValue value).
+        
+        $method := receiverType lookupSelector: selector.
+        if: method value isInvalidErrorValue then: {
+            printLine(method value getInvalidErrorValueMessage. " " . selector).
+            abort()
+        }.
+        $methodFunction := extractFunctionFromValue(method value).
+
+        $invocationArguments := OrderedCollection().
+        invocationArguments add: receiverTypedValue.
+        $i := 0. while:(i < self arguments size) do: {
+            $argument := context getValueFromPC: (self arguments at: i) scheduleIndex.
+            ##printLine("Arg". i. " ". argument).
+            invocationArguments add: argument.
+        } continueWith:(i := i + 1).
+
+        match: methodFunction ofType: SysmelFunction withPatterns: #{
+            $(SysmelIntrinsicPrimitive)intrinsic : {
+                context setValueInCurrentPC: intrinsic implementation(invocationArguments asArray)
+            }.
+            $(SysmelCompiledFunction)compiledFunction : {
+                context setValueInCurrentPC: (compiledFunction midIR evaluateWithArguments: invocationArguments asArray)
+            }.
+            _: {
+                printLine("Unsupported method function kind. " . methodFunction).
+                abort()
+            }
+        }.
+        context advancePC.
     }.
 
+MidReturn
+    withSelector: #usedValues addMethod: {
+        | $(MidReturn)self :: Array |
+        [self previousControl . self resultValue]
+    };
+    withSelector: #connectWithUsed addMethod: {
+        | $(MidReturn)self :: Void |
+        self resultValue addUser: self.
+    };
+    withSelector: #evaluateInActivationContext: addMethod: {
+        | $(MidReturn)self $(MidActivationContext)context :: Void |
+        $resultValue := context getValueFromPC: self resultValue scheduleIndex.
+        context setValueInCurrentPC: resultValue.
+        context exitPointValue: resultValue.
+        context hasReachedExitPoint: true
+    }.
+MidValue
+    withSelector: #usedValues addMethod: {
+        | $(MidValue)self :: Array |
+        []
+    };
+    withSelector: #usageTopoSort:into: addMethod: {
+        | $(MidValue)self $(IdentityHashset)visitedSet $(OrderedCollection)sortedResults :: Void |
+        if: (visitedSet includes: self) then: {
+            return: void
+        }.
+        visitedSet add: self.
+
+        $usedValues := self usedValues.
+        $!i := 0.
+        while: i < usedValues size do: {
+            (usedValues at: i)
+                usageTopoSort: visitedSet into: sortedResults
+        } continueWith: (i := i + 1).
+
+        sortedResults add: self
+    };
+    withSelector: #usageTopoSort addMethod: {
+        | $(MidValue)self :: Array |
+
+        $visitedSet := IdentityHashset().
+        $sortedElements := OrderedCollection().
+        self usageTopoSort: visitedSet into: sortedElements.
+
+        sortedElements asArray
+    }.
 MidClosureFunction
     withSelector: #makeBuilder addMethod: {
         | $(MidClosureFunction) self :: MidFunctionBuilder |
@@ -166,6 +359,35 @@ MidClosureFunction
             exitPoints: OrderedCollection()
         }.
         builder
+    };
+    withSelector: #ensureInstructionSchedule addMethod: {
+        | $(MidClosureFunction)self :: Void |
+        if: self instructionSchedule isNotNull then: {
+            return: void
+        }.
+
+        ## TODO: Implement GCM algorithm.
+        $topoSort := self stopNode usageTopoSort.
+
+        ## Enumerate the scheduled instructions.
+        $!i := 0. while: i < topoSort size do: {
+            (topoSort at: i) scheduleIndex: i asUInt32
+        } continueWith:(i := i + 1).
+        
+        self instructionSchedule: topoSort.
+
+    };
+    withSelector: #evaluateWithArguments: addMethod: {
+        | $(MidClosureFunction)self $(Array)arguments :: TypedValue |
+        self ensureInstructionSchedule.
+
+        $activationContext := MidActivationContext#{
+            arguments: arguments.
+            scheduledInstructions: self instructionSchedule.
+            scheduledInstructionValues: (Array new: self instructionSchedule size).
+            pc: 0u32.
+        }.
+        activationContext evaluate
     }.
 
 MidFunctionBuilder
@@ -176,9 +398,11 @@ MidFunctionBuilder
             users: OrderedCollection().
             type: getBasicIntrinsicTypes() voidType.
             resultValue: resultValue.
+            previousControl: self currentControlNode.
         }.
-        resultValue addUser: instruction.
+        instruction connectWithUsed.
         self exitPoints add: instruction.
+        self currentControlNode: instruction.
         return: instruction
     };
     withSelector: #constantInteger: addMethod: {
@@ -258,9 +482,11 @@ MidFunctionBuilder
 
     withSelector: #finish addMethod: {
         | $(MidFunctionBuilder)self :: Void |
-        self midFunction stopNode: MidStopNode#{
+        $stopNode := MidStopNode#{
             exitPoints: self exitPoints asArray
-        }
+        }.
+        stopNode connectWithUsed.
+        self midFunction stopNode: stopNode
     }.
 }
 

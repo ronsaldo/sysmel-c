@@ -110,7 +110,7 @@ public: [
                 }.
                 $(ParseTreeLiteralSymbolNode)literal : {
                     midBuilder sourcePosition: literal sourcePosition.
-                    midBuilder constantString: literal value.
+                    midBuilder constantSymbol: literal value.
                 }.
                 
                 ## Identifiers
@@ -144,6 +144,21 @@ public: [
                     midBuilder sourcePosition: messageSend sourcePosition.
                     return: (midBuilder send: selectorValue to: receiverValue withArguments: invocationArguments asArray)
                 }.
+                $(ParseTreeFunctionApplicationNode)functionApplication : {
+                    $functional := self analyzeWithEnvironment: environment andCompileClosure: midBuilder withBody: functionApplication functional.
+
+                    ## TODO: Handle the macro case.
+
+                    $invocationArguments := OrderedCollection().
+                    $i := 0. while:(i < functionApplication arguments size) do: {
+                        $argument := functionApplication arguments at: i.
+                        $analyzedArgument := self analyzeWithEnvironment: environment andCompileClosure: midBuilder withBody: argument.
+                        invocationArguments add: analyzedArgument.
+                    } continueWith:(i := i + 1).
+
+                    midBuilder sourcePosition: functionApplication sourcePosition.
+                    return: (midBuilder call: functional withArguments: invocationArguments asArray)
+                }.
                 $(ParseTreeBinaryOperatorSequenceNode)binopSequence : {
                     if: binopSequence elements size = 1 then: {
                         return: (self analyzeWithEnvironment: environment andCompileClosure: midBuilder withBody: (binopSequence elements at: 0))
@@ -163,6 +178,15 @@ public: [
                     } continueWith: (i := i + 2).
 
                     return: (self analyzeWithEnvironment: environment andCompileClosure: midBuilder withBody: receiver)
+                }.
+                ## Blocks
+                $(ParseTreeLexicalBlockNode)lexicalBlock : {
+                    $blockLexicalScope := Environment(LexicalEnvironment#{
+                        parent: environment.
+                        localSymbols: SymbolHashtable().
+                    }).
+                    $result := (self analyzeWithEnvironment: blockLexicalScope andCompileClosure: midBuilder withBody: lexicalBlock expression).
+                    return: result
                 }.
                 _: {
                     printLine("Unsupported node for compilation. ". ast).

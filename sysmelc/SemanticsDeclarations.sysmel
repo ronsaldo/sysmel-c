@@ -119,6 +119,7 @@ public: [
         sourcePosition: SourcePosition.
         users: OrderedCollection.
         type: SysmelType.
+        scheduleIndex: UInt32.
     }.
 
     Inductive: SysmelFunction withAlternatives: [

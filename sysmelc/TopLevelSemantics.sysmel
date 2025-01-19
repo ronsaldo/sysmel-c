@@ -51,6 +51,9 @@ public: [
                     $(SysmelIntrinsicPrimitive)intrinsic : {
                         return: intrinsic implementation(invocationArguments asArray)
                     }.
+                    $(SysmelCompiledFunction)compiledFunction : {
+                        return: (compiledFunction midIR evaluateWithArguments: invocationArguments asArray)
+                    }.
                     _: {
                         printLine("Unsupported method function kind. " . functionalValue).
                         abort()
@@ -90,6 +93,9 @@ public: [
                 match: methodFunction ofType: SysmelFunction withPatterns: #{
                     $(SysmelIntrinsicPrimitive)intrinsic : {
                         return: intrinsic implementation(invocationArguments asArray)
+                    }.
+                    $(SysmelCompiledFunction)compiledFunction : {
+                        return: (compiledFunction midIR evaluateWithArguments: invocationArguments asArray)
                     }.
                     _: {
                         printLine("Unsupported method function kind. " . methodFunction).
@@ -171,6 +177,14 @@ public: [
                         }).
                     }
                 }
+            }.
+            $(ParseTreeLexicalBlockNode)lexicalBlock : {
+                $blockLexicalScope := Environment(LexicalEnvironment#{
+                    parent: environment.
+                    localSymbols: SymbolHashtable().
+                }).
+                $result := self analyzeAndEvaluateWithEnvironment: blockLexicalScope script: lexicalBlock expression.
+                return: result
             }.
             _: {
                 printLine("Unsupported parse-tree node: ". ast).
