@@ -138,6 +138,7 @@ public: [
             sourcePosition: SourcePosition.
             typeExpression: ParseTreeNode.
             nameExpression: ParseTreeNode.
+            isAnonymous: Boolean.
             isImplicit: Boolean.
             isExistential: Boolean.
             isVariadic: Boolean.
@@ -205,5 +206,22 @@ $getSourcePositionFromNode($(ParseTreeNode)node :: SourcePosition) := {
     match: node ofType: ParseTreeNode withPatterns: #{
         _: SourcePosition().
     }
+}.
+].
+
+ParseTreeNode
+    withSelector: #isFunctionalDependentTypeNode addMethod: {
+        |$(ParseTreeNode)self :: Boolean | 
+        match: self ofType: ParseTreeNode withPatterns: #{
+            $(ParseTreeFunctionalDependentTypeNode)funtype : true.
+            _: false
+        }
+    };
+    withSelector: #extractFunctionalDependentTypeNode addMethod: {
+        |$(ParseTreeNode)self :: ParseTreeFunctionalDependentTypeNode | 
+        match: self ofType: ParseTreeNode withPatterns: #{
+            $(ParseTreeFunctionalDependentTypeNode)funtype : funtype.
+            _: abort()
+        }
+    }.
 }
-]}.

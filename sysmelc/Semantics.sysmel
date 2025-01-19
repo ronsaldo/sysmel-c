@@ -1,0 +1,6 @@
+namespace: SysmelC definition: {
+public: [
+    Record: SemanticsState withFields: #{
+        currentExpectedType: Type
+    }.
+]}

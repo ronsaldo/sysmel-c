@@ -563,6 +563,7 @@ public: [
                 sourcePosition: (self state sourcePositionFrom: startingPosition).
                 typeExpression: typeExpression.
                 nameExpression: nameExpression.
+                isAnonymous: isAnonymousFunction.
                 isImplicit: isImplicit.
                 isExistential: isExistential.
                 isVariadic: isVariadic.

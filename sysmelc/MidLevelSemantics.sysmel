@@ -1,0 +1,10 @@
+namespace: SysmelC definition: {
+public: [
+    SemanticsState
+        withSelector: #analyzeWithEnvironment:andCompileClosure: addMethod: {
+        | $(SemanticsState)self $(Environment)environment $(ParseTreeFunctionNode)ast :: TypedValue |
+            printLine("Todo implement mid-level: ". ast).
+            abort()
+        }
+]
+}

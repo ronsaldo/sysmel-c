@@ -1,12 +1,8 @@
 namespace: SysmelC definition: {
 public: [
-    Record: TopLevelSemanticsState withFields: #{
-        currentExpectedType: Type
-    }.
-
-    TopLevelSemanticsState
+    SemanticsState
         withSelector: #analyzeAndEvaluateWithEnvironment:script: addMethod: {
-        | $(TopLevelSemanticsState)self $(Environment)environment $(ParseTreeNode)ast :: TypedValue |
+        | $(SemanticsState)self $(Environment)environment $(ParseTreeNode)ast :: TypedValue |
         match: ast ofType: ParseTreeNode withPatterns: #{
             $(ParseTreeErrorNode)errorNode : {
                 printLine(errorNode errorMessage).
@@ -127,11 +123,54 @@ public: [
                 $!i := 0.
                 while: i < sequenceNode elements size do: {
                     $element := sequenceNode elements at: i.
-                    result := (self analyzeAndEvaluateWithEnvironment: environment script: element)
+                    result := self analyzeAndEvaluateWithEnvironment: environment script: element
                 } continueWith: (i := i + 1).
                 return: result
             }.
             
+            ## Assignment
+            $(ParseTreeAssignmentNode)assignmentNode : {
+                $store := assignmentNode store.
+                $value := assignmentNode value.
+                match: store ofType: ParseTreeNode withPatterns: #{
+                    $(ParseTreeBindableNameNode)bindable : {
+                        $!name := null.
+                        if: bindable isAnonymous not then: {
+                            $nameValue := self analyzeAndEvaluateWithEnvironment: environment script: bindable nameExpression.
+                            name := extractSymbolFromValue(nameValue value)
+                        }.
+
+                        if: bindable hasPostTypeExpression && bindable typeExpression isFunctionalDependentTypeNode then: {
+                            $functionNode := ParseTreeFunctionNode#{
+                                sourcePosition: getSourcePositionFromNode(ast).
+                                functionDependentType: bindable typeExpression extractFunctionalDependentTypeNode.
+                                bodyExpression: value.
+                            }.
+                            if: bindable isAnonymous not then: {
+                                functionNode name: name.
+                            }.
+
+                            return: (self analyzeWithEnvironment: environment andCompileClosure: functionNode)
+                        }.
+                        printLine("bindable assignment ". name).
+                        printLine("bindable type is function type: ". bindable typeExpression isFunctionalDependentTypeNode ).
+                        abort()
+
+                    }.
+                    _: {
+                        $selectorLiteral := ParseTreeNode(ParseTreeLiteralSymbolNode#{
+                            sourcePosition: ast sourcePosition.
+                            value: #":="
+                        }).
+                        $messageSend := ParseTreeNode(ParseTreeMessageSendNode#{
+                            sourcePosition: ast sourcePosition.
+                            receiver: store.
+                            selector: selectorLiteral.
+                            arguments: [value]
+                        }).
+                    }
+                }
+            }.
             _: {
                 printLine("Unsupported parse-tree node: ". ast).
                 abort()

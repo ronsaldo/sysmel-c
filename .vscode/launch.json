@@ -12,7 +12,7 @@
             //"args": ["${workspaceFolder}/sysmelc/package.sysmel"],
             //"args": ["${workspaceFolder}/samples/19-SymbolHashtable.sysmel"],
             "args": ["${workspaceFolder}/sysmelc/package.sysmel",
-                "--", "${workspaceFolder}/samples/01-HelloWorld.sysmel"],
+                "--", "${workspaceFolder}/samples/02-Functions.sysmel"],
             "stopAtEntry": false,
             "cwd": "${workspaceFolder}",
             "environment": [],

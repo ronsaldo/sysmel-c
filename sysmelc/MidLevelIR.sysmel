@@ -1,0 +1,10 @@
+namespace: SysmelC definition: {
+public: [
+    Inductive: MidIRValue withAlternatives: [
+        Record: EmptyValue withFields: #{}.
+        Record: ConstantInteger withFields: #{
+            sourcePosition: SourcePosition.
+            value: Integer
+        }
+    ]
+]}

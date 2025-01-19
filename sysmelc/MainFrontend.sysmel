@@ -16,7 +16,7 @@ public: [
         $tokens := scanSourceCode(sourceCode).
         $ast := parseTokenList(sourceCode . tokens).
         $environment := module createTopLevelScriptEnvironment.
-        TopLevelSemanticsState()
+        SemanticsState()
             analyzeAndEvaluateWithEnvironment: environment script: ast
     }.
 
