@@ -83,6 +83,20 @@ public: [
         arguments: Array.
     }.
 
+    Class: MidBranchNode withSuperclass: MidControlNode fields: #{
+        condition: MidValue.
+        trueDestination: MidValue.
+        falseDestination: MidValue.
+    }.
+    Class: MidBranchTrueDestinationNode withSuperclass: MidControlNode fields: #{
+    }.
+    Class: MidBranchFalseDestinationNode withSuperclass: MidControlNode fields: #{
+    }.
+
+    Class: MidMergeNode withSuperclass: MidControlNode fields: #{
+        incomingEdges: Array.
+    }.
+
     Record: MidFunctionBuilder withFields: #{
         midFunction: MidClosureFunction.
         currentControlNode: MidControlNode.
@@ -173,6 +187,22 @@ MidStartNode
     withSelector: #evaluateInActivationContext: addMethod: {
         | $(MidStartNode)self $(MidActivationContext)context :: Void |
         context advancePC.
+    }.
+
+MidBranchNode
+    withSelector: #connectWithUsed addMethod: {
+        | $(MidBranchNode)self :: Void |
+        self condition addUser: self.
+    }.
+MidBranchTrueDestinationNode
+    withSelector: #connectWithUsed addMethod: {
+        | $(MidBranchTrueDestinationNode)self :: Void |
+        
+    }.
+MidBranchFalseDestinationNode
+    withSelector: #connectWithUsed addMethod: {
+        | $(MidBranchFalseDestinationNode)self :: Void |
+        
     }.
 
 MidConstantInteger
@@ -479,7 +509,39 @@ MidFunctionBuilder
         self currentControlNode: node.
         node
     };
-
+    withSelector: #conditionBranch: addMethod: {
+        | $(MidFunctionBuilder)self $(MidValue)condition :: MidBranchNode |
+        $node := MidBranchNode#{
+            previousControl: self currentControlNode.
+            sourcePosition: self sourcePosition.
+            condition: condition.
+        }.
+        node connectWithUsed.
+        self currentControlNode: node.
+        node
+    };
+    withSelector: #beginConditionBranchTrueDestination: addMethod: {
+        | $(MidFunctionBuilder)self $(MidBranchNode)branch :: MidBranchTrueDestinationNode |
+        $node := MidBranchTrueDestinationNode#{
+            previousControl: branch.
+            sourcePosition: self sourcePosition.
+        }.
+        branch trueDestination: node.
+        node connectWithUsed.
+        self currentControlNode: node.
+        node
+    };
+    withSelector: #beginConditionBranchFalseDestination: addMethod: {
+        | $(MidFunctionBuilder)self $(MidBranchNode)branch :: MidBranchFalseDestinationNode |
+        $node := MidBranchFalseDestinationNode#{
+            previousControl: branch.
+            sourcePosition: self sourcePosition.
+        }.
+        branch falseDestination: node.
+        node connectWithUsed.
+        self currentControlNode: node.
+        node
+    };
     withSelector: #finish addMethod: {
         | $(MidFunctionBuilder)self :: Void |
         $stopNode := MidStopNode#{

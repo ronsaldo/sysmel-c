@@ -40,6 +40,8 @@ public: [
             $(ParseTreeFunctionApplicationNode)functionApplication : {
                 $functional := self analyzeAndEvaluateWithEnvironment: environment script: functionApplication functional.
                 $functionalValue := extractFunctionFromValue(functional value).
+                ## TODO: Add support for macros.
+
                 $invocationArguments := OrderedCollection().
                 $argumentCount := functionApplication arguments size.
                 $!i := 0. while: (i < argumentCount) do: {
@@ -178,6 +180,7 @@ public: [
                     }
                 }
             }.
+            ## Blocks
             $(ParseTreeLexicalBlockNode)lexicalBlock : {
                 $blockLexicalScope := Environment(LexicalEnvironment#{
                     parent: environment.
@@ -186,6 +189,14 @@ public: [
                 $result := self analyzeAndEvaluateWithEnvironment: blockLexicalScope script: lexicalBlock expression.
                 return: result
             }.
+            
+            ## Control flow. Exposed via macros
+            $(ParseTreeIfSelectionNode)ifSelection : {
+                $condition := self analyzeAndEvaluateWithEnvironment: environment script: ifSelection condition.
+                printLine(condition).
+                abort().
+            }.
+
             _: {
                 printLine("Unsupported parse-tree node: ". ast).
                 abort()

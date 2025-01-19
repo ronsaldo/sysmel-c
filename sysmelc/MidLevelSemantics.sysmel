@@ -209,6 +209,21 @@ public: [
                     $result := (self analyzeWithEnvironment: blockLexicalScope andCompileClosure: midBuilder withBody: lexicalBlock expression).
                     return: result
                 }.
+
+                ## Control flow. Exposed via macros
+                $(ParseTreeIfSelectionNode)ifSelection : {
+                    $condition := self analyzeWithEnvironment: environment andCompileClosure: midBuilder withBody: ifSelection condition.
+                    $branch := midBuilder conditionBranch: condition.
+
+                    $trueBranch := midBuilder beginConditionBranchTrueDestination: branch.
+                    $trueResult := self analyzeWithEnvironment: environment andCompileClosure: midBuilder withBody: ifSelection trueExpression.
+
+                    $falseBranch := midBuilder beginConditionBranchFalseDestination: branch.
+                    $falseResult := self analyzeWithEnvironment: environment andCompileClosure: midBuilder withBody: ifSelection trueExpression.
+
+                    printLine("Constructing if branch.").
+                    abort().
+                }.
                 _: {
                     printLine("Unsupported node for compilation. ". ast).
                     abort()
