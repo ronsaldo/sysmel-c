@@ -92,9 +92,17 @@ public: [
     }.
     Class: MidBranchFalseDestinationNode withSuperclass: MidControlNode fields: #{
     }.
-
-    Class: MidMergeNode withSuperclass: MidControlNode fields: #{
+    Class: MidBranchMergeNode withSuperclass: MidControlNode fields: #{
+        branchNode: MidControlNode.
         incomingEdges: Array.
+    }.
+
+    Class: MidPhiNode withSuperclass: MidFunctionLocalValue fields: #{
+        incomingValues: Array.
+    }.
+    Class: MidPhiNodeCopy withSuperclass: MidFunctionLocalValue fields: #{
+        sourceValue: MidValue.
+        destinationPhi: MidPhiNode.
     }.
 
     Record: MidFunctionBuilder withFields: #{
@@ -205,6 +213,11 @@ MidBranchFalseDestinationNode
         
     }.
 
+MidBranchMergeNode
+    withSelector: #connectWithUsed addMethod: {
+        | $(MidBranchMergeNode)self :: Void |
+        
+    }.
 MidConstantInteger
     withSelector: #evaluateInActivationContext: addMethod: {
         | $(MidConstantInteger)self $(MidActivationContext)context :: Void |
