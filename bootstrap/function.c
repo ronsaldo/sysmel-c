@@ -619,6 +619,7 @@ sysmelb_Value_t sysmelb_interpretBytecodeFunction(sysmelb_function_t *function, 
                 break;
             }
         case SysmelFunctionOpcodeJumpIfFalse:
+        {
             sysmelb_Value_t condition = sysmelb_bytecodeActivationContext_pop(&context);
             assert(condition.kind == SysmelValueKindBoolean);
             if(condition.boolean)
@@ -626,6 +627,7 @@ sysmelb_Value_t sysmelb_interpretBytecodeFunction(sysmelb_function_t *function, 
             else
                 pc += currentInstruction->jumpOffset;
             break;
+        }
         case SysmelFunctionOpcodeJumpIfTrue:
         {
             sysmelb_Value_t condition = sysmelb_bytecodeActivationContext_pop(&context);

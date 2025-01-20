@@ -148,6 +148,7 @@ sysmelb_Value_t sysmelb_analyzeAndEvaluateScript(sysmelb_Environment_t *environm
                     return macroResult;
             }
             case SysmelFunctionKindInterpreted:
+            {
                 size_t argumentCount = ast->functionApplication.arguments.size;
                 assert(ast->functionApplication.arguments.size <= SYSMEL_MAX_ARGUMENT_COUNT);
                 sysmelb_Value_t applicationArguments[SYSMEL_MAX_ARGUMENT_COUNT];
@@ -156,7 +157,7 @@ sysmelb_Value_t sysmelb_analyzeAndEvaluateScript(sysmelb_Environment_t *environm
                     applicationArguments[i] = sysmelb_analyzeAndEvaluateScript(environment, ast->functionApplication.arguments.elements[i]);
                 
                 return sysmelb_interpretBytecodeFunction(function, argumentCount, applicationArguments);
-
+            }
             default:
                 abort();
             }
@@ -708,6 +709,7 @@ sysmelb_Value_t sysmelb_analyzeAndEvaluateScript(sysmelb_Environment_t *environm
         return sysmelb_analyzeAndEvaluateScript(environment, defaultCase);
     };
     case ParseTreeSwitchPatternMatching:
+    {
         sysmelb_Value_t value = sysmelb_analyzeAndEvaluateScript(environment, ast->switchPatternMatching.value);
         sysmelb_Value_t sumTypeValue = sysmelb_analyzeAndEvaluateScript(environment, ast->switchPatternMatching.valueSumType);
         assert(value.kind == SysmelValueKindSumValueReference);
@@ -766,6 +768,7 @@ sysmelb_Value_t sysmelb_analyzeAndEvaluateScript(sysmelb_Environment_t *environm
         }
 
         return sysmelb_analyzeAndEvaluateScript(environment, defaultCase);
+    }
     case ParseTreeNamespaceDefinition:
     {
         sysmelb_Environment_t *namespaceEnvironment = sysmelb_createNamespaceEnvironment(ast->namespaceDefinition.namespace, environment);

@@ -1436,7 +1436,7 @@ static sysmelb_Value_t sysmelb_primitive_SymbolHashtable_at(size_t argumentCount
     const sysmelb_SymbolHashtablePair_t *lookupResult = sysmelb_SymbolHashtable_lookupSymbol(arguments[0].symbolHashtableReference, arguments[1].symbolReference);
     if(!lookupResult)
     {
-        sysmelb_SourcePosition_t null;
+        sysmelb_SourcePosition_t null = {0};
         sysmelb_errorPrintf(null, "Failed to find key in symbol hashtable.");
     }
 

@@ -318,6 +318,7 @@ static void sysmelb_analyzeAndCompileClosureBody(sysmelb_Environment_t *environm
 
     // Assignment.
     case ParseTreeAssignment:
+    {
         sysmelb_ParseTreeNode_t *store = ast->assignment.store;
         sysmelb_ParseTreeNode_t *value = ast->assignment.value;
         if(store->kind == ParseTreeBindableName)
@@ -369,7 +370,7 @@ static void sysmelb_analyzeAndCompileClosureBody(sysmelb_Environment_t *environm
 
 
         abort();
-
+    }
     // Control flow
     case ParseTreeIfSelection:
     {
