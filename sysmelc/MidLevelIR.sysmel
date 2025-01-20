@@ -203,16 +203,28 @@ MidStartNode
     }.
 
 MidBranchNode
+    withSelector: #usedValues addMethod: {
+        | $(MidStartNode)self :: Array |
+        [self previousControl . self condition]
+    };
     withSelector: #connectWithUsed addMethod: {
         | $(MidBranchNode)self :: Void |
         self condition addUser: self.
     }.
 MidBranchDestinationNode
+    withSelector: #usedValues addMethod: {
+        | $(MidStartNode)self :: Array |
+        [self previousControl]
+    };
     withSelector: #connectWithUsed addMethod: {
         | $(MidBranchDestinationNode)self :: Void |
         
     }.
 MidBranchMergeNode
+    withSelector: #usedValues addMethod: {
+        | $(MidStartNode)self :: Array |
+        [self branchNode ] -- self incomingEdges
+    };
     withSelector: #connectWithUsed addMethod: {
         | $(MidBranchMergeNode)self :: Void |
         
@@ -402,6 +414,7 @@ MidClosureFunction
         }.
         builder
     };
+
     withSelector: #ensureInstructionSchedule addMethod: {
         | $(MidClosureFunction)self :: Void |
         if: self instructionSchedule isNotNull then: {
@@ -417,6 +430,29 @@ MidClosureFunction
         } continueWith:(i := i + 1).
         
         self instructionSchedule: topoSort.
+        self dumpSchedule
+
+    };
+    withSelector: #dumpSchedule addMethod: {
+        | $(MidClosureFunction)self :: Void |
+        $schedule := self instructionSchedule.
+
+        printLine("digraph function {").
+
+        $!i := 0. while: (i < schedule size) do: {
+            $scheduledInstruction := schedule at: i.
+            print("\t". scheduledInstruction class. i).
+
+            $usedValues := scheduledInstruction usedValues.
+            $!j := 0. while: (j < usedValues size) do: {
+                $usedValue := usedValues at: j.
+                print(" -> ". usedValue class. usedValue scheduleIndex asInteger)
+            } continueWith: (j := j + 1).
+            
+            printLine(";").
+        } continueWith: (i := i + 1).
+
+        printLine("}").
 
     };
     withSelector: #evaluateWithArguments: addMethod: {
