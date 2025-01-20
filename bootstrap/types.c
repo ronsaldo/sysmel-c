@@ -1625,6 +1625,53 @@ static void sysmelb_createBasicNullPrimitives(void)
     sysmelb_type_addPrimitiveMethod(sysmelb_BasicTypesData.null, sysmelb_internSymbolC("~~"), sysmelb_primitive_Null_NotEquals);
 }
 
+static sysmelb_Value_t sysmelb_primitive_Object_Equals(size_t argumentCount, sysmelb_Value_t *arguments)
+{
+    assert(argumentCount == 2);
+    assert(arguments[0].kind == SysmelValueKindObjectReference);
+    assert(arguments[1].kind == SysmelValueKindObjectReference);
+
+    sysmelb_Value_t result = {
+        .kind = SysmelValueKindBoolean,
+        .type = sysmelb_getBasicTypes()->boolean,
+        .boolean = arguments[0].objectReference == arguments[1].objectReference
+    };
+    return result;
+}
+
+static sysmelb_Value_t sysmelb_primitive_Object_NotEquals(size_t argumentCount, sysmelb_Value_t *arguments)
+{
+    assert(argumentCount == 2);
+    assert(arguments[0].kind == SysmelValueKindObjectReference);
+    assert(arguments[1].kind == SysmelValueKindObjectReference);
+
+    sysmelb_Value_t result = {
+        .kind = SysmelValueKindBoolean,
+        .type = sysmelb_getBasicTypes()->boolean,
+        .boolean = arguments[0].objectReference == arguments[1].objectReference
+    };
+    return result;
+}
+
+static sysmelb_Value_t sysmelb_primitive_Object_GetClass(size_t argumentCount, sysmelb_Value_t *arguments)
+{
+    assert(argumentCount == 1);
+    assert(arguments[0].kind == SysmelValueKindObjectReference);
+
+    sysmelb_Value_t result = {
+        .kind = SysmelValueKindTypeReference,
+        .type = sysmelb_getBasicTypes()->universe,
+        .typeReference = arguments[0].objectReference->clazz
+    };
+    return result;
+}
+
+static void sysmelb_createObjectPrimitives(void)
+{
+    sysmelb_type_addPrimitiveMethod(sysmelb_BasicTypesData.clazz, sysmelb_internSymbolC("=="), sysmelb_primitive_Object_Equals);
+    sysmelb_type_addPrimitiveMethod(sysmelb_BasicTypesData.clazz, sysmelb_internSymbolC("~~"), sysmelb_primitive_Object_NotEquals);
+    sysmelb_type_addPrimitiveMethod(sysmelb_BasicTypesData.clazz, sysmelb_internSymbolC("class"), sysmelb_primitive_Object_GetClass);
+}
 
 static void sysmelb_createBasicTypesPrimitives(void)
 {
@@ -1639,6 +1686,7 @@ static void sysmelb_createBasicTypesPrimitives(void)
     sysmelb_createBasicOrderedCollectionPrimitives();
     sysmelb_createBasicSymbolHashtablePrimitives();
     sysmelb_createBasicIdentityHashsetPrimitives();
+    sysmelb_createObjectPrimitives();
     sysmelb_createBasicTypeUniversePrimitives();
 }
 

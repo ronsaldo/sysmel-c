@@ -213,16 +213,43 @@ public: [
                 ## Control flow. Exposed via macros
                 $(ParseTreeIfSelectionNode)ifSelection : {
                     $condition := self analyzeWithEnvironment: environment andCompileClosure: midBuilder withBody: ifSelection condition.
+                    
+                    midBuilder sourcePosition: ifSelection sourcePosition.
                     $branch := midBuilder conditionBranch: condition.
 
-                    $trueBranch := midBuilder beginConditionBranchTrueDestination: branch.
+                    $trueBranch := midBuilder makeBranchDestination: branch.
+                    $falseBranch := midBuilder makeBranchDestination: branch.
+                    $mergeRegion := midBuilder makeBranchMerge: branch.
+
+                    $phiMerge := midBuilder makeMergePhiNode.
+                    phiMerge previousControl: mergeRegion.
+
+                    branch trueDestination: trueBranch.
+                    branch falseDestination: falseBranch.
+                    branch branchMerge: mergeRegion.
+
+                    midBuilder beginWithControlNode: trueBranch.
                     $trueResult := self analyzeWithEnvironment: environment andCompileClosure: midBuilder withBody: ifSelection trueExpression.
+                    $truePredecessor := midBuilder currentControlNode.
+                    $truePhiValue := midBuilder makePhiNodeValue.
+                    
+                    truePhiValue sourceValue: trueResult.
+                    truePhiValue destinationPhi: phiMerge.
+                    truePhiValue previousControl: truePredecessor.
 
-                    $falseBranch := midBuilder beginConditionBranchFalseDestination: branch.
+                    midBuilder beginWithControlNode: trueBranch.
                     $falseResult := self analyzeWithEnvironment: environment andCompileClosure: midBuilder withBody: ifSelection trueExpression.
+                    $falsePredecessor := midBuilder currentControlNode.
+                    $falsePhiValue := midBuilder makePhiNodeValue.
 
-                    printLine("Constructing if branch.").
-                    abort().
+                    falsePhiValue sourceValue: falseResult.
+                    falsePhiValue destinationPhi: phiMerge.
+                    falsePhiValue previousControl: falsePredecessor.
+
+                    midBuilder beginWithControlNode: mergeRegion.
+                    phiMerge incomingValues: [truePhiValue . falsePhiValue].
+
+                    return: phiMerge
                 }.
                 _: {
                     printLine("Unsupported node for compilation. ". ast).

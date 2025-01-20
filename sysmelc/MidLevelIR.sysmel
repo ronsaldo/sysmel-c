@@ -85,24 +85,24 @@ public: [
 
     Class: MidBranchNode withSuperclass: MidControlNode fields: #{
         condition: MidValue.
-        trueDestination: MidValue.
-        falseDestination: MidValue.
+        trueDestination: MidControlNode.
+        falseDestination: MidControlNode.
+        branchMerge: MidControlNode.
     }.
-    Class: MidBranchTrueDestinationNode withSuperclass: MidControlNode fields: #{
+    Class: MidBranchDestinationNode withSuperclass: MidControlNode fields: #{
     }.
-    Class: MidBranchFalseDestinationNode withSuperclass: MidControlNode fields: #{
-    }.
+
     Class: MidBranchMergeNode withSuperclass: MidControlNode fields: #{
         branchNode: MidControlNode.
         incomingEdges: Array.
     }.
 
-    Class: MidPhiNode withSuperclass: MidFunctionLocalValue fields: #{
+    Class: MidMergePhiNode withSuperclass: MidControlNode fields: #{
         incomingValues: Array.
     }.
-    Class: MidPhiNodeCopy withSuperclass: MidFunctionLocalValue fields: #{
+    Class: MidPhiNodeValue withSuperclass: MidControlNode fields: #{
         sourceValue: MidValue.
-        destinationPhi: MidPhiNode.
+        destinationPhi: MidMergePhiNode.
     }.
 
     Record: MidFunctionBuilder withFields: #{
@@ -129,6 +129,11 @@ MidValue
             self users: OrderedCollection()
         }.
         self users add: user
+    };
+    withSelector: #evaluateInActivationContext: addMethod: {
+        | $(MidValue)self $(MidActivationContext)context :: Void |
+        printLine("subclassResponsibility #evaluateInActivationContext: ". self class).
+        abort().
     }.
 
 MidActivationContext
@@ -202,17 +207,11 @@ MidBranchNode
         | $(MidBranchNode)self :: Void |
         self condition addUser: self.
     }.
-MidBranchTrueDestinationNode
+MidBranchDestinationNode
     withSelector: #connectWithUsed addMethod: {
-        | $(MidBranchTrueDestinationNode)self :: Void |
+        | $(MidBranchDestinationNode)self :: Void |
         
     }.
-MidBranchFalseDestinationNode
-    withSelector: #connectWithUsed addMethod: {
-        | $(MidBranchFalseDestinationNode)self :: Void |
-        
-    }.
-
 MidBranchMergeNode
     withSelector: #connectWithUsed addMethod: {
         | $(MidBranchMergeNode)self :: Void |
@@ -533,27 +532,35 @@ MidFunctionBuilder
         self currentControlNode: node.
         node
     };
-    withSelector: #beginConditionBranchTrueDestination: addMethod: {
-        | $(MidFunctionBuilder)self $(MidBranchNode)branch :: MidBranchTrueDestinationNode |
-        $node := MidBranchTrueDestinationNode#{
+    withSelector: #makeBranchDestination: addMethod: {
+        | $(MidFunctionBuilder)self $(MidBranchNode)branch :: MidBranchDestinationNode |
+        $node := MidBranchDestinationNode#{
             previousControl: branch.
             sourcePosition: self sourcePosition.
         }.
-        branch trueDestination: node.
-        node connectWithUsed.
-        self currentControlNode: node.
-        node
     };
-    withSelector: #beginConditionBranchFalseDestination: addMethod: {
-        | $(MidFunctionBuilder)self $(MidBranchNode)branch :: MidBranchFalseDestinationNode |
-        $node := MidBranchFalseDestinationNode#{
-            previousControl: branch.
+    withSelector: #makeBranchMerge: addMethod: {
+        | $(MidFunctionBuilder)self $(MidBranchNode)branch :: MidBranchMergeNode |
+        MidBranchMergeNode#{
+            sourcePosition: self sourcePosition.
+            branchNode: branch.
+        }.
+    };
+    withSelector: #makePhiNodeValue addMethod: {
+        | $(MidFunctionBuilder)self :: MidPhiNodeValue |
+        MidPhiNodeValue#{
             sourcePosition: self sourcePosition.
         }.
-        branch falseDestination: node.
-        node connectWithUsed.
-        self currentControlNode: node.
-        node
+    };
+    withSelector: #makeMergePhiNode addMethod: {
+        | $(MidFunctionBuilder)self :: MidMergePhiNode |
+        MidMergePhiNode#{
+            sourcePosition: self sourcePosition.
+        }.
+    };
+    withSelector: #beginWithControlNode: addMethod: {
+        | $(MidFunctionBuilder)self $(MidControlNode)controlNode :: Void |
+        self currentControlNode: controlNode
     };
     withSelector: #finish addMethod: {
         | $(MidFunctionBuilder)self :: Void |
