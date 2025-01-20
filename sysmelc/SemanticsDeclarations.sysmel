@@ -257,7 +257,15 @@ public: [
             |$(TypedValue)self :: Integer |
             self value getIntegerValue
         }.
-
+    $extractBooleanFromValue($(Value)value :: Boolean) := {
+        match: value ofType: Value withPatterns: #{
+            $(BooleanValue)booleanValue : booleanValue value.
+            _: {
+                printLine("Not a valid boolean value")
+                abort()
+            }
+        }.
+    }.
     $extractSymbolFromValue($(Value)value :: Symbol) := {
         match: value ofType: Value withPatterns: #{
             $(SymbolValue)symbolValue : symbolValue value.

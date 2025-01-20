@@ -83,7 +83,7 @@ public: [
         arguments: Array.
     }.
 
-    Class: MidBranchNode withSuperclass: MidControlNode fields: #{
+    Class: MidConditionalBranch withSuperclass: MidControlNode fields: #{
         condition: MidValue.
         trueDestination: MidControlNode.
         falseDestination: MidControlNode.
@@ -95,6 +95,10 @@ public: [
     Class: MidBranchMergeNode withSuperclass: MidControlNode fields: #{
         branchNode: MidControlNode.
         incomingEdges: Array.
+    }.
+
+    Class: MidBranchSequenceEnd withSuperclass: MidControlNode fields: #{
+        mergeNode: MidControlNode
     }.
 
     Class: MidMergePhiNode withSuperclass: MidControlNode fields: #{
@@ -124,11 +128,20 @@ public: [
 
 MidValue
     withSelector: #addUser: addMethod: {
-        | $(MidValue)self $(MidValue)user |
+        | $(MidValue)self $(MidValue)user :: Void |
         if: self users isNull then: {
             self users: OrderedCollection()
         }.
-        self users add: user
+        self users add: user.
+        void
+    };
+    withSelector: #isConstant addMethod: {
+        | $(MidValue)self :: Boolean |
+        false
+    };
+    withSelector: #getCurrentValueForActivationContext: addMethod: {
+        | $(MidValue)self $(MidActivationContext)context :: Void |
+        return: (context getValueFromPC: self scheduleIndex)
     };
     withSelector: #evaluateInActivationContext: addMethod: {
         | $(MidValue)self $(MidActivationContext)context :: Void |
@@ -143,7 +156,7 @@ MidActivationContext
         $instructionCount := self scheduledInstructions size.
         while: (self pc < instructionCount) && (self hasReachedExitPoint not) do: {
             $instruction := self scheduledInstructions at: self pc.
-            ##printLine(instruction).
+            ##printLine(self pc ." :". instruction class).
             instruction evaluateInActivationContext: self
         }.
         if: self hasReachedExitPoint then: {
@@ -159,7 +172,16 @@ MidActivationContext
         | $(MidActivationContext)self $(UInt32)pc :: TypedValue |
         self scheduledInstructionValues at: pc
     };
-    
+    withSelector: #setValue:inPCOf: addMethod:  {
+        | $(MidActivationContext)self $(TypedValue)value $(MidValue)targetInstruction :: Void |
+        self scheduledInstructionValues at: targetInstruction scheduleIndex put: value.
+        void
+    };
+    withSelector: #jumpToPCOf: addMethod: {
+        | $(MidActivationContext)self $(MidValue)targetInstruction :: Void |
+        self pc: targetInstruction scheduleIndex.
+        void
+    };
     withSelector: #advancePC addMethod: {
         | $(MidActivationContext)self :: Void |
         self pc: self pc + 1.
@@ -202,66 +224,150 @@ MidStartNode
         context advancePC.
     }.
 
-MidBranchNode
+MidConditionalBranch
     withSelector: #usedValues addMethod: {
-        | $(MidStartNode)self :: Array |
-        [self previousControl . self condition]
+        | $(MidConditionalBranch)self :: Array |
+        [self condition]
+    };
+    withSelector: #usedControlNodes addMethod: {
+        | $(MidConditionalBranch)self :: Array |
+        [self previousControl]
     };
     withSelector: #connectWithUsed addMethod: {
-        | $(MidBranchNode)self :: Void |
+        | $(MidConditionalBranch)self :: Void |
         self condition addUser: self.
+    };
+    withSelector: #evaluateInActivationContext: addMethod: {
+        | $(MidStartNode)self $(MidActivationContext)context :: Void |
+        $condition := extractBooleanFromValue((self condition getCurrentValueForActivationContext: context) value).
+        if: condition then: {
+            context jumpToPCOf: self trueDestination
+        } else: {
+            context jumpToPCOf: self falseDestination
+        }.
+        void.
     }.
 MidBranchDestinationNode
     withSelector: #usedValues addMethod: {
-        | $(MidStartNode)self :: Array |
+        | $(MidBranchDestinationNode)self :: Array |
+        []
+    };
+    withSelector: #usedControlNodes addMethod: {
+        | $(MidBranchDestinationNode)self :: Array |
         [self previousControl]
     };
     withSelector: #connectWithUsed addMethod: {
         | $(MidBranchDestinationNode)self :: Void |
         
+    };
+    withSelector: #evaluateInActivationContext: addMethod: {
+        | $(MidStartNode)self $(MidActivationContext)context :: Void |
+        context advancePC.
+        void.
     }.
 MidBranchMergeNode
-    withSelector: #usedValues addMethod: {
+    withSelector: #usedControlNodes addMethod: {
         | $(MidStartNode)self :: Array |
         [self branchNode ] -- self incomingEdges
     };
     withSelector: #connectWithUsed addMethod: {
         | $(MidBranchMergeNode)self :: Void |
         
-    }.
-MidConstantInteger
+    };
     withSelector: #evaluateInActivationContext: addMethod: {
-        | $(MidConstantInteger)self $(MidActivationContext)context :: Void |
-        context setValueInCurrentPC: TypedValue(Value(IntegerValue(self value)). self type).
+        | $(MidStartNode)self $(MidActivationContext)context :: Void |
         context advancePC.
+        void.
     }.
-MidConstantFloat
+
+MidBranchSequenceEnd
+    withSelector: #usedControlNodes addMethod: {
+        | $(MidStartNode)self :: Array |
+        [self previousControl ]
+    };
     withSelector: #evaluateInActivationContext: addMethod: {
-        | $(MidConstantFloat)self $(MidActivationContext)context :: Void |
-        context setValueInCurrentPC: TypedValue(Value(FloatValue(self value)). self type).
-        context advancePC.
+        | $(MidStartNode)self $(MidActivationContext)context :: Void |
+        context jumpToPCOf: self mergeNode.
+        void.
     }.
-MidConstantString
+
+MidMergePhiNode
+    withSelector: #usedValues addMethod: {
+        | $(MidMergePhiNode)self :: Array |
+        self incomingValues.
+    };
+    withSelector: #usedControlNodes addMethod: {
+        | $(MidMergePhiNode)self :: Array |
+        [self previousControl ]
+    };
+    withSelector: #connectWithUsed addMethod: {
+        | $(MidMergePhiNode)self :: Void |
+    };
     withSelector: #evaluateInActivationContext: addMethod: {
-        | $(MidConstantString)self $(MidActivationContext)context :: Void |
-        context setValueInCurrentPC: TypedValue(Value(StringValue(self value)). self type).
-        context advancePC.
-    }.
-MidConstantSymbol
-    withSelector: #evaluateInActivationContext: addMethod: {
-        | $(MidConstantString)self $(MidActivationContext)context :: Void |
-        context setValueInCurrentPC: TypedValue(Value(SymbolValue(self value)). self type).
-        context advancePC.
-    }.
-MidConstantValue
-    withSelector: #evaluateInActivationContext: addMethod: {
-        | $(MidConstantValue)self $(MidActivationContext)context :: Void |
-        context setValueInCurrentPC: TypedValue(self value. self type).
+        | $(MidStartNode)self $(MidActivationContext)context :: Void |
+        ## Nothing is required here. The predecessor copy takes care.
         context advancePC.
     }.
 
-MidStopNode
+MidPhiNodeValue
     withSelector: #usedValues addMethod: {
+        | $(MidPhiNodeValue)self :: Array |
+        [self sourceValue]
+    };
+    withSelector: #usedControlNodes addMethod: {
+        | $(MidPhiNodeValue)self :: Array |
+        [ self previousControl  ]
+    };
+    withSelector: #connectWithUsed addMethod: {
+        | $(MidPhiNodeValue)self :: Void |
+        
+    };
+    withSelector: #evaluateInActivationContext: addMethod: {
+        | $(MidPhiNodeValue)self $(MidActivationContext)context :: Void |
+        $sourceValue := self sourceValue getCurrentValueForActivationContext: context.
+        context setValueInCurrentPC: sourceValue.
+        context setValue: sourceValue inPCOf: self destinationPhi.
+        context advancePC
+    }.
+
+MidConstant
+    withSelector: #isConstant addMethod: {
+        | $(MidValue)self :: Boolean |
+        true
+    };
+    withSelector: #getCurrentValueForActivationContext: addMethod: {
+        | $(MidConstant)self $(MidActivationContext)context :: Void |
+        printLine("getCurrentValueForActivationContext: subclassResponsibility ". self class).
+    }.
+
+MidConstantInteger
+    withSelector: #getCurrentValueForActivationContext: addMethod: {
+        | $(MidConstantInteger)self $(MidActivationContext)context :: Void |
+        TypedValue(Value(IntegerValue(self value)). self type)
+    }.
+MidConstantFloat
+    withSelector: #getCurrentValueForActivationContext: addMethod: {
+        | $(MidConstantFloat)self $(MidActivationContext)context :: Void |
+        TypedValue(Value(FloatValue(self value)). self type)
+    }.
+MidConstantString
+    withSelector: #getCurrentValueForActivationContext: addMethod: {
+        | $(MidConstantString)self $(MidActivationContext)context :: Void |
+        TypedValue(Value(StringValue(self value)). self type)
+    }.
+MidConstantSymbol
+    withSelector: #getCurrentValueForActivationContext: addMethod: {
+        | $(MidConstantString)self $(MidActivationContext)context :: Void |
+        TypedValue(Value(SymbolValue(self value)). self type)
+    }.
+MidConstantValue
+    withSelector: #getCurrentValueForActivationContext: addMethod: {
+        | $(MidConstantValue)self $(MidActivationContext)context :: Void |
+        TypedValue(self value. self type).
+    }.
+
+MidStopNode
+    withSelector: #usedControlNodes addMethod: {
         | $(MidStopNode)self :: Array |
         self exitPoints
     };
@@ -280,7 +386,11 @@ MidStopNode
 MidCallFunction
     withSelector: #usedValues addMethod: {
         | $(MidCallFunction)self :: Array |
-        [self previousControl . self functional] -- self arguments 
+        [self functional] -- self arguments 
+    };
+    withSelector: #usedControlNodes addMethod: {
+        | $(MidCallFunction)self :: Array |
+        [self previousControl] 
     };
     withSelector: #connectWithUsed addMethod: {
         | $(MidCallFunction)self :: Void |
@@ -293,12 +403,43 @@ MidCallFunction
                 (self arguments at: i) addUser: self
             } continueWith: (i := i + 1).
         }.
+    };
+    withSelector: #evaluateInActivationContext: addMethod: {
+        | $(MidCallFunction)self $(MidActivationContext)context :: Void |
+        $functionalTypedValue := self functional getCurrentValueForActivationContext: context.
+
+        $function := extractFunctionFromValue(functionalTypedValue value).
+
+        $invocationArguments := OrderedCollection().
+        $i := 0. while:(i < self arguments size) do: {
+            $argument := (self arguments at: i) getCurrentValueForActivationContext: context.
+            ##printLine("Arg". i. " ". argument).
+            invocationArguments add: argument.
+        } continueWith:(i := i + 1).
+
+        match: function ofType: SysmelFunction withPatterns: #{
+            $(SysmelIntrinsicPrimitive)intrinsic : {
+                context setValueInCurrentPC: intrinsic implementation(invocationArguments asArray)
+            }.
+            $(SysmelCompiledFunction)compiledFunction : {
+                context setValueInCurrentPC: (compiledFunction midIR evaluateWithArguments: invocationArguments asArray)
+            }.
+            _: {
+                printLine("Unsupported method function kind. " . function).
+                abort()
+            }
+        }.
+        context advancePC.
     }.
 
 MidSendMessage
     withSelector: #usedValues addMethod: {
         | $(MidSendMessage)self :: Array |
-        [self previousControl . self receiver . self selector] -- self arguments 
+        [self receiver . self selector] -- self arguments 
+    };
+    withSelector: #usedControlNodes addMethod: {
+        | $(MidSendMessage)self :: Array |
+        [self previousControl]
     };
     withSelector: #connectWithUsed addMethod: {
         | $(MidSendMessage)self :: Void |
@@ -315,12 +456,11 @@ MidSendMessage
     };
     withSelector: #evaluateInActivationContext: addMethod: {
         | $(MidSendMessage)self $(MidActivationContext)context :: Void |
-        $receiverTypedValue := context getValueFromPC: self receiver scheduleIndex.
-        $selectorTypedValue := context getValueFromPC: self selector scheduleIndex.
+        $receiverTypedValue := self receiver getCurrentValueForActivationContext: context.
+        $selectorTypedValue := self selector getCurrentValueForActivationContext: context.
 
-        $receiverType := receiverTypedValue type.
         $selector := extractSymbolFromValue(selectorTypedValue value).
-        
+        $receiverType := receiverTypedValue type.
         $method := receiverType lookupSelector: selector.
         if: method value isInvalidErrorValue then: {
             printLine(method value getInvalidErrorValueMessage. " " . selector).
@@ -331,8 +471,7 @@ MidSendMessage
         $invocationArguments := OrderedCollection().
         invocationArguments add: receiverTypedValue.
         $i := 0. while:(i < self arguments size) do: {
-            $argument := context getValueFromPC: (self arguments at: i) scheduleIndex.
-            ##printLine("Arg". i. " ". argument).
+            $argument := (self arguments at: i) getCurrentValueForActivationContext: context.
             invocationArguments add: argument.
         } continueWith:(i := i + 1).
 
@@ -354,7 +493,11 @@ MidSendMessage
 MidReturn
     withSelector: #usedValues addMethod: {
         | $(MidReturn)self :: Array |
-        [self previousControl . self resultValue]
+        [self resultValue]
+    };
+    withSelector: #usedControlNodes addMethod: {
+        | $(MidReturn)self :: Array |
+        [self previousControl]
     };
     withSelector: #connectWithUsed addMethod: {
         | $(MidReturn)self :: Void |
@@ -362,13 +505,17 @@ MidReturn
     };
     withSelector: #evaluateInActivationContext: addMethod: {
         | $(MidReturn)self $(MidActivationContext)context :: Void |
-        $resultValue := context getValueFromPC: self resultValue scheduleIndex.
+        $resultValue := self resultValue getCurrentValueForActivationContext: context.
         context setValueInCurrentPC: resultValue.
         context exitPointValue: resultValue.
         context hasReachedExitPoint: true
     }.
 MidValue
     withSelector: #usedValues addMethod: {
+        | $(MidValue)self :: Array |
+        []
+    };
+    withSelector: #usedControlNodes addMethod: {
         | $(MidValue)self :: Array |
         []
     };
@@ -379,12 +526,25 @@ MidValue
         }.
         visitedSet add: self.
 
-        $usedValues := self usedValues.
-        $!i := 0.
-        while: i < usedValues size do: {
-            (usedValues at: i)
-                usageTopoSort: visitedSet into: sortedResults
-        } continueWith: (i := i + 1).
+        {
+            $usedControlNodes := self usedControlNodes.
+            ##printLine(self class .": control ".).
+            $!i := 0.
+            while: i < usedControlNodes size do: {
+                (usedControlNodes at: i)
+                    usageTopoSort: visitedSet into: sortedResults
+            } continueWith: (i := i + 1).
+        }.
+
+        {
+            $usedValues := self usedValues.
+            ##printLine(self class .": value ".).
+            $!i := 0.
+            while: i < usedValues size do: {
+                (usedValues at: i)
+                    usageTopoSort: visitedSet into: sortedResults
+            } continueWith: (i := i + 1).
+        }.
 
         sortedResults add: self
     };
@@ -423,17 +583,38 @@ MidClosureFunction
 
         ## TODO: Implement GCM algorithm.
         $topoSort := self stopNode usageTopoSort.
+        {
+            $!i := 0. while: i < topoSort size do: {
+                $instruction := topoSort at: i.
+                instruction scheduleIndex: i asUInt32
+            } continueWith:(i := i + 1).
+        }.
 
-        ## Enumerate the scheduled instructions.
-        $!i := 0. while: i < topoSort size do: {
-            (topoSort at: i) scheduleIndex: i asUInt32
-        } continueWith:(i := i + 1).
+        ## Re-enumerate the scheduled instructions by removing the constants
+        $enumeratedInstructions := OrderedCollection().
+        {
+            $!i := 0. while: i < topoSort size do: {
+                $instruction := topoSort at: i.
+                if: instruction isConstant not then: {
+                    instruction scheduleIndex: enumeratedInstructions size asUInt32.
+                    enumeratedInstructions add: instruction
+                }
+            } continueWith:(i := i + 1).
+        }.
         
-        self instructionSchedule: topoSort.
-        self dumpSchedule
+        self instructionSchedule: enumeratedInstructions asArray.
+        ##self dumpSchedule.
+        ##self dumpGraph
 
     };
     withSelector: #dumpSchedule addMethod: {
+        | $(MidClosureFunction)self :: Void |
+        $schedule := self instructionSchedule.
+        $!i := 0. while: i < schedule size do: {
+            printLine(i. "  ". (schedule at: i) class)
+        } continueWith: (i := i + 1)
+    };
+    withSelector: #dumpGraph addMethod: {
         | $(MidClosureFunction)self :: Void |
         $schedule := self instructionSchedule.
 
@@ -441,19 +622,29 @@ MidClosureFunction
 
         $!i := 0. while: (i < schedule size) do: {
             $scheduledInstruction := schedule at: i.
-            print("\t". scheduledInstruction class. i).
 
-            $usedValues := scheduledInstruction usedValues.
-            $!j := 0. while: (j < usedValues size) do: {
-                $usedValue := usedValues at: j.
-                print(" -> ". usedValue class. usedValue scheduleIndex asInteger)
-            } continueWith: (j := j + 1).
-            
-            printLine(";").
+            {
+                $usedValues := scheduledInstruction usedValues.
+                $!j := 0. while: (j < usedValues size) do: {
+                    $usedValue := usedValues at: j.
+                    print("\t". scheduledInstruction class. i).
+                    printLine(" -> ". usedValue class. usedValue scheduleIndex asInteger. " [color=green];").
+
+                } continueWith: (j := j + 1).
+            }.
+
+            {
+                $usedControlNodes := scheduledInstruction usedControlNodes.
+                $!j := 0. while: (j < usedControlNodes size) do: {
+                    $usedControl := usedControlNodes at: j.
+                    print("\t". scheduledInstruction class. i).
+                    printLine(" -> ". usedControl class. usedControl scheduleIndex asInteger. " [color=blue];").
+
+                } continueWith: (j := j + 1).
+            }.
         } continueWith: (i := i + 1).
 
         printLine("}").
-
     };
     withSelector: #evaluateWithArguments: addMethod: {
         | $(MidClosureFunction)self $(Array)arguments :: TypedValue |
@@ -558,8 +749,8 @@ MidFunctionBuilder
         node
     };
     withSelector: #conditionBranch: addMethod: {
-        | $(MidFunctionBuilder)self $(MidValue)condition :: MidBranchNode |
-        $node := MidBranchNode#{
+        | $(MidFunctionBuilder)self $(MidValue)condition :: MidConditionalBranch |
+        $node := MidConditionalBranch#{
             previousControl: self currentControlNode.
             sourcePosition: self sourcePosition.
             condition: condition.
@@ -569,17 +760,25 @@ MidFunctionBuilder
         node
     };
     withSelector: #makeBranchDestination: addMethod: {
-        | $(MidFunctionBuilder)self $(MidBranchNode)branch :: MidBranchDestinationNode |
+        | $(MidFunctionBuilder)self $(MidConditionalBranch)branch :: MidBranchDestinationNode |
         $node := MidBranchDestinationNode#{
             previousControl: branch.
             sourcePosition: self sourcePosition.
         }.
     };
     withSelector: #makeBranchMerge: addMethod: {
-        | $(MidFunctionBuilder)self $(MidBranchNode)branch :: MidBranchMergeNode |
+        | $(MidFunctionBuilder)self $(MidConditionalBranch)branch :: MidBranchMergeNode |
         MidBranchMergeNode#{
             sourcePosition: self sourcePosition.
             branchNode: branch.
+        }.
+    };
+    withSelector: #makeBranchSequenceEnd:Into: addMethod: {
+        | $(MidFunctionBuilder)self $(MidControlNode)previousControl $(MidBranchMergeNode)mergeNode :: MidBranchSequenceEnd |
+        MidBranchSequenceEnd#{
+            sourcePosition: self sourcePosition.
+            previousControl: previousControl.
+            mergeNode: mergeNode.
         }.
     };
     withSelector: #makePhiNodeValue addMethod: {

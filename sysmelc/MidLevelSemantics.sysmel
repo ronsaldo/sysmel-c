@@ -66,6 +66,7 @@ public: [
 
             $interpretedFunction := SysmelCompiledFunction#{
                 midIR: midFunction.
+                isMacro: false.
             }.
 
             $analysisEnvironment := FunctionAnalysisEnvironment#{
@@ -237,8 +238,10 @@ public: [
                     truePhiValue destinationPhi: phiMerge.
                     truePhiValue previousControl: truePredecessor.
 
+                    $trueBranchSequenceEnd := midBuilder makeBranchSequenceEnd: truePhiValue Into: mergeRegion.
+
                     midBuilder beginWithControlNode: falseBranch.
-                    $falseResult := self analyzeWithEnvironment: environment andCompileClosure: midBuilder withBody: ifSelection trueExpression.
+                    $falseResult := self analyzeWithEnvironment: environment andCompileClosure: midBuilder withBody: ifSelection falseExpression.
                     $falsePredecessor := midBuilder currentControlNode.
                     $falsePhiValue := midBuilder makePhiNodeValue.
 
@@ -246,12 +249,16 @@ public: [
                     falsePhiValue destinationPhi: phiMerge.
                     falsePhiValue previousControl: falsePredecessor.
 
+                    $falseBranchSequenceEnd := midBuilder makeBranchSequenceEnd: falsePhiValue Into: mergeRegion.
+
                     midBuilder beginWithControlNode: mergeRegion.
                     phiMerge incomingValues: [truePhiValue . falsePhiValue].
                     phiMerge previousControl: mergeRegion.
                     
                     mergeRegion branchNode: branch.
-                    mergeRegion incomingEdges: [truePredecessor . falsePredecessor].
+                    mergeRegion incomingEdges: [trueBranchSequenceEnd . falseBranchSequenceEnd].
+
+                    midBuilder beginWithControlNode: phiMerge.
 
                     return: phiMerge
                 }.
