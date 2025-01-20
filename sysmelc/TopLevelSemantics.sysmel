@@ -71,18 +71,13 @@ public: [
                 $selector := extractSymbolFromValue(selectorTypedValue value).
 
                 $method := receiverType lookupSelector: selector.
-                ##printLine("Receiver type: ". receiverType).
-                ##printLine("Selector: ". selector).
-                ##printLine("method: ". method).
                 if: method value isInvalidErrorValue then: {
                     printLine(method value getInvalidErrorValueMessage. " " . selector).
                     abort()
                 }.
 
                 ## TODO: add support for macros
-                ##printLine(method type).
                 $methodFunction := extractFunctionFromValue(method value).
-                ##printLine(methodFunction).
 
                 $invocationArguments := OrderedCollection().
                 invocationArguments add: receiverTypedValue.
@@ -135,7 +130,53 @@ public: [
                 } continueWith: (i := i + 1).
                 return: result
             }.
-            
+            $(ParseTreeArrayNode)arrayNode : {
+                $array := Array new: arrayNode elements size
+                $!i := 0.
+                while: i < arrayNode elements size do: {
+                    $element := arrayNode elements at: i.
+                    $analyzedElement := self analyzeAndEvaluateWithEnvironment: environment script: element.
+                    array at: i put: analyzedElement. 
+                } continueWith: (i := i + 1).
+                return: TypedValue(Value(ArrayValue(array)). getBasicIntrinsicTypes() array)
+            }.
+            $(ParseTreeTupleNode)tupleNode : {
+                $array := Array new: tupleNode elements size
+                $!i := 0.
+                while: i < tupleNode elements size do: {
+                    $element := tupleNode elements at: i.
+                    $analyzedElement := self analyzeAndEvaluateWithEnvironment: environment script: element.
+                    array at: i put: analyzedElement. 
+                } continueWith: (i := i + 1).
+                $tuple := array asTuple.
+                return: TypedValue(Value(TupleValue(tuple)). getBasicIntrinsicTypes() tuple)
+            }.
+
+            ## Association and immutable dictionary.
+            $(ParseTreeAssociationNode)association : {
+                $key := extractValueForPrinting((self analyzeAndEvaluateWithEnvironment: environment script: association key) value).
+                $!value := null.
+                if: association value isNotNull then: {
+                    value := extractValueForPrinting((self analyzeAndEvaluateWithEnvironment: environment script: association value) value).
+                }.
+
+                return: TypedValue(Value(AssociationValue(key : value)). getBasicIntrinsicTypes() association)
+            }.
+            $(ParseTreeImmutableDictionaryNode)dictionary : {
+                $dictionarySize := dictionary elements size.
+                $evaluatedElements := Array new: dictionarySize.
+                $!i := 0. while: (i < dictionarySize) do: {
+                    $element := dictionary elements at: i.
+                    $evaluatedElement := self analyzeAndEvaluateWithEnvironment: environment script: element.
+                    $association := extractAssociationFromValue(evaluatedElement value).
+                    evaluatedElements at: i put: association.
+                } continueWith: (i := i + 1).
+                
+                $dictionary := evaluatedElements asImmutableDictionary.
+                $resultValue := Value(ImmutableDictionaryValue#{value: dictionary}).
+                return: TypedValue(resultValue . getBasicIntrinsicTypes() immutableDictionary).
+            }.
+
             ## Assignment
             $(ParseTreeAssignmentNode)assignmentNode : {
                 $store := assignmentNode store.

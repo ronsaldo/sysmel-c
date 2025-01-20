@@ -183,6 +183,21 @@ public: [
         Record: SysmelFunctionValue withFields: #{
             value: SysmelFunction
         }.
+        Record: ArrayValue withFields: #{
+            value: Array
+        }.
+        Record: TupleValue withFields: #{
+            value: Tuple
+        }.
+        Record: AssociationValue withFields: #{
+            value: Association.
+        }.
+        Record: ImmutableDictionaryValue withFields: #{
+            value: ImmutableDictionary.
+        }.
+        Record: GradualValue withFields: #{
+            value: GradualType.
+        }.
         Record: SysmelMidValue withFields: #{
             value: MidValue
         }.
@@ -195,6 +210,11 @@ public: [
             $(CharacterValue)value : value value.
             $(StringValue)value : value value.
             $(SymbolValue)value : value value.
+            $(ArrayValue)value : value value.
+            $(TupleValue)value : value value.
+            $(AssociationValue)value : value value.
+            $(ImmutableDictionaryValue)value : value value.
+            $(GradualValue)value : value value.
             _: {
                 value
             }
@@ -257,11 +277,65 @@ public: [
             |$(TypedValue)self :: Integer |
             self value getIntegerValue
         }.
+    $extractArrayFromValue($(Value)value :: Array) := {
+        match: value ofType: Value withPatterns: #{
+            $(ArrayValue)arrayValue : arrayValue value.
+            _: {
+                printLine("Not a valid array value").
+                abort()
+            }
+        }.
+    }.
+    $extractTupleFromValue($(Value)value :: Tuple) := {
+        match: value ofType: Value withPatterns: #{
+            $(TupleValue)arrayValue : arrayValue value.
+            _: {
+                printLine("Not a valid tuple value").
+                abort()
+            }
+        }.
+    }.
+    $extractAssociationFromValue($(Value)value :: Association) := {
+        match: value ofType: Value withPatterns: #{
+            $(AssociationValue)association : association value.
+            _: {
+                printLine("Not a valid association value").
+                abort()
+            }
+        }.
+    }.
+    $extractImmutableDictionaryFromValue($(Value)value :: ImmutableDictionary) := {
+        match: value ofType: Value withPatterns: #{
+            $(ImmutableDictionaryValue)dict : dict value.
+            _: {
+                printLine("Not a valid association value").
+                abort()
+            }
+        }.
+    }.
     $extractBooleanFromValue($(Value)value :: Boolean) := {
         match: value ofType: Value withPatterns: #{
             $(BooleanValue)booleanValue : booleanValue value.
             _: {
-                printLine("Not a valid boolean value")
+                printLine("Not a valid boolean value").
+                abort()
+            }
+        }.
+    }.
+    $extractIntegerFromValue($(Value)value :: String) := {
+        match: value ofType: Value withPatterns: #{
+            $(IntegerValue)integerValue : integerValue value.
+            _: {
+                printLine("Not a valid string value.").
+                abort()
+            }
+        }.
+    }.
+    $extractStringFromValue($(Value)value :: String) := {
+        match: value ofType: Value withPatterns: #{
+            $(StringValue)stringValue : stringValue value.
+            _: {
+                printLine("Not a valid string value.").
                 abort()
             }
         }.
@@ -270,7 +344,7 @@ public: [
         match: value ofType: Value withPatterns: #{
             $(SymbolValue)symbolValue : symbolValue value.
             _: {
-                printLine("Not a valid symbol value")
+                printLine("Not a valid symbol value").
                 abort()
             }
         }.
@@ -279,7 +353,7 @@ public: [
         match: value ofType: Value withPatterns: #{
             $(SysmelTypeValue)typeValue : typeValue value.
             _: {
-                printLine("Not a valid sysmel type value")
+                printLine("Not a valid sysmel type value").
                 abort()
             }
         }.
@@ -288,7 +362,7 @@ public: [
         match: value ofType: Value withPatterns: #{
             $(SysmelFunctionValue)functionValue : functionValue value.
             _: {
-                printLine("Not a valid function value")
+                printLine("Not a valid function value").
                 abort()
             }
         }

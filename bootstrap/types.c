@@ -34,9 +34,9 @@ void sysmelb_type_addPrimitiveMacroMethod(sysmelb_Type_t *type, sysmelb_symbol_t
 sysmelb_function_t *sysmelb_type_lookupSelector(sysmelb_Type_t *type, sysmelb_symbol_t *selector)
 {
     const sysmelb_SymbolHashtablePair_t *pair = sysmelb_SymbolHashtable_lookupSymbol(&type->methodDict, selector);
-    if(pair)
+    if (pair)
         return pair->value;
-    if(type->supertype)
+    if (type->supertype)
         return sysmelb_type_lookupSelector(type->supertype, selector);
     return NULL;
 }
@@ -62,10 +62,10 @@ sysmelb_Type_t *sysmelb_allocateRecordType(sysmelb_symbol_t *name, sysmelb_Immut
 
     size_t fieldCount = fieldsAndTypes->size;
     type->tupleAndRecords.fieldCount = fieldCount;
-    type->tupleAndRecords.fields = sysmelb_allocate(sizeof(sysmelb_Type_t*)*fieldCount);
-    type->tupleAndRecords.fieldNames = sysmelb_allocate(sizeof(sysmelb_symbol_t*)*fieldCount);
+    type->tupleAndRecords.fields = sysmelb_allocate(sizeof(sysmelb_Type_t *) * fieldCount);
+    type->tupleAndRecords.fieldNames = sysmelb_allocate(sizeof(sysmelb_symbol_t *) * fieldCount);
 
-    for(size_t i = 0; i < fieldCount; ++i)
+    for (size_t i = 0; i < fieldCount; ++i)
     {
         sysmelb_Association_t *assoc = fieldsAndTypes->elements[i];
         assert(assoc->key.kind == SysmelValueKindSymbolReference);
@@ -87,14 +87,14 @@ sysmelb_Type_t *sysmelb_allocateClassType(sysmelb_symbol_t *name, sysmelb_Type_t
 
     size_t fieldCount = fieldsAndTypes->size;
     type->clazz.superFieldCount = 0;
-    if(superclass)
+    if (superclass)
         type->clazz.superFieldCount = superclass->clazz.superFieldCount + superclass->clazz.fieldCount;
 
     type->clazz.fieldCount = fieldCount;
-    type->clazz.fields = sysmelb_allocate(sizeof(sysmelb_Type_t*)*fieldCount);
-    type->clazz.fieldNames = sysmelb_allocate(sizeof(sysmelb_symbol_t*)*fieldCount);
+    type->clazz.fields = sysmelb_allocate(sizeof(sysmelb_Type_t *) * fieldCount);
+    type->clazz.fieldNames = sysmelb_allocate(sizeof(sysmelb_symbol_t *) * fieldCount);
 
-    for(size_t i = 0; i < fieldCount; ++i)
+    for (size_t i = 0; i < fieldCount; ++i)
     {
         sysmelb_Association_t *assoc = fieldsAndTypes->elements[i];
         assert(assoc->key.kind == SysmelValueKindSymbolReference);
@@ -114,7 +114,7 @@ sysmelb_Type_t *sysmelb_allocateSumType(sysmelb_symbol_t *name, size_t alternati
     type->valueSize = 1;
     type->supertype = sysmelb_getBasicTypes()->sum;
     type->sumType.alternativeCount = alternativeCount;
-    type->sumType.alternatives = sysmelb_allocate(sizeof(sysmelb_Type_t*) * alternativeCount);
+    type->sumType.alternatives = sysmelb_allocate(sizeof(sysmelb_Type_t *) * alternativeCount);
     return type;
 }
 
@@ -131,18 +131,17 @@ sysmelb_Type_t *sysmelb_allocateEnumType(sysmelb_symbol_t *name, sysmelb_Type_t 
     type->enumValues.baseType = baseType;
     type->enumValues.valueCount = valueCount;
     type->enumValues.values = sysmelb_allocate(sizeof(sysmelb_Value_t) * valueCount);
-    type->enumValues.valueNames = sysmelb_allocate(sizeof(sysmelb_symbol_t*) * valueCount);
+    type->enumValues.valueNames = sysmelb_allocate(sizeof(sysmelb_symbol_t *) * valueCount);
 
     sysmelb_Value_t lastValue = {
         .kind = SysmelValueKindInteger,
-        .type = baseType
-    };
+        .type = baseType};
 
-    for(size_t i = 0; i < valueCount; ++i)
+    for (size_t i = 0; i < valueCount; ++i)
     {
         sysmelb_Association_t *assoc = namesAndValues->elements[i];
         assert(assoc->key.kind == SysmelValueKindSymbolReference);
-        if(assoc->value.kind == SysmelValueKindNull && i != 0)
+        if (assoc->value.kind == SysmelValueKindNull && i != 0)
         {
             ++lastValue.integer;
         }
@@ -159,12 +158,12 @@ sysmelb_Type_t *sysmelb_allocateEnumType(sysmelb_symbol_t *name, sysmelb_Type_t 
 
 bool sysmelb_findEnumValueWithName(sysmelb_Type_t *type, sysmelb_symbol_t *name, sysmelb_Value_t *outValue)
 {
-    if(!type->enumValues.valueNames || !type->enumValues.values)
+    if (!type->enumValues.valueNames || !type->enumValues.values)
         return false;
 
-    for(uint32_t i = 0; i < type->enumValues.valueCount; ++i)
+    for (uint32_t i = 0; i < type->enumValues.valueCount; ++i)
     {
-        if(type->enumValues.valueNames[i] == name)
+        if (type->enumValues.valueNames[i] == name)
         {
             *outValue = type->enumValues.values[i];
             return true;
@@ -176,12 +175,12 @@ bool sysmelb_findEnumValueWithName(sysmelb_Type_t *type, sysmelb_symbol_t *name,
 
 int sysmelb_findIndexOfFieldNamed(sysmelb_Type_t *type, sysmelb_symbol_t *name)
 {
-    if(!type->tupleAndRecords.fields || !type->tupleAndRecords.fieldNames)
+    if (!type->tupleAndRecords.fields || !type->tupleAndRecords.fieldNames)
         return -1;
 
-    for(uint32_t i = 0; i < type->tupleAndRecords.fieldCount; ++i)
+    for (uint32_t i = 0; i < type->tupleAndRecords.fieldCount; ++i)
     {
-        if(type->tupleAndRecords.fieldNames[i] == name)
+        if (type->tupleAndRecords.fieldNames[i] == name)
             return (int)i;
     }
 
@@ -190,15 +189,15 @@ int sysmelb_findIndexOfFieldNamed(sysmelb_Type_t *type, sysmelb_symbol_t *name)
 
 int sysmelb_findIndexOfFieldNamedInClass(sysmelb_Type_t *type, sysmelb_symbol_t *name)
 {
-    if(!type->clazz.fields || !type->clazz.fieldNames || type->kind != SysmelTypeKindClass)
+    if (!type->clazz.fields || !type->clazz.fieldNames || type->kind != SysmelTypeKindClass)
         return -1;
 
-    for(uint32_t i = 0; i < type->clazz.fieldCount; ++i)
+    for (uint32_t i = 0; i < type->clazz.fieldCount; ++i)
     {
-        if(type->clazz.fieldNames[i] == name)
+        if (type->clazz.fieldNames[i] == name)
             return (int)(i + type->clazz.superFieldCount);
     }
-    if(type->supertype)
+    if (type->supertype)
         return sysmelb_findIndexOfFieldNamedInClass(type->supertype, name);
 
     return -1;
@@ -206,9 +205,9 @@ int sysmelb_findIndexOfFieldNamedInClass(sysmelb_Type_t *type, sysmelb_symbol_t 
 
 int sysmelb_findSumTypeIndexForType(sysmelb_Type_t *sumType, sysmelb_Type_t *injectedType)
 {
-    for(uint32_t i = 0; i < sumType->sumType.alternativeCount; ++i)
+    for (uint32_t i = 0; i < sumType->sumType.alternativeCount; ++i)
     {
-        if(sumType->sumType.alternatives[i] == injectedType)
+        if (sumType->sumType.alternatives[i] == injectedType)
             return (int)i;
     }
     return -1;
@@ -216,21 +215,20 @@ int sysmelb_findSumTypeIndexForType(sysmelb_Type_t *sumType, sysmelb_Type_t *inj
 
 sysmelb_Value_t sysmelb_instantiateTypeWithArguments(sysmelb_Type_t *type, size_t argumentCount, sysmelb_Value_t *arguments)
 {
-    if(type->kind == SysmelTypeKindRecord || type->kind == SysmelTypeKindTuple)
+    if (type->kind == SysmelTypeKindRecord || type->kind == SysmelTypeKindTuple)
     {
         assert(argumentCount <= type->tupleAndRecords.fieldCount);
-        sysmelb_TupleHeader_t *tupleOrRecord = sysmelb_allocate(sizeof(sysmelb_TupleHeader_t) + sizeof(sysmelb_Value_t)*type->tupleAndRecords.fieldCount);
+        sysmelb_TupleHeader_t *tupleOrRecord = sysmelb_allocate(sizeof(sysmelb_TupleHeader_t) + sizeof(sysmelb_Value_t) * type->tupleAndRecords.fieldCount);
         tupleOrRecord->size = type->tupleAndRecords.fieldCount;
-        
+
         // Prefill with null values.
         sysmelb_Value_t nullValue = {
             .kind = SysmelValueKindNull,
-            .type = sysmelb_getBasicTypes()->null
-        };
-        for(size_t i = 0; i < tupleOrRecord->size; ++i)
+            .type = sysmelb_getBasicTypes()->null};
+        for (size_t i = 0; i < tupleOrRecord->size; ++i)
             tupleOrRecord->elements[i] = nullValue;
 
-        if(argumentCount == 1 && arguments[0].kind == SysmelValueKindImmutableDictionaryReference)
+        if (argumentCount == 1 && arguments[0].kind == SysmelValueKindImmutableDictionaryReference)
         {
             sysmelb_ImmutableDictionary_t *dict = arguments[0].immutableDictionaryReference;
             for (size_t i = 0; i < dict->size; ++i)
@@ -239,7 +237,7 @@ sysmelb_Value_t sysmelb_instantiateTypeWithArguments(sysmelb_Type_t *type, size_
                 assert(assoc->key.kind == SysmelValueKindSymbolReference);
                 sysmelb_symbol_t *fieldName = assoc->key.symbolReference;
                 int fieldIndex = sysmelb_findIndexOfFieldNamed(type, assoc->key.symbolReference);
-                if(fieldIndex < 0)
+                if (fieldIndex < 0)
                 {
                     sysmelb_SourcePosition_t nullPosition = {};
                     sysmelb_errorPrintf(nullPosition, "Failed to find field %.*s in record.", fieldName->size, fieldName->string);
@@ -251,7 +249,7 @@ sysmelb_Value_t sysmelb_instantiateTypeWithArguments(sysmelb_Type_t *type, size_
         }
         else
         {
-            for(size_t i = 0; i < argumentCount; ++i)
+            for (size_t i = 0; i < argumentCount; ++i)
                 tupleOrRecord->elements[i] = arguments[i];
         }
 
@@ -263,23 +261,22 @@ sysmelb_Value_t sysmelb_instantiateTypeWithArguments(sysmelb_Type_t *type, size_
 
         return result;
     }
-    if(type->kind == SysmelTypeKindClass)
+    if (type->kind == SysmelTypeKindClass)
     {
         size_t totalFieldCount = type->clazz.superFieldCount + type->clazz.fieldCount;
         assert(argumentCount <= totalFieldCount);
-        sysmelb_ObjectHeader_t *object = sysmelb_allocate(sizeof(sysmelb_ObjectHeader_t) + sizeof(sysmelb_Value_t)*totalFieldCount);
+        sysmelb_ObjectHeader_t *object = sysmelb_allocate(sizeof(sysmelb_ObjectHeader_t) + sizeof(sysmelb_Value_t) * totalFieldCount);
         object->size = totalFieldCount;
         object->clazz = type;
-        
+
         // Prefill with null values.
         sysmelb_Value_t nullValue = {
             .kind = SysmelValueKindNull,
-            .type = sysmelb_getBasicTypes()->null
-        };
-        for(size_t i = 0; i < object->size; ++i)
+            .type = sysmelb_getBasicTypes()->null};
+        for (size_t i = 0; i < object->size; ++i)
             object->elements[i] = nullValue;
 
-        if(argumentCount == 1 && arguments[0].kind == SysmelValueKindImmutableDictionaryReference)
+        if (argumentCount == 1 && arguments[0].kind == SysmelValueKindImmutableDictionaryReference)
         {
             sysmelb_ImmutableDictionary_t *dict = arguments[0].immutableDictionaryReference;
             for (size_t i = 0; i < dict->size; ++i)
@@ -288,7 +285,7 @@ sysmelb_Value_t sysmelb_instantiateTypeWithArguments(sysmelb_Type_t *type, size_
                 assert(assoc->key.kind == SysmelValueKindSymbolReference);
                 sysmelb_symbol_t *fieldName = assoc->key.symbolReference;
                 int fieldIndex = sysmelb_findIndexOfFieldNamedInClass(type, assoc->key.symbolReference);
-                if(fieldIndex < 0)
+                if (fieldIndex < 0)
                 {
                     sysmelb_SourcePosition_t nullPosition = {};
                     sysmelb_errorPrintf(nullPosition, "Failed to find field %.*s in class.", fieldName->size, fieldName->string);
@@ -300,7 +297,7 @@ sysmelb_Value_t sysmelb_instantiateTypeWithArguments(sysmelb_Type_t *type, size_
         }
         else
         {
-            for(size_t i = 0; i < argumentCount; ++i)
+            for (size_t i = 0; i < argumentCount; ++i)
                 object->elements[i] = arguments[i];
         }
 
@@ -312,46 +309,43 @@ sysmelb_Value_t sysmelb_instantiateTypeWithArguments(sysmelb_Type_t *type, size_
 
         return result;
     }
-    if(type->kind == SysmelTypeKindOrderedCollection)
+    if (type->kind == SysmelTypeKindOrderedCollection)
     {
         sysmelb_OrderedCollection_t *collection = sysmelb_allocate(sizeof(sysmelb_OrderedCollection_t));
         sysmelb_Value_t result = {
             .kind = SysmelValueKindOrderedCollectionReference,
             .type = sysmelb_getBasicTypes()->orderedCollection,
-            .orderedCollectionReference = collection
-        };
+            .orderedCollectionReference = collection};
         return result;
     }
-    if(type->kind == SysmelTypeKindSymbolHashtable)
+    if (type->kind == SysmelTypeKindSymbolHashtable)
     {
         sysmelb_SymbolHashtable_t *table = sysmelb_allocate(sizeof(sysmelb_SymbolHashtable_t));
         sysmelb_Value_t result = {
             .kind = SysmelValueKindSymbolHashtableReference,
             .type = sysmelb_getBasicTypes()->symbolHashtable,
-            .symbolHashtableReference = table
-        };
+            .symbolHashtableReference = table};
         return result;
     }
-    if(type->kind == SysmelTypeKindIdentityHashset)
+    if (type->kind == SysmelTypeKindIdentityHashset)
     {
         sysmelb_IdentityHashset_t *set = sysmelb_allocate(sizeof(sysmelb_IdentityHashset_t));
         sysmelb_Value_t result = {
             .kind = SysmelValueKindIdentityHashsetReference,
             .type = sysmelb_getBasicTypes()->identityHashset,
-            .identityHashsetReference = set
-        };
+            .identityHashsetReference = set};
         return result;
     }
-    if(type->kind == SysmelTypeKindSum)
+    if (type->kind == SysmelTypeKindSum)
     {
-        if(argumentCount != 1)
+        if (argumentCount != 1)
         {
             sysmelb_SourcePosition_t emptyPosition = {0};
             sysmelb_errorPrintf(emptyPosition, "Sum types can only be instantiated with a single parameter.");
         }
         sysmelb_Type_t *argumentType = arguments[0].type;
         int injectionIndex = sysmelb_findSumTypeIndexForType(type, argumentType);
-        if(injectionIndex < 0)
+        if (injectionIndex < 0)
         {
             sysmelb_SourcePosition_t emptyPosition = {0};
             sysmelb_errorPrintf(emptyPosition, "Failed to inject value of a type into a sum type.");
@@ -361,68 +355,66 @@ sysmelb_Value_t sysmelb_instantiateTypeWithArguments(sysmelb_Type_t *type, size_
         sysmelb_SumTypeValue_t *sumValue = sysmelb_allocate(sizeof(sysmelb_SumTypeValue_t));
         sumValue->alternativeIndex = injectionIndex;
         sumValue->alternativeValue = arguments[0];
-        
+
         sysmelb_Value_t sumValueValue = {
             .kind = SysmelValueKindSumValueReference,
             .type = type,
-            .sumTypeValueReference = sumValue
-        };
+            .sumTypeValueReference = sumValue};
         return sumValueValue;
     }
 
     abort();
 }
 
-
 static void sysmelb_createBasicTypes(void)
 {
-    uint32_t pointerSize = sizeof(void*);
-    uint32_t pointerAlignment = sizeof(void*);
+    uint32_t pointerSize = sizeof(void *);
+    uint32_t pointerAlignment = sizeof(void *);
 
-    sysmelb_BasicTypesData.null           = sysmelb_allocateValueType(SysmelTypeKindNull, sysmelb_internSymbolC("NullType"), 0, 0);
-    sysmelb_BasicTypesData.gradual        = sysmelb_allocateValueType(SysmelTypeKindGradual, sysmelb_internSymbolC("?"), pointerSize, pointerSize);
-    sysmelb_BasicTypesData.unit           = sysmelb_allocateValueType(SysmelTypeKindUnit, sysmelb_internSymbolC("Unit"), 0, 0);
-    sysmelb_BasicTypesData.voidType       = sysmelb_allocateValueType(SysmelTypeKindVoid, sysmelb_internSymbolC("Void"), 0, 0);
-    sysmelb_BasicTypesData.boolean        = sysmelb_allocateValueType(SysmelTypeKindBoolean, sysmelb_internSymbolC("Boolean"), 1, 1);
-    sysmelb_BasicTypesData.character      = sysmelb_allocateValueType(SysmelTypeKindCharacter, sysmelb_internSymbolC("Character"), 4, 4);
-    sysmelb_BasicTypesData.string         = sysmelb_allocateValueType(SysmelTypeKindString, sysmelb_internSymbolC("String"), pointerSize, pointerAlignment);
-    sysmelb_BasicTypesData.symbol         = sysmelb_allocateValueType(SysmelTypeKindSymbol, sysmelb_internSymbolC("Symbol"), pointerSize, pointerAlignment);
-    sysmelb_BasicTypesData.integer        = sysmelb_allocateValueType(SysmelTypeKindInteger, sysmelb_internSymbolC("Integer"), pointerSize, pointerAlignment);
-    sysmelb_BasicTypesData.floatingPoint  = sysmelb_allocateValueType(SysmelTypeKindFloat, sysmelb_internSymbolC("Float"), 8, 8);
-    sysmelb_BasicTypesData.universe       = sysmelb_allocateValueType(SysmelTypeKindUniverse, sysmelb_internSymbolC("Type"), pointerSize, pointerAlignment);
+    sysmelb_BasicTypesData.null = sysmelb_allocateValueType(SysmelTypeKindNull, sysmelb_internSymbolC("NullType"), 0, 0);
+    sysmelb_BasicTypesData.gradual = sysmelb_allocateValueType(SysmelTypeKindGradual, sysmelb_internSymbolC("GradualType"), pointerSize, pointerSize);
+    sysmelb_BasicTypesData.unit = sysmelb_allocateValueType(SysmelTypeKindUnit, sysmelb_internSymbolC("Unit"), 0, 0);
+    sysmelb_BasicTypesData.voidType = sysmelb_allocateValueType(SysmelTypeKindVoid, sysmelb_internSymbolC("Void"), 0, 0);
+    sysmelb_BasicTypesData.boolean = sysmelb_allocateValueType(SysmelTypeKindBoolean, sysmelb_internSymbolC("Boolean"), 1, 1);
+    sysmelb_BasicTypesData.character = sysmelb_allocateValueType(SysmelTypeKindCharacter, sysmelb_internSymbolC("Character"), 4, 4);
+    sysmelb_BasicTypesData.string = sysmelb_allocateValueType(SysmelTypeKindString, sysmelb_internSymbolC("String"), pointerSize, pointerAlignment);
+    sysmelb_BasicTypesData.symbol = sysmelb_allocateValueType(SysmelTypeKindSymbol, sysmelb_internSymbolC("Symbol"), pointerSize, pointerAlignment);
+    sysmelb_BasicTypesData.integer = sysmelb_allocateValueType(SysmelTypeKindInteger, sysmelb_internSymbolC("Integer"), pointerSize, pointerAlignment);
+    sysmelb_BasicTypesData.floatingPoint = sysmelb_allocateValueType(SysmelTypeKindFloat, sysmelb_internSymbolC("Float"), 8, 8);
+    sysmelb_BasicTypesData.universe = sysmelb_allocateValueType(SysmelTypeKindUniverse, sysmelb_internSymbolC("Type"), pointerSize, pointerAlignment);
 
-    sysmelb_BasicTypesData.array          = sysmelb_allocateValueType(SysmelTypeKindArray, sysmelb_internSymbolC("Array"), pointerSize, pointerAlignment);
-    sysmelb_BasicTypesData.byteArray      = sysmelb_allocateValueType(SysmelTypeKindByteArray, sysmelb_internSymbolC("ByteArray"), pointerSize, pointerAlignment);
-    sysmelb_BasicTypesData.tuple          = sysmelb_allocateValueType(SysmelTypeKindTuple, sysmelb_internSymbolC("Tuple"), pointerSize, pointerAlignment);
-    sysmelb_BasicTypesData.record         = sysmelb_allocateValueType(SysmelTypeKindRecord, sysmelb_internSymbolC("Record"), pointerSize, pointerAlignment);
+    sysmelb_BasicTypesData.array = sysmelb_allocateValueType(SysmelTypeKindArray, sysmelb_internSymbolC("Array"), pointerSize, pointerAlignment);
+    sysmelb_BasicTypesData.byteArray = sysmelb_allocateValueType(SysmelTypeKindByteArray, sysmelb_internSymbolC("ByteArray"), pointerSize, pointerAlignment);
+    sysmelb_BasicTypesData.tuple = sysmelb_allocateValueType(SysmelTypeKindTuple, sysmelb_internSymbolC("Tuple"), pointerSize, pointerAlignment);
+    sysmelb_BasicTypesData.record = sysmelb_allocateValueType(SysmelTypeKindRecord, sysmelb_internSymbolC("Record"), pointerSize, pointerAlignment);
     sysmelb_BasicTypesData.record->supertype = sysmelb_BasicTypesData.tuple;
-    sysmelb_BasicTypesData.clazz          = sysmelb_allocateValueType(SysmelTypeKindClass, sysmelb_internSymbolC("Class"), pointerSize, pointerAlignment);
-    sysmelb_BasicTypesData.sum            = sysmelb_allocateValueType(SysmelTypeKindSum, sysmelb_internSymbolC("Sum"), pointerSize, pointerAlignment);
-    sysmelb_BasicTypesData.enumType       = sysmelb_allocateValueType(SysmelTypeKindEnum, sysmelb_internSymbolC("Enum"), 4, 4);
-    sysmelb_BasicTypesData.association    = sysmelb_allocateValueType(SysmelTypeKindAssociation, sysmelb_internSymbolC("Association"), pointerSize, pointerAlignment);
+    sysmelb_BasicTypesData.clazz = sysmelb_allocateValueType(SysmelTypeKindClass, sysmelb_internSymbolC("Class"), pointerSize, pointerAlignment);
+    sysmelb_BasicTypesData.sum = sysmelb_allocateValueType(SysmelTypeKindSum, sysmelb_internSymbolC("Sum"), pointerSize, pointerAlignment);
+    sysmelb_BasicTypesData.enumType = sysmelb_allocateValueType(SysmelTypeKindEnum, sysmelb_internSymbolC("Enum"), 4, 4);
+    sysmelb_BasicTypesData.association = sysmelb_allocateValueType(SysmelTypeKindAssociation, sysmelb_internSymbolC("Association"), pointerSize, pointerAlignment);
     sysmelb_BasicTypesData.immutableDictionary = sysmelb_allocateValueType(SysmelTypeKindImmutableDictionary, sysmelb_internSymbolC("ImmutableDictionary"), pointerSize, pointerAlignment);
-    sysmelb_BasicTypesData.symbolHashtable  = sysmelb_allocateValueType(SysmelTypeKindSymbolHashtable, sysmelb_internSymbolC("SymbolHashtable"), pointerSize, pointerAlignment);
-    sysmelb_BasicTypesData.parseTreeNode  = sysmelb_allocateValueType(SysmelTypeKindParseTreeNode, sysmelb_internSymbolC("ParseTreeNode"), pointerSize, pointerAlignment);
+    sysmelb_BasicTypesData.symbolHashtable = sysmelb_allocateValueType(SysmelTypeKindSymbolHashtable, sysmelb_internSymbolC("SymbolHashtable"), pointerSize, pointerAlignment);
+    sysmelb_BasicTypesData.parseTreeNode = sysmelb_allocateValueType(SysmelTypeKindParseTreeNode, sysmelb_internSymbolC("ParseTreeNode"), pointerSize, pointerAlignment);
     sysmelb_BasicTypesData.valueReference = sysmelb_allocateValueType(SysmelTypeKindValueReference, sysmelb_internSymbolC("ValueReference"), pointerSize, pointerAlignment);
-    sysmelb_BasicTypesData.function       = sysmelb_allocateValueType(SysmelTypeKindSimpleFunction, sysmelb_internSymbolC("Function"), pointerSize, pointerAlignment);
-    sysmelb_BasicTypesData.namespace      = sysmelb_allocateValueType(SysmelTypeKindNamespace, sysmelb_internSymbolC("Namespace"), pointerSize, pointerAlignment);
-    
+    sysmelb_BasicTypesData.function = sysmelb_allocateValueType(SysmelTypeKindSimpleFunction, sysmelb_internSymbolC("Function"), pointerSize, pointerAlignment);
+    sysmelb_BasicTypesData.namespace = sysmelb_allocateValueType(SysmelTypeKindNamespace, sysmelb_internSymbolC("Namespace"), pointerSize, pointerAlignment);
+
     sysmelb_BasicTypesData.orderedCollection = sysmelb_allocateValueType(SysmelTypeKindOrderedCollection, sysmelb_internSymbolC("OrderedCollection"), pointerSize, pointerAlignment);
     sysmelb_BasicTypesData.identityHashset = sysmelb_allocateValueType(SysmelTypeKindIdentityHashset, sysmelb_internSymbolC("IdentityHashset"), pointerSize, pointerAlignment);
 
-    sysmelb_BasicTypesData.char8    = sysmelb_allocateValueType(SysmelTypeKindPrimitiveCharacter, sysmelb_internSymbolC("Int8"), 1, 1);
-    sysmelb_BasicTypesData.char16   = sysmelb_allocateValueType(SysmelTypeKindPrimitiveCharacter, sysmelb_internSymbolC("Int16"), 2, 2);
-    sysmelb_BasicTypesData.char32   = sysmelb_allocateValueType(SysmelTypeKindPrimitiveCharacter, sysmelb_internSymbolC("Int32"), 4, 4);
+    sysmelb_BasicTypesData.char8 = sysmelb_allocateValueType(SysmelTypeKindPrimitiveCharacter, sysmelb_internSymbolC("Int8"), 1, 1);
+    sysmelb_BasicTypesData.char16 = sysmelb_allocateValueType(SysmelTypeKindPrimitiveCharacter, sysmelb_internSymbolC("Int16"), 2, 2);
+    sysmelb_BasicTypesData.char32 = sysmelb_allocateValueType(SysmelTypeKindPrimitiveCharacter, sysmelb_internSymbolC("Int32"), 4, 4);
 
-    sysmelb_BasicTypesData.int8    = sysmelb_allocateValueType(SysmelTypeKindPrimitiveSignedInteger, sysmelb_internSymbolC("Int8"), 1, 1);
-    sysmelb_BasicTypesData.int16   = sysmelb_allocateValueType(SysmelTypeKindPrimitiveSignedInteger, sysmelb_internSymbolC("Int16"), 2, 2);
-    sysmelb_BasicTypesData.int32   = sysmelb_allocateValueType(SysmelTypeKindPrimitiveSignedInteger, sysmelb_internSymbolC("Int32"), 4, 4);
-    sysmelb_BasicTypesData.int64   = sysmelb_allocateValueType(SysmelTypeKindPrimitiveSignedInteger, sysmelb_internSymbolC("Int64"), 8, 8);
-    
-    sysmelb_BasicTypesData.uint8   = sysmelb_allocateValueType(SysmelTypeKindPrimitiveUnsignedInteger, sysmelb_internSymbolC("UInt8"), 1, 1);
-    sysmelb_BasicTypesData.uint16  = sysmelb_allocateValueType(SysmelTypeKindPrimitiveUnsignedInteger, sysmelb_internSymbolC("UInt16"), 2, 2);
-    sysmelb_BasicTypesData.uint32  = sysmelb_allocateValueType(SysmelTypeKindPrimitiveUnsignedInteger, sysmelb_internSymbolC("UInt32"), 4, 4);
-    sysmelb_BasicTypesData.uint64  = sysmelb_allocateValueType(SysmelTypeKindPrimitiveUnsignedInteger, sysmelb_internSymbolC("UInt64"), 8, 8);
+    sysmelb_BasicTypesData.int8 = sysmelb_allocateValueType(SysmelTypeKindPrimitiveSignedInteger, sysmelb_internSymbolC("Int8"), 1, 1);
+    sysmelb_BasicTypesData.int16 = sysmelb_allocateValueType(SysmelTypeKindPrimitiveSignedInteger, sysmelb_internSymbolC("Int16"), 2, 2);
+    sysmelb_BasicTypesData.int32 = sysmelb_allocateValueType(SysmelTypeKindPrimitiveSignedInteger, sysmelb_internSymbolC("Int32"), 4, 4);
+    sysmelb_BasicTypesData.int64 = sysmelb_allocateValueType(SysmelTypeKindPrimitiveSignedInteger, sysmelb_internSymbolC("Int64"), 8, 8);
+
+    sysmelb_BasicTypesData.uint8 = sysmelb_allocateValueType(SysmelTypeKindPrimitiveUnsignedInteger, sysmelb_internSymbolC("UInt8"), 1, 1);
+    sysmelb_BasicTypesData.uint16 = sysmelb_allocateValueType(SysmelTypeKindPrimitiveUnsignedInteger, sysmelb_internSymbolC("UInt16"), 2, 2);
+    sysmelb_BasicTypesData.uint32 = sysmelb_allocateValueType(SysmelTypeKindPrimitiveUnsignedInteger, sysmelb_internSymbolC("UInt32"), 4, 4);
+    sysmelb_BasicTypesData.uint64 = sysmelb_allocateValueType(SysmelTypeKindPrimitiveUnsignedInteger, sysmelb_internSymbolC("UInt64"), 8, 8);
 
     sysmelb_BasicTypesData.float32 = sysmelb_allocateValueType(SysmelTypeKindPrimitiveFloat, sysmelb_internSymbolC("Float32"), 4, 4);
     sysmelb_BasicTypesData.float64 = sysmelb_allocateValueType(SysmelTypeKindPrimitiveFloat, sysmelb_internSymbolC("Float64"), 8, 8);
@@ -435,7 +427,7 @@ static void sysmelb_createBasicTypes(void)
     sysmelb_BasicTypesData.int16->printingSuffix = "i16";
     sysmelb_BasicTypesData.int32->printingSuffix = "i32";
     sysmelb_BasicTypesData.int64->printingSuffix = "i64";
-    
+
     sysmelb_BasicTypesData.uint8->printingSuffix = "u8";
     sysmelb_BasicTypesData.uint16->printingSuffix = "u16";
     sysmelb_BasicTypesData.uint32->printingSuffix = "u32";
@@ -447,17 +439,16 @@ static void sysmelb_createBasicTypes(void)
 
 static sysmelb_IntegerLiteralType_t sysmelb_normalizeIntegerValue(sysmelb_Type_t *integerType, sysmelb_IntegerLiteralType_t value)
 {
-    if(integerType == sysmelb_BasicTypesData.integer || integerType->valueSize == 8)
+    if (integerType == sysmelb_BasicTypesData.integer || integerType->valueSize == 8)
         return value;
 
-    sysmelb_UnsignedIntegerLiteralType_t integerBitCount = integerType->valueSize*8;
-    sysmelb_UnsignedIntegerLiteralType_t integerBitMask =  ((sysmelb_UnsignedIntegerLiteralType_t)1<<integerBitCount) - 1;
-    
-    sysmelb_IntegerLiteralType_t integerSignedBitMask =  (1<<(integerBitCount - 1)) - 1;
-    sysmelb_IntegerLiteralType_t integerSignBitMask =  (1<<(integerBitCount - 1));
+    sysmelb_UnsignedIntegerLiteralType_t integerBitCount = integerType->valueSize * 8;
+    sysmelb_UnsignedIntegerLiteralType_t integerBitMask = ((sysmelb_UnsignedIntegerLiteralType_t)1 << integerBitCount) - 1;
 
+    sysmelb_IntegerLiteralType_t integerSignedBitMask = (1 << (integerBitCount - 1)) - 1;
+    sysmelb_IntegerLiteralType_t integerSignBitMask = (1 << (integerBitCount - 1));
 
-    switch(integerType->kind)
+    switch (integerType->kind)
     {
     case SysmelTypeKindPrimitiveCharacter:
     case SysmelTypeKindPrimitiveUnsignedInteger:
@@ -465,7 +456,8 @@ static sysmelb_IntegerLiteralType_t sysmelb_normalizeIntegerValue(sysmelb_Type_t
     case SysmelTypeKindPrimitiveSignedInteger:
         return (value & integerSignedBitMask) - (value & integerSignBitMask);
     case SysmelTypeKindInteger:
-    default: return value;
+    default:
+        return value;
     }
 }
 static sysmelb_Value_t sysmelb_primitive_negated(size_t argumentCount, sysmelb_Value_t *arguments)
@@ -542,8 +534,7 @@ static sysmelb_Value_t sysmelb_primitive_integerEquals(size_t argumentCount, sys
     sysmelb_Value_t result = {
         .kind = SysmelValueKindBoolean,
         .type = sysmelb_getBasicTypes()->boolean,
-        .boolean = leftValue.integer == rightValue.integer
-    };
+        .boolean = leftValue.integer == rightValue.integer};
     return result;
 }
 
@@ -555,8 +546,7 @@ static sysmelb_Value_t sysmelb_primitive_integerNotEquals(size_t argumentCount, 
     sysmelb_Value_t result = {
         .kind = SysmelValueKindBoolean,
         .type = sysmelb_getBasicTypes()->boolean,
-        .boolean = leftValue.integer != rightValue.integer
-    };
+        .boolean = leftValue.integer != rightValue.integer};
     return result;
 }
 
@@ -569,9 +559,8 @@ static sysmelb_Value_t sysmelb_primitive_integerLessThan(size_t argumentCount, s
         .kind = SysmelValueKindBoolean,
         .type = sysmelb_getBasicTypes()->boolean,
         .boolean = (leftValue.kind == SysmelValueKindUnsignedInteger)
-                    ? leftValue.unsignedInteger < rightValue.unsignedInteger
-                    : leftValue.integer < rightValue.integer
-    };
+                       ? leftValue.unsignedInteger < rightValue.unsignedInteger
+                       : leftValue.integer < rightValue.integer};
     return result;
 }
 
@@ -584,9 +573,8 @@ static sysmelb_Value_t sysmelb_primitive_integerLessOrEquals(size_t argumentCoun
         .kind = SysmelValueKindBoolean,
         .type = sysmelb_getBasicTypes()->boolean,
         .boolean = (leftValue.kind == SysmelValueKindUnsignedInteger)
-                    ? leftValue.unsignedInteger <= rightValue.unsignedInteger
-                    : leftValue.integer <= rightValue.integer
-    };
+                       ? leftValue.unsignedInteger <= rightValue.unsignedInteger
+                       : leftValue.integer <= rightValue.integer};
     return result;
 }
 
@@ -599,9 +587,8 @@ static sysmelb_Value_t sysmelb_primitive_integerGreaterThan(size_t argumentCount
         .kind = SysmelValueKindBoolean,
         .type = sysmelb_getBasicTypes()->boolean,
         .boolean = (leftValue.kind == SysmelValueKindUnsignedInteger)
-                    ? leftValue.unsignedInteger > rightValue.unsignedInteger
-                    : leftValue.integer > rightValue.integer
-    };
+                       ? leftValue.unsignedInteger > rightValue.unsignedInteger
+                       : leftValue.integer > rightValue.integer};
     return result;
 }
 
@@ -614,9 +601,8 @@ static sysmelb_Value_t sysmelb_primitive_integerGreaterOrEquals(size_t argumentC
         .kind = SysmelValueKindBoolean,
         .type = sysmelb_getBasicTypes()->boolean,
         .boolean = (leftValue.kind == SysmelValueKindUnsignedInteger)
-                    ? leftValue.unsignedInteger >= rightValue.unsignedInteger
-                    : leftValue.integer >= rightValue.integer
-    };
+                       ? leftValue.unsignedInteger >= rightValue.unsignedInteger
+                       : leftValue.integer >= rightValue.integer};
     return result;
 }
 
@@ -627,8 +613,7 @@ static sysmelb_Value_t sysmelb_primitive_integerAsInteger(size_t argumentCount, 
     sysmelb_Value_t result = {
         .kind = SysmelValueKindInteger,
         .type = sysmelb_BasicTypesData.integer,
-        .integer = originalValue.integer
-    };
+        .integer = originalValue.integer};
     return result;
 }
 
@@ -639,8 +624,7 @@ static sysmelb_Value_t sysmelb_primitive_integerAsCharacter(size_t argumentCount
     sysmelb_Value_t result = {
         .kind = SysmelValueKindInteger,
         .type = sysmelb_BasicTypesData.character,
-        .integer = originalValue.integer
-    };
+        .integer = originalValue.integer};
     return result;
 }
 
@@ -651,8 +635,7 @@ static sysmelb_Value_t sysmelb_primitive_integerAsInt8(size_t argumentCount, sys
     sysmelb_Value_t result = {
         .kind = SysmelValueKindInteger,
         .type = sysmelb_BasicTypesData.int8,
-        .integer = (int8_t)originalValue.integer
-    };
+        .integer = (int8_t)originalValue.integer};
     return result;
 }
 
@@ -663,8 +646,7 @@ static sysmelb_Value_t sysmelb_primitive_integerAsInt16(size_t argumentCount, sy
     sysmelb_Value_t result = {
         .kind = SysmelValueKindInteger,
         .type = sysmelb_BasicTypesData.int16,
-        .integer = (int16_t)originalValue.integer
-    };
+        .integer = (int16_t)originalValue.integer};
     return result;
 }
 
@@ -675,8 +657,7 @@ static sysmelb_Value_t sysmelb_primitive_integerAsInt32(size_t argumentCount, sy
     sysmelb_Value_t result = {
         .kind = SysmelValueKindInteger,
         .type = sysmelb_BasicTypesData.int32,
-        .integer = (int32_t)originalValue.integer
-    };
+        .integer = (int32_t)originalValue.integer};
     return result;
 }
 
@@ -687,8 +668,7 @@ static sysmelb_Value_t sysmelb_primitive_integerAsInt64(size_t argumentCount, sy
     sysmelb_Value_t result = {
         .kind = SysmelValueKindInteger,
         .type = sysmelb_BasicTypesData.int64,
-        .integer = (int64_t)originalValue.integer
-    };
+        .integer = (int64_t)originalValue.integer};
     return result;
 }
 
@@ -699,8 +679,7 @@ static sysmelb_Value_t sysmelb_primitive_integerAsUInt8(size_t argumentCount, sy
     sysmelb_Value_t result = {
         .kind = SysmelValueKindUnsignedInteger,
         .type = sysmelb_BasicTypesData.uint8,
-        .unsignedInteger = (uint8_t)originalValue.unsignedInteger
-    };
+        .unsignedInteger = (uint8_t)originalValue.unsignedInteger};
     return result;
 }
 
@@ -711,8 +690,7 @@ static sysmelb_Value_t sysmelb_primitive_integerAsUInt16(size_t argumentCount, s
     sysmelb_Value_t result = {
         .kind = SysmelValueKindUnsignedInteger,
         .type = sysmelb_BasicTypesData.uint16,
-        .unsignedInteger = (uint16_t)originalValue.unsignedInteger
-    };
+        .unsignedInteger = (uint16_t)originalValue.unsignedInteger};
     return result;
 }
 
@@ -723,8 +701,7 @@ static sysmelb_Value_t sysmelb_primitive_integerAsUInt32(size_t argumentCount, s
     sysmelb_Value_t result = {
         .kind = SysmelValueKindUnsignedInteger,
         .type = sysmelb_BasicTypesData.uint32,
-        .unsignedInteger = (uint32_t)originalValue.unsignedInteger
-    };
+        .unsignedInteger = (uint32_t)originalValue.unsignedInteger};
     return result;
 }
 
@@ -735,8 +712,7 @@ static sysmelb_Value_t sysmelb_primitive_integerAsUInt64(size_t argumentCount, s
     sysmelb_Value_t result = {
         .kind = SysmelValueKindUnsignedInteger,
         .type = sysmelb_BasicTypesData.uint64,
-        .unsignedInteger = (uint64_t)originalValue.unsignedInteger
-    };
+        .unsignedInteger = (uint64_t)originalValue.unsignedInteger};
     return result;
 }
 
@@ -748,8 +724,8 @@ static sysmelb_Value_t sysmelb_primitive_integerAsFloat32(size_t argumentCount, 
         .kind = SysmelValueKindFloatingPoint,
         .type = sysmelb_BasicTypesData.float32,
         .floatingPoint = (originalValue.kind == SysmelValueKindUnsignedInteger)
-            ? (float) originalValue.unsignedInteger
-            : (float) originalValue.integer,
+                             ? (float)originalValue.unsignedInteger
+                             : (float)originalValue.integer,
     };
     return result;
 }
@@ -762,8 +738,8 @@ static sysmelb_Value_t sysmelb_primitive_integerAsFloat64(size_t argumentCount, 
         .kind = SysmelValueKindFloatingPoint,
         .type = sysmelb_BasicTypesData.float64,
         .floatingPoint = (originalValue.kind == SysmelValueKindUnsignedInteger)
-            ? (double) originalValue.unsignedInteger
-            : (double) originalValue.integer,
+                             ? (double)originalValue.unsignedInteger
+                             : (double)originalValue.integer,
     };
     return result;
 }
@@ -771,15 +747,24 @@ static sysmelb_Value_t sysmelb_primitive_integerAsFloat64(size_t argumentCount, 
 static void sysmelb_createBasicIntegersPrimitives(void)
 {
     sysmelb_Type_t *integerTypes[] = {
-        sysmelb_BasicTypesData.integer, sysmelb_BasicTypesData.character,
+        sysmelb_BasicTypesData.integer,
+        sysmelb_BasicTypesData.character,
 
-        sysmelb_BasicTypesData.char8, sysmelb_BasicTypesData.char16, sysmelb_BasicTypesData.char32,
-        sysmelb_BasicTypesData.int8, sysmelb_BasicTypesData.int16, sysmelb_BasicTypesData.int32, sysmelb_BasicTypesData.int64,
-        sysmelb_BasicTypesData.uint8, sysmelb_BasicTypesData.uint16, sysmelb_BasicTypesData.uint32, sysmelb_BasicTypesData.uint64,
+        sysmelb_BasicTypesData.char8,
+        sysmelb_BasicTypesData.char16,
+        sysmelb_BasicTypesData.char32,
+        sysmelb_BasicTypesData.int8,
+        sysmelb_BasicTypesData.int16,
+        sysmelb_BasicTypesData.int32,
+        sysmelb_BasicTypesData.int64,
+        sysmelb_BasicTypesData.uint8,
+        sysmelb_BasicTypesData.uint16,
+        sysmelb_BasicTypesData.uint32,
+        sysmelb_BasicTypesData.uint64,
     };
     size_t integerTypeCount = sizeof(integerTypes) / sizeof(integerTypes[0]);
-    for(size_t i = 0; i < integerTypeCount; ++i)
-    {   
+    for (size_t i = 0; i < integerTypeCount; ++i)
+    {
         sysmelb_Type_t *type = integerTypes[i];
         sysmelb_type_addPrimitiveMethod(type, sysmelb_internSymbolC("negated"), sysmelb_primitive_negated);
         sysmelb_type_addPrimitiveMethod(type, sysmelb_internSymbolC("bitInvert"), sysmelb_primitive_bitInvert);
@@ -797,15 +782,15 @@ static void sysmelb_createBasicIntegersPrimitives(void)
         sysmelb_type_addPrimitiveMethod(type, sysmelb_internSymbolC(">"), sysmelb_primitive_integerGreaterThan);
         sysmelb_type_addPrimitiveMethod(type, sysmelb_internSymbolC(">="), sysmelb_primitive_integerGreaterOrEquals);
 
-        sysmelb_type_addPrimitiveMethod(type, sysmelb_internSymbolC("asInteger"),  sysmelb_primitive_integerAsInteger);
-        sysmelb_type_addPrimitiveMethod(type, sysmelb_internSymbolC("asCharacter"),  sysmelb_primitive_integerAsCharacter);
+        sysmelb_type_addPrimitiveMethod(type, sysmelb_internSymbolC("asInteger"), sysmelb_primitive_integerAsInteger);
+        sysmelb_type_addPrimitiveMethod(type, sysmelb_internSymbolC("asCharacter"), sysmelb_primitive_integerAsCharacter);
 
-        sysmelb_type_addPrimitiveMethod(type, sysmelb_internSymbolC("asInt8"),  sysmelb_primitive_integerAsInt8);
+        sysmelb_type_addPrimitiveMethod(type, sysmelb_internSymbolC("asInt8"), sysmelb_primitive_integerAsInt8);
         sysmelb_type_addPrimitiveMethod(type, sysmelb_internSymbolC("asInt16"), sysmelb_primitive_integerAsInt16);
         sysmelb_type_addPrimitiveMethod(type, sysmelb_internSymbolC("asInt32"), sysmelb_primitive_integerAsInt32);
         sysmelb_type_addPrimitiveMethod(type, sysmelb_internSymbolC("asInt64"), sysmelb_primitive_integerAsInt64);
 
-        sysmelb_type_addPrimitiveMethod(type, sysmelb_internSymbolC("asUInt8"),  sysmelb_primitive_integerAsUInt8);
+        sysmelb_type_addPrimitiveMethod(type, sysmelb_internSymbolC("asUInt8"), sysmelb_primitive_integerAsUInt8);
         sysmelb_type_addPrimitiveMethod(type, sysmelb_internSymbolC("asUInt16"), sysmelb_primitive_integerAsUInt16);
         sysmelb_type_addPrimitiveMethod(type, sysmelb_internSymbolC("asUInt32"), sysmelb_primitive_integerAsUInt32);
         sysmelb_type_addPrimitiveMethod(type, sysmelb_internSymbolC("asUInt64"), sysmelb_primitive_integerAsUInt64);
@@ -814,12 +799,12 @@ static void sysmelb_createBasicIntegersPrimitives(void)
         sysmelb_type_addPrimitiveMethod(type, sysmelb_internSymbolC("asFloat64"), sysmelb_primitive_integerAsFloat64);
     }
 
-    sysmelb_type_addPrimitiveMethod(sysmelb_BasicTypesData.integer, sysmelb_internSymbolC("i8"),  sysmelb_primitive_integerAsInt8);
+    sysmelb_type_addPrimitiveMethod(sysmelb_BasicTypesData.integer, sysmelb_internSymbolC("i8"), sysmelb_primitive_integerAsInt8);
     sysmelb_type_addPrimitiveMethod(sysmelb_BasicTypesData.integer, sysmelb_internSymbolC("i16"), sysmelb_primitive_integerAsInt16);
     sysmelb_type_addPrimitiveMethod(sysmelb_BasicTypesData.integer, sysmelb_internSymbolC("i32"), sysmelb_primitive_integerAsInt32);
     sysmelb_type_addPrimitiveMethod(sysmelb_BasicTypesData.integer, sysmelb_internSymbolC("i64"), sysmelb_primitive_integerAsInt64);
 
-    sysmelb_type_addPrimitiveMethod(sysmelb_BasicTypesData.integer, sysmelb_internSymbolC("u8"),  sysmelb_primitive_integerAsUInt8);
+    sysmelb_type_addPrimitiveMethod(sysmelb_BasicTypesData.integer, sysmelb_internSymbolC("u8"), sysmelb_primitive_integerAsUInt8);
     sysmelb_type_addPrimitiveMethod(sysmelb_BasicTypesData.integer, sysmelb_internSymbolC("u16"), sysmelb_primitive_integerAsUInt16);
     sysmelb_type_addPrimitiveMethod(sysmelb_BasicTypesData.integer, sysmelb_internSymbolC("u32"), sysmelb_primitive_integerAsUInt32);
     sysmelb_type_addPrimitiveMethod(sysmelb_BasicTypesData.integer, sysmelb_internSymbolC("u64"), sysmelb_primitive_integerAsUInt64);
@@ -827,31 +812,28 @@ static void sysmelb_createBasicIntegersPrimitives(void)
     sysmelb_type_addPrimitiveMethod(sysmelb_BasicTypesData.integer, sysmelb_internSymbolC("f32"), sysmelb_primitive_integerAsFloat32);
     sysmelb_type_addPrimitiveMethod(sysmelb_BasicTypesData.integer, sysmelb_internSymbolC("f64"), sysmelb_primitive_integerAsFloat64);
 
-    sysmelb_type_addPrimitiveMethod(sysmelb_BasicTypesData.character, sysmelb_internSymbolC("i8"),  sysmelb_primitive_integerAsInt8);
+    sysmelb_type_addPrimitiveMethod(sysmelb_BasicTypesData.character, sysmelb_internSymbolC("i8"), sysmelb_primitive_integerAsInt8);
     sysmelb_type_addPrimitiveMethod(sysmelb_BasicTypesData.character, sysmelb_internSymbolC("i16"), sysmelb_primitive_integerAsInt16);
     sysmelb_type_addPrimitiveMethod(sysmelb_BasicTypesData.character, sysmelb_internSymbolC("i32"), sysmelb_primitive_integerAsInt32);
     sysmelb_type_addPrimitiveMethod(sysmelb_BasicTypesData.character, sysmelb_internSymbolC("i64"), sysmelb_primitive_integerAsInt64);
 
-    sysmelb_type_addPrimitiveMethod(sysmelb_BasicTypesData.character, sysmelb_internSymbolC("u8"),  sysmelb_primitive_integerAsUInt8);
+    sysmelb_type_addPrimitiveMethod(sysmelb_BasicTypesData.character, sysmelb_internSymbolC("u8"), sysmelb_primitive_integerAsUInt8);
     sysmelb_type_addPrimitiveMethod(sysmelb_BasicTypesData.character, sysmelb_internSymbolC("u16"), sysmelb_primitive_integerAsUInt16);
     sysmelb_type_addPrimitiveMethod(sysmelb_BasicTypesData.character, sysmelb_internSymbolC("u32"), sysmelb_primitive_integerAsUInt32);
     sysmelb_type_addPrimitiveMethod(sysmelb_BasicTypesData.character, sysmelb_internSymbolC("u64"), sysmelb_primitive_integerAsUInt64);
-
 }
 
 static sysmelb_Value_t sysmelb_primitive_stringEquals(size_t argumentCount, sysmelb_Value_t *arguments)
 {
     assert(argumentCount == 2);
-    assert(arguments[0].kind == SysmelValueKindStringReference
-        && arguments[1].kind == SysmelValueKindStringReference);
+    assert(arguments[0].kind == SysmelValueKindStringReference && arguments[1].kind == SysmelValueKindStringReference);
 
     sysmelb_Value_t result = {
         .kind = SysmelValueKindBoolean,
         .type = sysmelb_getBasicTypes()->boolean,
     };
 
-    if (arguments[0].stringSize == arguments[1].stringSize
-        && memcmp(arguments[0].string, arguments[1].string, arguments[1].stringSize) == 0)
+    if (arguments[0].stringSize == arguments[1].stringSize && memcmp(arguments[0].string, arguments[1].string, arguments[1].stringSize) == 0)
     {
         result.boolean = true;
     }
@@ -866,16 +848,14 @@ static sysmelb_Value_t sysmelb_primitive_stringEquals(size_t argumentCount, sysm
 static sysmelb_Value_t sysmelb_primitive_stringNotEquals(size_t argumentCount, sysmelb_Value_t *arguments)
 {
     assert(argumentCount == 2);
-    assert(arguments[0].kind == SysmelValueKindStringReference
-        && arguments[1].kind == SysmelValueKindStringReference);
+    assert(arguments[0].kind == SysmelValueKindStringReference && arguments[1].kind == SysmelValueKindStringReference);
 
     sysmelb_Value_t result = {
         .kind = SysmelValueKindBoolean,
         .type = sysmelb_getBasicTypes()->boolean,
     };
 
-    if (arguments[0].stringSize == arguments[1].stringSize
-        && memcmp(arguments[0].string, arguments[1].string, arguments[1].stringSize) == 0)
+    if (arguments[0].stringSize == arguments[1].stringSize && memcmp(arguments[0].string, arguments[1].string, arguments[1].stringSize) == 0)
     {
         result.boolean = false;
     }
@@ -890,11 +870,10 @@ static sysmelb_Value_t sysmelb_primitive_stringNotEquals(size_t argumentCount, s
 static sysmelb_Value_t sysmelb_primitive_concatenateString(size_t argumentCount, sysmelb_Value_t *arguments)
 {
     assert(argumentCount == 2);
-    assert(arguments[0].kind == SysmelValueKindStringReference
-        && arguments[1].kind == SysmelValueKindStringReference);
+    assert(arguments[0].kind == SysmelValueKindStringReference && arguments[1].kind == SysmelValueKindStringReference);
 
     size_t stringSize = arguments[0].stringSize + arguments[1].stringSize;
-    char* stringData = sysmelb_allocate(stringSize);
+    char *stringData = sysmelb_allocate(stringSize);
     memcpy(stringData, arguments[0].string, arguments[0].stringSize);
     memcpy(stringData + arguments[0].stringSize, arguments[1].string, arguments[1].stringSize);
 
@@ -902,8 +881,7 @@ static sysmelb_Value_t sysmelb_primitive_concatenateString(size_t argumentCount,
         .kind = SysmelValueKindStringReference,
         .type = sysmelb_getBasicTypes()->string,
         .string = stringData,
-        .stringSize = stringSize
-    };
+        .stringSize = stringSize};
     return result;
 }
 
@@ -916,16 +894,14 @@ static sysmelb_Value_t sysmelb_primitive_stringSize(size_t argumentCount, sysmel
     sysmelb_Value_t result = {
         .kind = SysmelValueKindUnsignedInteger,
         .type = sysmelb_BasicTypesData.integer,
-        .unsignedInteger = stringSize
-    };
+        .unsignedInteger = stringSize};
     return result;
 }
 
 static sysmelb_Value_t sysmelb_primitive_stringAt(size_t argumentCount, sysmelb_Value_t *arguments)
 {
     assert(argumentCount == 2);
-    assert(arguments[0].kind == SysmelValueKindStringReference
-        && (arguments[1].kind == SysmelValueKindInteger || arguments[1].kind == SysmelValueKindUnsignedInteger));
+    assert(arguments[0].kind == SysmelValueKindStringReference && (arguments[1].kind == SysmelValueKindInteger || arguments[1].kind == SysmelValueKindUnsignedInteger));
 
     size_t stringSize = arguments[0].stringSize;
     unsigned int stringIndex = arguments[1].unsignedInteger;
@@ -935,17 +911,14 @@ static sysmelb_Value_t sysmelb_primitive_stringAt(size_t argumentCount, sysmelb_
     sysmelb_Value_t result = {
         .kind = SysmelValueKindCharacter,
         .type = sysmelb_getBasicTypes()->character,
-        .unsignedInteger = element
-    };
+        .unsignedInteger = element};
     return result;
 }
 
 static sysmelb_Value_t sysmelb_primitive_substringFromUntil(size_t argumentCount, sysmelb_Value_t *arguments)
 {
     assert(argumentCount == 3);
-    assert(arguments[0].kind == SysmelValueKindStringReference
-        && (arguments[1].kind == SysmelValueKindInteger || arguments[1].kind == SysmelValueKindUnsignedInteger)
-        && (arguments[2].kind == SysmelValueKindInteger || arguments[2].kind == SysmelValueKindUnsignedInteger));
+    assert(arguments[0].kind == SysmelValueKindStringReference && (arguments[1].kind == SysmelValueKindInteger || arguments[1].kind == SysmelValueKindUnsignedInteger) && (arguments[2].kind == SysmelValueKindInteger || arguments[2].kind == SysmelValueKindUnsignedInteger));
 
     size_t stringSize = arguments[0].stringSize;
     unsigned int startIndex = arguments[1].unsignedInteger;
@@ -980,8 +953,7 @@ static sysmelb_Value_t sysmelb_primitive_stringAsFloat(size_t argumentCount, sys
     sysmelb_Value_t result = {
         .kind = SysmelValueKindFloatingPoint,
         .type = sysmelb_BasicTypesData.integer,
-        .floatingPoint = floatValue
-    };
+        .floatingPoint = floatValue};
     return result;
 }
 
@@ -995,8 +967,7 @@ static sysmelb_Value_t sysmelb_primitive_stringAsSymbol(size_t argumentCount, sy
     sysmelb_Value_t result = {
         .kind = SysmelValueKindSymbolReference,
         .type = sysmelb_BasicTypesData.symbol,
-        .symbolReference = internedString
-    };
+        .symbolReference = internedString};
     return result;
 }
 
@@ -1009,14 +980,14 @@ static sysmelb_Value_t sysmelb_primitive_parseCEscapeSequences(size_t argumentCo
     char *parsedString = sysmelb_allocate(stringSize);
     size_t parsedStringSize = 0;
 
-    for(size_t i = 0; i < stringSize; ++i)
+    for (size_t i = 0; i < stringSize; ++i)
     {
         char c = arguments[0].string[i];
-        if(c == '\\' && i + 1 < stringSize)
+        if (c == '\\' && i + 1 < stringSize)
         {
             char escape = arguments[0].string[++i];
             char resultingChar = escape;
-            switch(escape)
+            switch (escape)
             {
             case 'n':
                 resultingChar = '\n';
@@ -1031,7 +1002,7 @@ static sysmelb_Value_t sysmelb_primitive_parseCEscapeSequences(size_t argumentCo
                 resultingChar = escape;
                 break;
             }
-            
+
             parsedString[parsedStringSize++] = resultingChar;
         }
         else
@@ -1060,17 +1031,15 @@ static void sysmelb_createBasicStringPrimitives(void)
     sysmelb_type_addPrimitiveMethod(sysmelb_BasicTypesData.string, sysmelb_internSymbolC("asFloat"), sysmelb_primitive_stringAsFloat);
     sysmelb_type_addPrimitiveMethod(sysmelb_BasicTypesData.string, sysmelb_internSymbolC("asSymbol"), sysmelb_primitive_stringAsSymbol);
     sysmelb_type_addPrimitiveMethod(sysmelb_BasicTypesData.string, sysmelb_internSymbolC("parseCEscapeSequences"), sysmelb_primitive_parseCEscapeSequences);
-    
 }
 
 static sysmelb_Value_t sysmelb_primitive_concatenateArrays(size_t argumentCount, sysmelb_Value_t *arguments)
 {
     assert(argumentCount == 2);
-    assert(arguments[0].kind == SysmelValueKindArrayReference
-        && arguments[1].kind == SysmelValueKindArrayReference);
+    assert(arguments[0].kind == SysmelValueKindArrayReference && arguments[1].kind == SysmelValueKindArrayReference);
 
     size_t arraySize = arguments[0].arrayReference->size + arguments[1].arrayReference->size;
-    sysmelb_ArrayHeader_t *arrayData = sysmelb_allocate(sizeof(sysmelb_ArrayHeader_t) + sizeof(sysmelb_Value_t)*arraySize);
+    sysmelb_ArrayHeader_t *arrayData = sysmelb_allocate(sizeof(sysmelb_ArrayHeader_t) + sizeof(sysmelb_Value_t) * arraySize);
     arrayData->size = arraySize;
 
     memcpy(arrayData->elements, arguments[0].arrayReference->elements, arguments[0].arrayReference->size * sizeof(sysmelb_Value_t));
@@ -1079,8 +1048,7 @@ static sysmelb_Value_t sysmelb_primitive_concatenateArrays(size_t argumentCount,
     sysmelb_Value_t result = {
         .kind = SysmelValueKindArrayReference,
         .type = sysmelb_getBasicTypes()->array,
-        .arrayReference = arrayData
-    };
+        .arrayReference = arrayData};
     return result;
 }
 
@@ -1101,8 +1069,7 @@ static sysmelb_Value_t sysmelb_primitive_arraySize(size_t argumentCount, sysmelb
 static sysmelb_Value_t sysmelb_primitive_arrayAt(size_t argumentCount, sysmelb_Value_t *arguments)
 {
     assert(argumentCount == 2);
-    assert(arguments[0].kind == SysmelValueKindArrayReference
-        && (arguments[1].kind == SysmelValueKindInteger || arguments[1].kind == SysmelValueKindUnsignedInteger));
+    assert(arguments[0].kind == SysmelValueKindArrayReference && (arguments[1].kind == SysmelValueKindInteger || arguments[1].kind == SysmelValueKindUnsignedInteger));
 
     size_t arraySize = arguments[0].arrayReference->size;
     unsigned int arrayIndex = arguments[1].unsignedInteger;
@@ -1115,8 +1082,7 @@ static sysmelb_Value_t sysmelb_primitive_arrayAt(size_t argumentCount, sysmelb_V
 static sysmelb_Value_t sysmelb_primitive_arrayAtPut(size_t argumentCount, sysmelb_Value_t *arguments)
 {
     assert(argumentCount == 3);
-    assert(arguments[0].kind == SysmelValueKindArrayReference
-        && (arguments[1].kind == SysmelValueKindInteger || arguments[1].kind == SysmelValueKindUnsignedInteger));
+    assert(arguments[0].kind == SysmelValueKindArrayReference && (arguments[1].kind == SysmelValueKindInteger || arguments[1].kind == SysmelValueKindUnsignedInteger));
 
     size_t arraySize = arguments[0].arrayReference->size;
     unsigned int arrayIndex = arguments[1].unsignedInteger;
@@ -1126,12 +1092,52 @@ static sysmelb_Value_t sysmelb_primitive_arrayAtPut(size_t argumentCount, sysmel
     return result;
 }
 
+static sysmelb_Value_t sysmelb_primitive_arrayAsTuple(size_t argumentCount, sysmelb_Value_t *arguments)
+{
+    assert(argumentCount == 1);
+    assert(arguments[0].kind == SysmelValueKindArrayReference);
+
+    sysmelb_ArrayHeader_t *array = arguments[0].arrayReference;
+    size_t arraySize = array->size;
+    sysmelb_TupleHeader_t *tuple = sysmelb_allocate(sizeof(sysmelb_TupleHeader_t) + sizeof(sysmelb_Value_t) * arraySize);
+    tuple->size = arraySize;
+    for (size_t i = 0; i < arraySize; ++i)
+        tuple->elements[i] = array->elements[i];
+
+    sysmelb_Value_t result = {
+        .kind = SysmelValueKindTupleReference,
+        .tupleReference = tuple,
+        .type = sysmelb_getBasicTypes()->tuple};
+    return result;
+}
+
+static sysmelb_Value_t sysmelb_primitive_arrayAsImmutableDictionary(size_t argumentCount, sysmelb_Value_t *arguments)
+{
+    assert(argumentCount == 1);
+    assert(arguments[0].kind == SysmelValueKindArrayReference);
+
+    sysmelb_ArrayHeader_t *array = arguments[0].arrayReference;
+    size_t arraySize = array->size;
+    sysmelb_ImmutableDictionary_t *dictionary = sysmelb_allocate(sizeof(sysmelb_ImmutableDictionary_t) + sizeof(sysmelb_Association_t *)*arraySize);
+    dictionary->size = arraySize;
+    for (size_t i = 0; i < arraySize; ++i)
+        dictionary->elements[i] = array->elements[i].associationReference;
+
+    sysmelb_Value_t result = {
+        .kind = SysmelValueKindImmutableDictionaryReference,
+        .immutableDictionaryReference = dictionary,
+        .type = sysmelb_getBasicTypes()->immutableDictionary};
+    return result;
+}
+
 static void sysmelb_createBasicArrayPrimitives(void)
 {
     sysmelb_type_addPrimitiveMethod(sysmelb_BasicTypesData.array, sysmelb_internSymbolC("--"), sysmelb_primitive_concatenateArrays);
     sysmelb_type_addPrimitiveMethod(sysmelb_BasicTypesData.array, sysmelb_internSymbolC("size"), sysmelb_primitive_arraySize);
     sysmelb_type_addPrimitiveMethod(sysmelb_BasicTypesData.array, sysmelb_internSymbolC("at:"), sysmelb_primitive_arrayAt);
     sysmelb_type_addPrimitiveMethod(sysmelb_BasicTypesData.array, sysmelb_internSymbolC("at:put:"), sysmelb_primitive_arrayAtPut);
+    sysmelb_type_addPrimitiveMethod(sysmelb_BasicTypesData.array, sysmelb_internSymbolC("asTuple"), sysmelb_primitive_arrayAsTuple);
+    sysmelb_type_addPrimitiveMethod(sysmelb_BasicTypesData.array, sysmelb_internSymbolC("asImmutableDictionary"), sysmelb_primitive_arrayAsImmutableDictionary);
 }
 
 static sysmelb_Value_t sysmelb_primitive_tupleSize(size_t argumentCount, sysmelb_Value_t *arguments)
@@ -1144,16 +1150,14 @@ static sysmelb_Value_t sysmelb_primitive_tupleSize(size_t argumentCount, sysmelb
     sysmelb_Value_t result = {
         .kind = SysmelValueKindUnsignedInteger,
         .type = sysmelb_BasicTypesData.integer,
-        .unsignedInteger = tupleSize
-    };
+        .unsignedInteger = tupleSize};
     return result;
 }
 
 static sysmelb_Value_t sysmelb_primitive_tupleAt(size_t argumentCount, sysmelb_Value_t *arguments)
 {
     assert(argumentCount == 2);
-    assert(arguments[0].kind == SysmelValueKindTupleReference
-        && (arguments[1].kind == SysmelValueKindInteger || arguments[1].kind == SysmelValueKindUnsignedInteger));
+    assert(arguments[0].kind == SysmelValueKindTupleReference && (arguments[1].kind == SysmelValueKindInteger || arguments[1].kind == SysmelValueKindUnsignedInteger));
 
     size_t tupleSize = arguments[0].tupleReference->size;
     unsigned int tupleIndex = arguments[1].unsignedInteger;
@@ -1193,9 +1197,8 @@ static void sysmelb_createBasicAssociationPrimitives(void)
 
 static sysmelb_Value_t sysmelb_primitive_dictionaryAssocAt(size_t argumentCount, sysmelb_Value_t *arguments)
 {
-     assert(argumentCount == 2);
-    assert(arguments[0].kind == SysmelValueKindImmutableDictionaryReference
-        && (arguments[1].kind == SysmelValueKindInteger || arguments[1].kind == SysmelValueKindUnsignedInteger));
+    assert(argumentCount == 2);
+    assert(arguments[0].kind == SysmelValueKindImmutableDictionaryReference && (arguments[1].kind == SysmelValueKindInteger || arguments[1].kind == SysmelValueKindUnsignedInteger));
 
     size_t dictionarySize = arguments[0].immutableDictionaryReference->size;
     unsigned int dictionaryIndex = arguments[1].unsignedInteger;
@@ -1205,8 +1208,7 @@ static sysmelb_Value_t sysmelb_primitive_dictionaryAssocAt(size_t argumentCount,
     sysmelb_Value_t result = {
         .kind = SysmelValueKindAssociationReference,
         .type = sysmelb_getBasicTypes()->association,
-        .associationReference = assoc
-    };
+        .associationReference = assoc};
     return result;
 }
 
@@ -1219,27 +1221,25 @@ static sysmelb_Value_t sysmelb_primitive_dictionarySize(size_t argumentCount, sy
     sysmelb_Value_t result = {
         .kind = SysmelValueKindUnsignedInteger,
         .type = sysmelb_getBasicTypes()->integer,
-        .unsignedInteger = dictionarySize
-    };
+        .unsignedInteger = dictionarySize};
     return result;
 }
 
 static sysmelb_Value_t sysmelb_primitive_dictionaryIncludesKey(size_t argumentCount, sysmelb_Value_t *arguments)
 {
-     assert(argumentCount == 2);
+    assert(argumentCount == 2);
     assert(arguments[0].kind == SysmelValueKindImmutableDictionaryReference);
 
     size_t dictionarySize = arguments[0].immutableDictionaryReference->size;
     for (size_t i = 0; i < dictionarySize; ++i)
     {
         sysmelb_Association_t *assoc = arguments[0].immutableDictionaryReference->elements[i];
-        if(sysmelb_value_equals(arguments[1], assoc->key))
+        if (sysmelb_value_equals(arguments[1], assoc->key))
         {
             sysmelb_Value_t result = {
                 .kind = SysmelValueKindBoolean,
                 .type = sysmelb_getBasicTypes()->boolean,
-                .boolean = true
-            };
+                .boolean = true};
             return result;
         }
     }
@@ -1247,8 +1247,7 @@ static sysmelb_Value_t sysmelb_primitive_dictionaryIncludesKey(size_t argumentCo
     sysmelb_Value_t result = {
         .kind = SysmelValueKindBoolean,
         .type = sysmelb_getBasicTypes()->boolean,
-        .boolean = false
-    };
+        .boolean = false};
     return result;
 }
 
@@ -1261,7 +1260,7 @@ static sysmelb_Value_t sysmelb_primitive_dictionaryAt(size_t argumentCount, sysm
     for (size_t i = 0; i < dictionarySize; ++i)
     {
         sysmelb_Association_t *assoc = arguments[0].immutableDictionaryReference->elements[i];
-        if(sysmelb_value_equals(arguments[1], assoc->key))
+        if (sysmelb_value_equals(arguments[1], assoc->key))
             return assoc->value;
     }
 
@@ -1276,7 +1275,7 @@ static sysmelb_Value_t sysmelb_primitive_withSelectorAddMethod(size_t argumentCo
     assert(arguments[0].kind == SysmelValueKindTypeReference);
     assert(arguments[1].kind == SysmelValueKindSymbolReference);
     assert(arguments[2].kind == SysmelValueKindFunctionReference);
-    
+
     sysmelb_Type_t *type = arguments[0].typeReference;
     sysmelb_symbol_t *selector = arguments[1].symbolReference;
     sysmelb_function_t *function = arguments[2].functionReference;
@@ -1301,13 +1300,12 @@ static sysmelb_Value_t sysmelb_primitive_newWithSize(size_t argumentCount, sysme
     assert(arguments[1].kind == SysmelValueKindInteger || arguments[1].kind == SysmelValueKindUnsignedInteger);
 
     size_t arraySize = arguments[1].integer;
-    sysmelb_ArrayHeader_t *array = sysmelb_allocate(sizeof(sysmelb_ArrayHeader_t) + sizeof(sysmelb_Value_t)*arraySize);
+    sysmelb_ArrayHeader_t *array = sysmelb_allocate(sizeof(sysmelb_ArrayHeader_t) + sizeof(sysmelb_Value_t) * arraySize);
     array->size = arraySize;
     sysmelb_Value_t result = {
         .kind = SysmelValueKindArrayReference,
         .type = sysmelb_getBasicTypes()->array,
-        .arrayReference = array
-    };
+        .arrayReference = array};
     return result;
 }
 
@@ -1342,10 +1340,10 @@ static sysmelb_Value_t sysmelb_primitive_OrderedCollection_at(size_t argumentCou
     assert(argumentCount == 2);
     assert(arguments[0].kind == SysmelValueKindOrderedCollectionReference);
     assert(arguments[1].kind == SysmelValueKindInteger ||
-        arguments[1].kind == SysmelValueKindUnsignedInteger);
+           arguments[1].kind == SysmelValueKindUnsignedInteger);
     size_t size = arguments[0].orderedCollectionReference->size;
     size_t index = arguments[1].unsignedInteger;
-    if(index >= size)
+    if (index >= size)
     {
         sysmelb_SourcePosition_t pos = {};
         sysmelb_errorPrintf(pos, "Index %d is out of bounds (size %d).\n", (int)index, (int)size);
@@ -1360,10 +1358,10 @@ static sysmelb_Value_t sysmelb_primitive_OrderedCollection_atPut(size_t argument
     assert(argumentCount == 3);
     assert(arguments[0].kind == SysmelValueKindOrderedCollectionReference);
     assert(arguments[1].kind == SysmelValueKindInteger ||
-        arguments[1].kind == SysmelValueKindUnsignedInteger);
+           arguments[1].kind == SysmelValueKindUnsignedInteger);
     size_t size = arguments[0].orderedCollectionReference->size;
     size_t index = arguments[1].unsignedInteger;
-    if(index >= size)
+    if (index >= size)
     {
         sysmelb_SourcePosition_t pos = {};
         sysmelb_errorPrintf(pos, "Index %d is out of bounds (size %d).\n", (int)index, (int)size);
@@ -1381,14 +1379,13 @@ static sysmelb_Value_t sysmelb_primitive_OrderedCollection_asArray(size_t argume
     size_t dataSize = arguments[0].orderedCollectionReference->size;
     sysmelb_ArrayHeader_t *array = sysmelb_allocate(sizeof(sysmelb_ArrayHeader_t) + dataSize * sizeof(sysmelb_Value_t));
     array->size = dataSize;
-    for(size_t i = 0; i < dataSize; ++i)
+    for (size_t i = 0; i < dataSize; ++i)
         array->elements[i] = arguments[0].orderedCollectionReference->elements[i];
 
     sysmelb_Value_t result = {
         .kind = SysmelValueKindArrayReference,
         .type = sysmelb_getBasicTypes()->array,
-        .arrayReference = array
-    };
+        .arrayReference = array};
     return result;
 }
 
@@ -1422,8 +1419,7 @@ static sysmelb_Value_t sysmelb_primitive_SymbolHashtable_includesKey(size_t argu
     sysmelb_Value_t result = {
         .kind = SysmelValueKindBoolean,
         .type = sysmelb_getBasicTypes()->boolean,
-        .boolean = lookupResult != NULL && lookupResult->value != NULL
-    };
+        .boolean = lookupResult != NULL && lookupResult->value != NULL};
 
     return result;
 }
@@ -1434,13 +1430,13 @@ static sysmelb_Value_t sysmelb_primitive_SymbolHashtable_at(size_t argumentCount
     assert(arguments[0].kind == SysmelValueKindSymbolHashtableReference);
 
     const sysmelb_SymbolHashtablePair_t *lookupResult = sysmelb_SymbolHashtable_lookupSymbol(arguments[0].symbolHashtableReference, arguments[1].symbolReference);
-    if(!lookupResult)
+    if (!lookupResult)
     {
         sysmelb_SourcePosition_t null = {0};
         sysmelb_errorPrintf(null, "Failed to find key in symbol hashtable.");
     }
 
-    sysmelb_Value_t *resultPointer = (sysmelb_Value_t*)lookupResult->value;
+    sysmelb_Value_t *resultPointer = (sysmelb_Value_t *)lookupResult->value;
     return *resultPointer;
 }
 
@@ -1483,8 +1479,7 @@ static sysmelb_Value_t sysmelb_primitive_IdentityHashset_includes(size_t argumen
     sysmelb_Value_t result = {
         .kind = SysmelValueKindBoolean,
         .type = sysmelb_getBasicTypes()->boolean,
-        .boolean = includesResult
-    };
+        .boolean = includesResult};
 
     return result;
 }
@@ -1503,8 +1498,7 @@ static sysmelb_Value_t sysmelb_primitive_Boolean_Not(size_t argumentCount, sysme
     sysmelb_Value_t result = {
         .kind = SysmelValueKindBoolean,
         .type = sysmelb_getBasicTypes()->boolean,
-        .boolean = !arguments[0].boolean
-    };
+        .boolean = !arguments[0].boolean};
     return result;
 }
 
@@ -1517,8 +1511,7 @@ static sysmelb_Value_t sysmelb_primitive_Boolean_Equals(size_t argumentCount, sy
     sysmelb_Value_t result = {
         .kind = SysmelValueKindBoolean,
         .type = sysmelb_getBasicTypes()->boolean,
-        .boolean = arguments[0].boolean == arguments[1].boolean
-    };
+        .boolean = arguments[0].boolean == arguments[1].boolean};
     return result;
 }
 
@@ -1531,8 +1524,7 @@ static sysmelb_Value_t sysmelb_primitive_Boolean_NotEquals(size_t argumentCount,
     sysmelb_Value_t result = {
         .kind = SysmelValueKindBoolean,
         .type = sysmelb_getBasicTypes()->boolean,
-        .boolean = arguments[0].boolean != arguments[1].boolean
-    };
+        .boolean = arguments[0].boolean != arguments[1].boolean};
     return result;
 }
 
@@ -1555,8 +1547,7 @@ static sysmelb_Value_t sysmelb_primitive_Boolean_And(sysmelb_MacroContext_t *con
     sysmelb_Value_t nodeValue = {
         .kind = SysmelValueKindParseTreeReference,
         .type = sysmelb_getBasicTypes()->parseTreeNode,
-        .parseTreeReference = ifNode
-    };
+        .parseTreeReference = ifNode};
     return nodeValue;
 }
 
@@ -1579,8 +1570,7 @@ static sysmelb_Value_t sysmelb_primitive_Boolean_Or(sysmelb_MacroContext_t *cont
     sysmelb_Value_t nodeValue = {
         .kind = SysmelValueKindParseTreeReference,
         .type = sysmelb_getBasicTypes()->parseTreeNode,
-        .parseTreeReference = ifNode
-    };
+        .parseTreeReference = ifNode};
     return nodeValue;
 }
 
@@ -1601,8 +1591,7 @@ static sysmelb_Value_t sysmelb_primitive_Null_Equals(size_t argumentCount, sysme
     sysmelb_Value_t result = {
         .kind = SysmelValueKindBoolean,
         .type = sysmelb_getBasicTypes()->boolean,
-        .boolean = arguments[1].kind == SysmelValueKindNull
-    };
+        .boolean = arguments[1].kind == SysmelValueKindNull};
     return result;
 }
 
@@ -1614,8 +1603,7 @@ static sysmelb_Value_t sysmelb_primitive_Null_NotEquals(size_t argumentCount, sy
     sysmelb_Value_t result = {
         .kind = SysmelValueKindBoolean,
         .type = sysmelb_getBasicTypes()->boolean,
-        .boolean = arguments[1].kind != SysmelValueKindNull
-    };
+        .boolean = arguments[1].kind != SysmelValueKindNull};
     return result;
 }
 
@@ -1634,8 +1622,7 @@ static sysmelb_Value_t sysmelb_primitive_Object_Equals(size_t argumentCount, sys
     sysmelb_Value_t result = {
         .kind = SysmelValueKindBoolean,
         .type = sysmelb_getBasicTypes()->boolean,
-        .boolean = arguments[0].objectReference == arguments[1].objectReference
-    };
+        .boolean = arguments[0].objectReference == arguments[1].objectReference};
     return result;
 }
 
@@ -1648,8 +1635,7 @@ static sysmelb_Value_t sysmelb_primitive_Object_NotEquals(size_t argumentCount, 
     sysmelb_Value_t result = {
         .kind = SysmelValueKindBoolean,
         .type = sysmelb_getBasicTypes()->boolean,
-        .boolean = arguments[0].objectReference == arguments[1].objectReference
-    };
+        .boolean = arguments[0].objectReference == arguments[1].objectReference};
     return result;
 }
 
@@ -1661,8 +1647,7 @@ static sysmelb_Value_t sysmelb_primitive_Object_GetClass(size_t argumentCount, s
     sysmelb_Value_t result = {
         .kind = SysmelValueKindTypeReference,
         .type = sysmelb_getBasicTypes()->universe,
-        .typeReference = arguments[0].objectReference->clazz
-    };
+        .typeReference = arguments[0].objectReference->clazz};
     return result;
 }
 
@@ -1692,7 +1677,7 @@ static void sysmelb_createBasicTypesPrimitives(void)
 
 const sysmelb_BasicTypes_t *sysmelb_getBasicTypes(void)
 {
-    if(sysmelb_BasicTypesDataInitialized)
+    if (sysmelb_BasicTypesDataInitialized)
         return &sysmelb_BasicTypesData;
 
     sysmelb_createBasicTypes();

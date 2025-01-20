@@ -12,7 +12,7 @@
             //"args": ["${workspaceFolder}/sysmelc/package.sysmel"],
             //"args": ["${workspaceFolder}/samples/20-Classes.sysmel"],
             "args": ["${workspaceFolder}/sysmelc/package.sysmel",
-                "--", "${workspaceFolder}/samples/03-Factorial.sysmel"],
+                "--", "${workspaceFolder}/samples/04-Primitives.sysmel"],
             "stopAtEntry": false,
             "cwd": "${workspaceFolder}",
             "environment": [],

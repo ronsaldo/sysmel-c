@@ -4,7 +4,7 @@
 #include "value.h"
 #include <string.h>
 
-#define SYSMEL_BYTECODE_MAX_TEMPORARY_COUNT 64
+#define SYSMEL_BYTECODE_MAX_TEMPORARY_COUNT 256
 #define SYSMEL_BYTECODE_MAX_STACK_DEPTH 64
 
 typedef struct sysmelb_FunctionInstruction_s {

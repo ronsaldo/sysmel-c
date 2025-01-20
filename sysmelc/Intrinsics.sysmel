@@ -185,6 +185,38 @@ DefaultIntrinsicsEnvironment
     addType: BasicIntrinsicTypesSingleton float32;
     addType: BasicIntrinsicTypesSingleton float64.
 
+$makeSimplePureFunctionType($(Array)arguments $(SysmelType)resultType :: SysmelType) := {
+    SysmelType(SysmelSimpleFunctionType#{
+        common: SysmelTypeCommon#{
+            isValueType: true.
+            valueAlignment: 8u32.
+            valueSize: 8u32.
+            heapAlignment: 8u32.
+            heapSize: 8u32.
+            methodDict: SymbolHashtable().
+        }.
+        isCompileTimePure: true.
+        argumentTypes: arguments.
+        resultType: resultType.
+    }).
+}.
+
+$makeSimpleFunctionType($(Array)arguments $(SysmelType)resultType :: SysmelType) := {
+    SysmelType(SysmelSimpleFunctionType#{
+        common: SysmelTypeCommon#{
+            isValueType: true.
+            valueAlignment: 8u32.
+            valueSize: 8u32.
+            heapAlignment: 8u32.
+            heapSize: 8u32.
+            methodDict: SymbolHashtable().
+        }.
+        isCompileTimePure: false.
+        argumentTypes: arguments.
+        resultType: resultType.
+    }).
+}.
+
 $addGlobalIntrinsicMethod($(Symbol)name $(Function)primitive $(SysmelType)functionType :: Void) := {
     $primitiveValue := TypedValue(Value(SysmelFunctionValue(SysmelFunction(SysmelIntrinsicPrimitive#{
         name: name.
@@ -500,6 +532,7 @@ $addIntegerIntrinsicMethods($(SysmelType)intrinsicType :: Void) := {
     void
 }.
 
+
 addIntegerIntrinsicMethods(BasicIntrinsicTypesSingleton integer).
 addIntegerIntrinsicMethods(BasicIntrinsicTypesSingleton character).
 
@@ -516,6 +549,242 @@ addIntegerIntrinsicMethods(BasicIntrinsicTypesSingleton uint64).
 addIntegerIntrinsicMethods(BasicIntrinsicTypesSingleton char8).
 addIntegerIntrinsicMethods(BasicIntrinsicTypesSingleton char16).
 addIntegerIntrinsicMethods(BasicIntrinsicTypesSingleton char32).
+
+
+$addIntrinsicMethod($(SymbolHashtable)methodDict $(Symbol)name $(Function)primitive $(SysmelType)functionType :: Void) := {
+    $primitiveValue := TypedValue(Value(SysmelFunctionValue(SysmelFunction(SysmelIntrinsicPrimitive#{
+        name: name.
+        implementation: primitive
+    }))). functionType).
+    methodDict at: name put: primitiveValue
+}.
+
+$stringPrimitive_concatenate($(Array)arguments :: TypedValue) := {
+    assert: arguments size = 2.
+    $left := arguments at: 0.
+    $right := arguments at: 1.
+
+    $leftString := extractStringFromValue(left value).
+    $rightString := extractStringFromValue(right value).
+    $result := leftString -- rightString.
+    TypedValue(Value(StringValue(result)). BasicIntrinsicTypesSingleton array)
+}.
+
+$stringPrimitive_size($(Array)arguments :: TypedValue) := {
+    assert: arguments size = 1.
+    $string := arguments at: 0.
+    $stringValue := extractStringFromValue(string value).
+    TypedValue(Value(IntegerValue(stringValue size)). BasicIntrinsicTypesSingleton integer)
+}.
+
+$stringPrimitive_at($(Array)arguments :: TypedValue) := {
+    assert: arguments size = 2.
+    $string := arguments at: 0.
+    $stringValue := extractStringFromValue(string value).
+    $index := arguments at: 1.
+    $indexValue := extractIntegerFromValue(index value).
+    if: indexValue >= stringValue size then: {
+        printLine("Index ". indexValue . " is out bounds.")
+        abort().
+    }.
+    $character := stringValue at: indexValue.
+    TypedValue(Value(CharacterValue(character)). BasicIntrinsicTypesSingleton character)
+}.
+
+$addStringPrimitives() := {
+    $stringType := BasicIntrinsicTypesSingleton string.
+    $integerType := BasicIntrinsicTypesSingleton integer.
+    $characterType := BasicIntrinsicTypesSingleton character.
+    $commonPart := stringType getCommonSection.
+    $methodDict := commonPart methodDict.
+    
+    addIntrinsicMethod(methodDict. #--. stringPrimitive_concatenate . makeSimplePureFunctionType([stringType . stringType]. stringType)).
+    addIntrinsicMethod(methodDict. #size. stringPrimitive_size . makeSimplePureFunctionType([stringType]. integerType)).
+    addIntrinsicMethod(methodDict. #at:. stringPrimitive_at . makeSimplePureFunctionType([stringType . integerType]. characterType)).
+}.
+
+addStringPrimitives().
+
+$arrayPrimitive_concatenate($(Array)arguments :: TypedValue) := {
+    assert: arguments size = 2.
+    $left := arguments at: 0.
+    $right := arguments at: 1.
+
+    $leftArray := extractArrayFromValue(left value).
+    $rightArray := extractArrayFromValue(right value).
+    $result := leftArray -- rightArray.
+    TypedValue(Value(ArrayValue(result)). BasicIntrinsicTypesSingleton array).
+}.
+
+$arrayPrimitive_size($(Array)arguments :: TypedValue) := {
+    assert: arguments size = 1.
+    $typedArray := arguments at: 0.
+
+    $array := extractArrayFromValue(typedArray value).
+    TypedValue(Value(IntegerValue(array size)). BasicIntrinsicTypesSingleton integer).
+}.
+
+$arrayPrimitive_at($(Array)arguments :: TypedValue) := {
+    assert: arguments size = 2.
+    $array := arguments at: 0.
+    $arrayValue := extractArrayFromValue(array value).
+    $index := arguments at: 1.
+    $indexValue := extractIntegerFromValue(index value).
+    if: indexValue >= arrayValue size then: {
+        printLine("Index ". indexValue . " is out bounds.")
+        abort().
+    }.
+    $element := arrayValue at: indexValue.
+    element
+}.
+
+$arrayPrimitive_atPut($(Array)arguments :: TypedValue) := {
+    assert: arguments size = 3.
+    $array := arguments at: 0.
+    $arrayValue := extractArrayFromValue(array value).
+    $index := arguments at: 1.
+    $indexValue := extractIntegerFromValue(index value).
+    if: indexValue >= arrayValue size then: {
+        printLine("Index ". indexValue . " is out bounds.")
+        abort().
+    }.
+    $element := arguments at: 2.
+    arrayValue at: indexValue put: element.
+    element
+}.
+
+$addArrayPrimitives() := {
+    $arrayType := BasicIntrinsicTypesSingleton array.
+    $integerType := BasicIntrinsicTypesSingleton integer.
+    $gradualType := BasicIntrinsicTypesSingleton gradual.
+    $commonPart := arrayType getCommonSection.
+    $methodDict := commonPart methodDict.
+    
+    addIntrinsicMethod(methodDict. #--. arrayPrimitive_concatenate . makeSimplePureFunctionType([arrayType . arrayType]. arrayType)).
+    addIntrinsicMethod(methodDict. #size. arrayPrimitive_size . makeSimplePureFunctionType([arrayType]. integerType)).
+    addIntrinsicMethod(methodDict. #at:. arrayPrimitive_at . makeSimplePureFunctionType([arrayType . integerType]. gradualType)).
+    addIntrinsicMethod(methodDict. #at:put:. arrayPrimitive_atPut . makeSimpleFunctionType([arrayType . integerType. gradualType]. gradualType)).
+}.
+addArrayPrimitives().
+
+$tuplePrimitive_size($(Array)arguments :: TypedValue) := {
+    assert: arguments size = 1.
+    $typedTuple := arguments at: 0.
+
+    $tuple := extractTupleFromValue(typedTuple value).
+    TypedValue(Value(IntegerValue(tuple size)). BasicIntrinsicTypesSingleton integer).
+}.
+
+$tuplePrimitive_at($(Array)arguments :: TypedValue) := {
+    assert: arguments size = 2.
+    $tuple := arguments at: 0.
+    $tupleValue := extractTupleFromValue(tuple value).
+    $index := arguments at: 1.
+    $indexValue := extractIntegerFromValue(index value).
+    if: indexValue >= tupleValue size then: {
+        printLine("Index ". indexValue . " is out bounds.")
+        abort().
+    }.
+    $element := tupleValue at: indexValue.
+    element
+}.
+
+$addTuplePrimitives() := {
+    $tupleType := BasicIntrinsicTypesSingleton tuple.
+    $integerType := BasicIntrinsicTypesSingleton integer.
+    $gradualType := BasicIntrinsicTypesSingleton gradual.
+    $commonPart := tupleType getCommonSection.
+    $methodDict := commonPart methodDict.
+    
+    addIntrinsicMethod(methodDict. #size. tuplePrimitive_size . makeSimplePureFunctionType([tupleType]. integerType)).
+    addIntrinsicMethod(methodDict. #at:. tuplePrimitive_at . makeSimplePureFunctionType([tupleType . integerType]. gradualType)).
+}.
+addTuplePrimitives().
+
+$associationPrimitive_key($(Array)arguments :: TypedValue) := {
+    assert: arguments size = 1.
+    $typedAssociation := arguments at: 0.
+
+    $assoc := extractAssociationFromValue(typedAssociation value).
+    TypedValue(Value(GradualValue(assoc key)). BasicIntrinsicTypesSingleton gradual)
+}.
+
+$associationPrimitive_value($(Array)arguments :: TypedValue) := {
+    assert: arguments size = 1.
+    $typedAssociation := arguments at: 0.
+
+    $assoc := extractAssociationFromValue(typedAssociation value).
+    TypedValue(Value(GradualValue(assoc value)). BasicIntrinsicTypesSingleton gradual)
+}.
+
+$addAssociationPrimitives() := {
+    $associationType := BasicIntrinsicTypesSingleton association.
+    $integerType := BasicIntrinsicTypesSingleton integer.
+    $gradualType := BasicIntrinsicTypesSingleton gradual.
+    $commonPart := associationType getCommonSection.
+    $methodDict := commonPart methodDict.
+    
+    addIntrinsicMethod(methodDict. #key. associationPrimitive_key . makeSimplePureFunctionType([associationType]. gradualType)).
+    addIntrinsicMethod(methodDict. #value. associationPrimitive_value . makeSimplePureFunctionType([associationType]. gradualType)).
+}.
+addAssociationPrimitives().
+
+$immutableDictPrimitive_size($(Array)arguments :: TypedValue) := {
+    assert: arguments size = 1.
+    $typedDict := arguments at: 0.
+
+    $dict := extractImmutableDictionaryFromValue(typedDict value).
+    TypedValue(Value(IntegerValue(typedDict size)). BasicIntrinsicTypesSingleton integer).
+}.
+
+$immutableDictPrimitive_associationAt($(Array)arguments :: TypedValue) := {
+    assert: arguments size = 2.
+    $typedDict := arguments at: 0.
+    $dict := extractImmutableDictionaryFromValue(typedDict value).
+    $index := arguments at: 1.
+    $indexValue := extractIntegerFromValue(index value).
+    if: indexValue >= dict size then: {
+        printLine("Index ". indexValue . " is out bounds.")
+        abort().
+    }.
+    $association := dict associationAt: indexValue.
+    TypedValue(Value(AssociationValue(association)). BasicIntrinsicTypesSingleton integer)
+}.
+
+$immutableDictPrimitive_includesKey($(Array)arguments :: TypedValue) := {
+    assert: arguments size = 2.
+    $typedDict := arguments at: 0.
+    $dict := extractImmutableDictionaryFromValue(typedDict value).
+    $key := extractValueForPrinting((arguments at: 1) value).
+    $result := dict includesKey: key.
+    TypedValue(Value(BooleanValue(result)) . BasicIntrinsicTypesSingleton boolean )
+}.
+
+$immutableDictPrimitive_at($(Array)arguments :: TypedValue) := {
+    assert: arguments size = 2.
+    $typedDict := arguments at: 0.
+    $dict := extractImmutableDictionaryFromValue(typedDict value).
+    $key := extractValueForPrinting((arguments at: 1) value).
+    $result := dict at: key.
+    TypedValue(Value(BooleanValue(result)) . BasicIntrinsicTypesSingleton boolean )
+}.
+
+$addImmutableDictionaryPrimitives() := {
+    $dictType := BasicIntrinsicTypesSingleton immutableDictionary.
+    $associationType := BasicIntrinsicTypesSingleton association.
+    $integerType := BasicIntrinsicTypesSingleton integer.
+    $gradualType := BasicIntrinsicTypesSingleton gradual.
+    $booleanType := BasicIntrinsicTypesSingleton boolean.
+    $commonPart := dictType getCommonSection.
+    $methodDict := commonPart methodDict.
+    
+    addIntrinsicMethod(methodDict. #size. immutableDictPrimitive_size . makeSimplePureFunctionType([dictType]. integerType)).
+    addIntrinsicMethod(methodDict. #associationAt:. immutableDictPrimitive_associationAt . makeSimplePureFunctionType([dictType . integerType]. associationType)).
+    addIntrinsicMethod(methodDict. #includesKey:. immutableDictPrimitive_includesKey . makeSimplePureFunctionType([dictType . gradualType]. booleanType)).
+    addIntrinsicMethod(methodDict. #at:. immutableDictPrimitive_at . makeSimplePureFunctionType([dictType . gradualType]. gradualType)).
+}.
+addImmutableDictionaryPrimitives().
+
 public: [
     $getBasicIntrinsicTypes(:: BasicIntrinsicTypes) := BasicIntrinsicTypesSingleton.
     $getDefaultIntrinsicsEnvironment(:: Environment) := Environment(DefaultIntrinsicsEnvironment).
