@@ -1128,10 +1128,22 @@ static sysmelb_Value_t sysmelb_primitive_symbolIdentityNotEquals(size_t argument
     return result;
 }
 
+static sysmelb_Value_t sysmelb_primitive_symbolWithoutTrailingColon(size_t argumentCount, sysmelb_Value_t *arguments)
+{
+    assert(argumentCount == 1);
+    assert(arguments[0].kind == SysmelValueKindSymbolReference);
+
+    sysmelb_Value_t result = arguments[0];
+    if(arguments[0].symbolReference->string[arguments[0].symbolReference->size - 1] == ':')
+        result.symbolReference = sysmelb_internSymbol(arguments[0].symbolReference->size - 1, arguments[0].symbolReference->string);
+    return result;
+}
+
 static void sysmelb_createBasicSymbolPrimitives(void)
 {
     sysmelb_type_addPrimitiveMethod(sysmelb_BasicTypesData.symbol, sysmelb_internSymbolC("=="), sysmelb_primitive_symbolIdentityEquals);
     sysmelb_type_addPrimitiveMethod(sysmelb_BasicTypesData.symbol, sysmelb_internSymbolC("~~"), sysmelb_primitive_symbolIdentityNotEquals);
+    sysmelb_type_addPrimitiveMethod(sysmelb_BasicTypesData.symbol, sysmelb_internSymbolC("withoutTrailingColon"), sysmelb_primitive_symbolWithoutTrailingColon);
 }
 
 static sysmelb_Value_t sysmelb_primitive_concatenateArrays(size_t argumentCount, sysmelb_Value_t *arguments)

@@ -129,7 +129,14 @@ public: [
                                 }
                             }.
                             if: messageSend arguments size = 1 then: {
-
+                                $selectorWithoutTrailingColon := selector withoutTrailingColon.
+                                $fieldIndex := findIndexOfRecordFieldWithName(tupleAndRecord. selectorWithoutTrailingColon).
+                                if: fieldIndex >= 0 then: {
+                                    ## Implicit setter
+                                    $value := self analyzeAndEvaluateWithEnvironment: environment script: (messageSend arguments at: 0).
+                                    recordValue tuple at: fieldIndex put: value value.
+                                    return: value
+                                }
                             }.
 
 
@@ -138,14 +145,11 @@ public: [
                             ## Nothing required here. 
                         }
                     }.
-                    printLine("receiver type. ". receiverType).
-
-
                     printLine(method value getInvalidErrorValueMessage. " " . selector).
                     abort()
                 }.
 
-                ## TODO: add support for macros
+                ## TODO: add support for macro methods.
                 $methodFunction := extractFunctionFromValue(method value).
 
                 $invocationArguments := OrderedCollection().
