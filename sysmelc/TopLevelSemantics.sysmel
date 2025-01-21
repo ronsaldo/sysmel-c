@@ -39,8 +39,51 @@ public: [
             ## Functions and messages
             $(ParseTreeFunctionApplicationNode)functionApplication : {
                 $functional := self analyzeAndEvaluateWithEnvironment: environment script: functionApplication functional.
+
+                ## Is this a type constructor invocation?
+                if: isTypeValue(functional value) then: {
+                    $typeToConstruct := extractTypeFromValue(functional value).
+
+                    $invocationArguments := OrderedCollection().
+                    $argumentCount := functionApplication arguments size.
+                    $!i := 0. while: (i < argumentCount) do: {
+                        $argumentValue := self analyzeAndEvaluateWithEnvironment: environment script: (functionApplication arguments at: i).
+                        invocationArguments add: argumentValue
+                    } continueWith: (i := i + 1).
+                    
+                    return: (instantiateTypeWithArguments(typeToConstruct . invocationArguments asArray))
+                }.
+
                 $functionalValue := extractFunctionFromValue(functional value).
-                ## TODO: Add support for macros.
+                $functionalIsMacro := sysmelFunctionIsMacro(functionalValue).
+
+                if: functionalIsMacro then: {
+                    $macroContext := MacroContext#{
+                        sourcePosition: functionApplication sourcePosition.
+                        environment: environment.
+                        semanticsState: self.
+                    }.
+
+                    $macroResult := match: functionalValue ofType: SysmelFunction withPatterns: #{
+                        $(SysmelIntrinsicPrimitive)intrinsic : {
+                            intrinsic implementation(macroContext . functionApplication arguments)
+                        }.
+                        $(SysmelCompiledFunction)compiledFunction : {
+                            compiledFunction midIR evaluateWithArguments: [macroContext] -- functionApplication arguments
+                        }.
+                        _: {
+                            printLine("Unsupported method function kind. " . functionalValue).
+                            abort()
+                        }
+                    }.
+
+                    if: valueContainsParseTreeFromValue(macroResult value) then: {
+                        $macroASTResult := extractParseTreeNodeFromValue(macroResult value).
+                        return: (self analyzeAndEvaluateWithEnvironment: environment script: macroASTResult).
+                    } else: {
+                        return: macroResult
+                    }.
+                }.
 
                 $invocationArguments := OrderedCollection().
                 $argumentCount := functionApplication arguments size.
@@ -154,10 +197,10 @@ public: [
 
             ## Association and immutable dictionary.
             $(ParseTreeAssociationNode)association : {
-                $key := extractValueForPrinting((self analyzeAndEvaluateWithEnvironment: environment script: association key) value).
+                $key := extractValueForAnalysis((self analyzeAndEvaluateWithEnvironment: environment script: association key) value).
                 $!value := null.
                 if: association value isNotNull then: {
-                    value := extractValueForPrinting((self analyzeAndEvaluateWithEnvironment: environment script: association value) value).
+                    value := extractValueForAnalysis((self analyzeAndEvaluateWithEnvironment: environment script: association value) value).
                 }.
 
                 return: TypedValue(Value(AssociationValue(key : value)). getBasicIntrinsicTypes() association)

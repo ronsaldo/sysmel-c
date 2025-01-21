@@ -152,7 +152,7 @@ public: [
 
                     if: functionalIsMacro then: {
                         $macroContext := MacroContext#{
-                            sourcePosition: functionApplication.
+                            sourcePosition: functionApplication sourcePosition.
                             environment: environment.
                         }.
 
@@ -169,7 +169,17 @@ public: [
                             }
                         }.
 
-                        return: (self analyzeWithEnvironment: environment andCompileClosure: midBuilder withBody: macroResult).
+                        ##printLine("Macro result". macroResult).
+                        if: valueContainsParseTreeFromValue(macroResult value) then: {
+                            $macroASTResult := extractParseTreeNodeFromValue(macroResult value).
+                            return: (self analyzeWithEnvironment: environment andCompileClosure: midBuilder withBody: macroASTResult).
+                        }
+                        else: {
+                            printLine("TODO: Put the macro result in a constant.").
+                            abort()
+                        }
+
+                        
                     }.
                     $invocationArguments := OrderedCollection().
                     $i := 0. while:(i < functionApplication arguments size) do: {

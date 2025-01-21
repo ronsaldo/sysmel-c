@@ -1167,10 +1167,25 @@ static sysmelb_Value_t sysmelb_primitive_tupleAt(size_t argumentCount, sysmelb_V
     return result;
 }
 
+static sysmelb_Value_t sysmelb_primitive_tupleAtPut(size_t argumentCount, sysmelb_Value_t *arguments)
+{
+    assert(argumentCount == 3);
+    assert(arguments[0].kind == SysmelValueKindTupleReference && (arguments[1].kind == SysmelValueKindInteger || arguments[1].kind == SysmelValueKindUnsignedInteger));
+
+    size_t tupleSize = arguments[0].tupleReference->size;
+    unsigned int tupleIndex = arguments[1].unsignedInteger;
+    assert(tupleIndex < tupleSize);
+
+    sysmelb_Value_t result = arguments[2];
+    arguments[0].tupleReference->elements[tupleIndex] = result;
+    return result;
+}
+
 static void sysmelb_createBasicTuplePrimitives(void)
 {
     sysmelb_type_addPrimitiveMethod(sysmelb_BasicTypesData.tuple, sysmelb_internSymbolC("size"), sysmelb_primitive_tupleSize);
     sysmelb_type_addPrimitiveMethod(sysmelb_BasicTypesData.tuple, sysmelb_internSymbolC("at:"), sysmelb_primitive_tupleAt);
+    sysmelb_type_addPrimitiveMethod(sysmelb_BasicTypesData.tuple, sysmelb_internSymbolC("at:put:"), sysmelb_primitive_tupleAtPut);
 }
 
 static sysmelb_Value_t sysmelb_primitive_associationKey(size_t argumentCount, sysmelb_Value_t *arguments)
@@ -1296,17 +1311,37 @@ static sysmelb_Value_t sysmelb_primitive_newWithSize(size_t argumentCount, sysme
 {
     assert(argumentCount == 2);
     assert(arguments[0].kind == SysmelValueKindTypeReference);
-    assert(arguments[0].typeReference->kind == SysmelTypeKindArray);
     assert(arguments[1].kind == SysmelValueKindInteger || arguments[1].kind == SysmelValueKindUnsignedInteger);
 
-    size_t arraySize = arguments[1].integer;
-    sysmelb_ArrayHeader_t *array = sysmelb_allocate(sizeof(sysmelb_ArrayHeader_t) + sizeof(sysmelb_Value_t) * arraySize);
-    array->size = arraySize;
-    sysmelb_Value_t result = {
-        .kind = SysmelValueKindArrayReference,
-        .type = sysmelb_getBasicTypes()->array,
-        .arrayReference = array};
-    return result;
+
+    if(arguments[0].typeReference->kind == SysmelTypeKindArray)
+    {
+        size_t arraySize = arguments[1].integer;
+        sysmelb_ArrayHeader_t *array = sysmelb_allocate(sizeof(sysmelb_ArrayHeader_t) + sizeof(sysmelb_Value_t) * arraySize);
+        array->size = arraySize;
+        sysmelb_Value_t result = {
+            .kind = SysmelValueKindArrayReference,
+            .type = sysmelb_getBasicTypes()->array,
+            .arrayReference = array};
+        return result;
+    }
+
+    if(arguments[0].typeReference->kind == SysmelTypeKindTuple)
+    {
+        size_t tupleSize = arguments[1].integer;
+        sysmelb_TupleHeader_t *tuple = sysmelb_allocate(sizeof(sysmelb_TupleHeader_t) + sizeof(sysmelb_Value_t) * tupleSize);
+        tuple->size = tupleSize;
+        sysmelb_Value_t result = {
+            .kind = SysmelValueKindTupleReference,
+            .type = sysmelb_getBasicTypes()->array,
+            .tupleReference = tuple
+        };
+        return result;
+    }
+
+    sysmelb_SourcePosition_t nullPosition;
+    sysmelb_errorPrintf(nullPosition, "#new: only supports tuples and arrays.");
+    abort();
 }
 
 static void sysmelb_createBasicTypeUniversePrimitives(void)

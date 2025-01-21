@@ -17,9 +17,11 @@ public: [
         symbol: SysmelType.
         array: SysmelType.
         tuple: SysmelType.
+        record: SysmelType.
         byteArray: SysmelType.
         association: SysmelType.
         immutableDictionary: SysmelType.
+        parseTreeNode: SysmelType.
         function: SysmelType.
         universe: SysmelType.
 
@@ -72,6 +74,12 @@ $BasicIntrinsicTypesSingleton := BasicIntrinsicTypes#{
     })).
     tuple: SysmelType(SysmelBasicType(SysmelTypeCommon#{
         name: #Tuple. isValueType: false. valueAlignment: 8u8. valueSize: 8u8. heapAlignment: 8u8. heapSize: 8u8. methodDict: SymbolHashtable().
+    })).
+    record: SysmelType(SysmelBasicType(SysmelTypeCommon#{
+        name: #Record. isValueType: false. valueAlignment: 8u8. valueSize: 8u8. heapAlignment: 8u8. heapSize: 8u8. methodDict: SymbolHashtable().
+    })).
+    parseTreeNode: SysmelType(SysmelBasicType(SysmelTypeCommon#{
+        name: #ParseTreeNode. isValueType: false. valueAlignment: 8u8. valueSize: 8u8. heapAlignment: 8u8. heapSize: 8u8. methodDict: SymbolHashtable().
     })).
     byteArray: SysmelType(SysmelBasicType(SysmelTypeCommon#{
         name: #ByteArray. isValueType: false. valueAlignment: 8u8. valueSize: 8u8. heapAlignment: 8u8. heapSize: 8u8. methodDict: SymbolHashtable().
@@ -238,6 +246,7 @@ $addGlobalMacroIntrinsicMethod($(Symbol)name $(Function)primitive $(SysmelType)f
 $primitive_print($(Array) arguments :: Void) := {
     $!i := 0.
     while: i < arguments size do: {
+        
         print(extractValueForPrinting((arguments at: i) value))
     } continueWith: (i := i + 1).
     void
@@ -283,23 +292,14 @@ addGlobalIntrinsicMethod(#printLine. primitive_printLine.
     })
 ).
 
-$primitive_ifThenElse_Macro($(MacroContext)context $(Array)arguments :: ParseTreeNode) := {
+$primitive_ifThenElse_Macro($(MacroContext)context $(Array)arguments :: TypedValue) := {
     assert: arguments size = 3.
-    ParseTreeNode(ParseTreeIfSelectionNode#{
+    TypedValue(Value(ParseTreeNodeValue(ParseTreeNode(ParseTreeIfSelectionNode#{
         sourcePosition: context sourcePosition.
         condition: (arguments at: 0).
         trueExpression: (arguments at: 1).
         falseExpression: (arguments at: 2).
-    }).
-}.
-
-$primitive_ifThen_Macro($(MacroContext)context $(Array)arguments :: ParseTreeNode) := {
-    assert: arguments size = 2.
-    ParseTreeNode(ParseTreeIfSelectionNode#{
-        sourcePosition: context sourcePosition.
-        condition: (arguments at: 0).
-        trueExpression: (arguments at: 1).
-    }).
+    }))). BasicIntrinsicTypesSingleton parseTreeNode).
 }.
 
 addGlobalMacroIntrinsicMethod(#if:then:else:. primitive_ifThenElse_Macro.
@@ -313,11 +313,20 @@ addGlobalMacroIntrinsicMethod(#if:then:else:. primitive_ifThenElse_Macro.
             methodDict: SymbolHashtable().
         }.
         isCompileTimePure: false.
-        isVariadic: true.
+        isVariadic: false.
         argumentTypes: [MacroContext . BasicIntrinsicTypesSingleton array].
         resultType: ParseTreeNode.
     })
 ).
+
+$primitive_ifThen_Macro($(MacroContext)context $(Array)arguments :: TypedValue) := {
+    assert: arguments size = 2.
+    TypedValue(Value(ParseTreeNodeValue(ParseTreeNode(ParseTreeIfSelectionNode#{
+        sourcePosition: context sourcePosition.
+        condition: (arguments at: 0).
+        trueExpression: (arguments at: 1).
+    }))). BasicIntrinsicTypesSingleton parseTreeNode).
+}.
 
 addGlobalMacroIntrinsicMethod(#if:then:. primitive_ifThen_Macro.
     SysmelType(SysmelSimpleFunctionType#{
@@ -330,7 +339,287 @@ addGlobalMacroIntrinsicMethod(#if:then:. primitive_ifThen_Macro.
             methodDict: SymbolHashtable().
         }.
         isCompileTimePure: false.
-        isVariadic: true.
+        isVariadic: false.
+        argumentTypes: [MacroContext . BasicIntrinsicTypesSingleton array].
+        resultType: ParseTreeNode.
+    })
+).
+
+$primitive_whileDo_Macro($(MacroContext)context $(Array)arguments :: TypedValue) := {
+    assert: arguments size = 2.
+    TypedValue(Value(ParseTreeNodeValue(ParseTreeNode(ParseTreeWhileLoopNode#{
+        sourcePosition: context sourcePosition.
+        condition: (arguments at: 0).
+        body: (arguments at: 1).
+    }))). BasicIntrinsicTypesSingleton parseTreeNode).
+}.
+
+addGlobalMacroIntrinsicMethod(#while:do:. primitive_whileDo_Macro.
+    SysmelType(SysmelSimpleFunctionType#{
+        common: SysmelTypeCommon#{
+            isValueType: true.
+            valueAlignment: 8u32.
+            valueSize: 8u32.
+            heapAlignment: 8u32.
+            heapSize: 8u32.
+            methodDict: SymbolHashtable().
+        }.
+        isCompileTimePure: false.
+        isVariadic: false.
+        argumentTypes: [MacroContext . BasicIntrinsicTypesSingleton array].
+        resultType: ParseTreeNode.
+    })
+).
+
+$primitive_whileDoContinueWith_Macro($(MacroContext)context $(Array)arguments :: TypedValue) := {
+    assert: arguments size = 3.
+    TypedValue(Value(ParseTreeNodeValue(ParseTreeNode(ParseTreeWhileLoopNode#{
+        sourcePosition: context sourcePosition.
+        condition: (arguments at: 0).
+        body: (arguments at: 1).
+        continueExpression: (arguments at: 2).
+    }))). BasicIntrinsicTypesSingleton parseTreeNode).
+}.
+
+addGlobalMacroIntrinsicMethod(#while:do:continueWith:. primitive_whileDoContinueWith_Macro.
+    SysmelType(SysmelSimpleFunctionType#{
+        common: SysmelTypeCommon#{
+            isValueType: true.
+            valueAlignment: 8u32.
+            valueSize: 8u32.
+            heapAlignment: 8u32.
+            heapSize: 8u32.
+            methodDict: SymbolHashtable().
+        }.
+        isCompileTimePure: false.
+        isVariadic: false.
+        argumentTypes: [MacroContext . BasicIntrinsicTypesSingleton array].
+        resultType: ParseTreeNode.
+    })
+).
+
+$primitive_doWhile_Macro($(MacroContext)context $(Array)arguments :: TypedValue) := {
+    assert: arguments size = 2.
+    TypedValue(Value(ParseTreeNodeValue(ParseTreeNode(ParseTreeDoWhileLoopNode#{
+        sourcePosition: context sourcePosition.
+        body: (arguments at: 0).
+        condition: (arguments at: 1).
+    }))). BasicIntrinsicTypesSingleton parseTreeNode).
+}.
+
+addGlobalMacroIntrinsicMethod(#do:while:. primitive_doWhile_Macro.
+    SysmelType(SysmelSimpleFunctionType#{
+        common: SysmelTypeCommon#{
+            isValueType: true.
+            valueAlignment: 8u32.
+            valueSize: 8u32.
+            heapAlignment: 8u32.
+            heapSize: 8u32.
+            methodDict: SymbolHashtable().
+        }.
+        isCompileTimePure: false.
+        isVariadic: false.
+        argumentTypes: [MacroContext . BasicIntrinsicTypesSingleton array].
+        resultType: ParseTreeNode.
+    })
+).
+
+$primitive_doContinueWithWhile_Macro($(MacroContext)context $(Array)arguments :: TypedValue) := {
+    assert: arguments size = 2.
+    TypedValue(Value(ParseTreeNodeValue(ParseTreeNode(ParseTreeDoWhileLoopNode#{
+        sourcePosition: context sourcePosition.
+        body: (arguments at: 0).
+        continueExpression: (arguments at: 1).
+        condition: (arguments at: 2).
+    }))). BasicIntrinsicTypesSingleton parseTreeNode).
+}.
+
+addGlobalMacroIntrinsicMethod(#do:continueWith:while:. primitive_doContinueWithWhile_Macro.
+    SysmelType(SysmelSimpleFunctionType#{
+        common: SysmelTypeCommon#{
+            isValueType: true.
+            valueAlignment: 8u32.
+            valueSize: 8u32.
+            heapAlignment: 8u32.
+            heapSize: 8u32.
+            methodDict: SymbolHashtable().
+        }.
+        isCompileTimePure: false.
+        isVariadic: false.
+        argumentTypes: [MacroContext . BasicIntrinsicTypesSingleton array].
+        resultType: ParseTreeNode.
+    })
+).
+
+
+$primitive_Return_Macro($(MacroContext)context $(Array)arguments :: TypedValue) := {
+    assert: arguments size = 1.
+    TypedValue(Value(ParseTreeNodeValue(ParseTreeNode(ParseTreeReturnNode#{
+        sourcePosition: context sourcePosition.
+        body: (arguments at: 0).
+        continueExpression: (arguments at: 1).
+        condition: (arguments at: 2).
+    }))). BasicIntrinsicTypesSingleton parseTreeNode).
+}.
+
+addGlobalMacroIntrinsicMethod(#return:. primitive_Return_Macro.
+    SysmelType(SysmelSimpleFunctionType#{
+        common: SysmelTypeCommon#{
+            isValueType: true.
+            valueAlignment: 8u32.
+            valueSize: 8u32.
+            heapAlignment: 8u32.
+            heapSize: 8u32.
+            methodDict: SymbolHashtable().
+        }.
+        isCompileTimePure: false.
+        isVariadic: false.
+        argumentTypes: [MacroContext . BasicIntrinsicTypesSingleton array].
+        resultType: ParseTreeNode.
+    })
+).
+
+$primitive_SwitchWithCases($(MacroContext)context $(Array)arguments :: TypedValue) := {
+    assert: arguments size = 2.
+    TypedValue(Value(ParseTreeNodeValue(ParseTreeNode(ParseTreeSwitchNode#{
+        sourcePosition: context sourcePosition.
+        value: (arguments at: 0).
+        cases: (arguments at: 1).
+    }))) . BasicIntrinsicTypesSingleton parseTreeNode) .
+}.
+
+addGlobalMacroIntrinsicMethod(#switch:withCases:. primitive_SwitchWithCases.
+    SysmelType(SysmelSimpleFunctionType#{
+        common: SysmelTypeCommon#{
+            isValueType: true.
+            valueAlignment: 8u32.
+            valueSize: 8u32.
+            heapAlignment: 8u32.
+            heapSize: 8u32.
+            methodDict: SymbolHashtable().
+        }.
+        isCompileTimePure: false.
+        isVariadic: false.
+        argumentTypes: [MacroContext . BasicIntrinsicTypesSingleton array].
+        resultType: ParseTreeNode.
+    })
+).
+
+$primitive_MatchOfTypeWithPatterns($(MacroContext)context $(Array)arguments :: TypedValue) := {
+    assert: arguments size = 3.
+    TypedValue(Value(ParseTreeNodeValue(ParseTreeNode(ParseTreeSwitchPatternMatchingNode#{
+        sourcePosition: context sourcePosition.
+        value: (arguments at: 0).
+        valueSumType: (arguments at: 1).
+        cases: (arguments at: 2).
+    }))). BasicIntrinsicTypesSingleton parseTreeNode).
+}.
+
+addGlobalMacroIntrinsicMethod(#match:ofType:withPatterns:. primitive_MatchOfTypeWithPatterns.
+    SysmelType(SysmelSimpleFunctionType#{
+        common: SysmelTypeCommon#{
+            isValueType: true.
+            valueAlignment: 8u32.
+            valueSize: 8u32.
+            heapAlignment: 8u32.
+            heapSize: 8u32.
+            methodDict: SymbolHashtable().
+        }.
+        isCompileTimePure: false.
+        isVariadic: false.
+        argumentTypes: [MacroContext . BasicIntrinsicTypesSingleton array].
+        resultType: ParseTreeNode.
+    })
+).
+
+$primitive_MatchWithPatterns($(MacroContext)context $(Array)arguments :: TypedValue) := {
+    assert: arguments size = 2.
+    
+    TypedValue(Value(ParseTreeNodeValue(ParseTreeSwitchPatternMatchingNode#{
+        sourcePosition: context sourcePosition.
+        value: (arguments at: 0).
+        cases: (arguments at: 1).
+    })). BasicIntrinsicTypesSingleton parseTreeNode).
+}.
+
+addGlobalMacroIntrinsicMethod(#match:withPatterns:. primitive_MatchWithPatterns.
+    SysmelType(SysmelSimpleFunctionType#{
+        common: SysmelTypeCommon#{
+            isValueType: true.
+            valueAlignment: 8u32.
+            valueSize: 8u32.
+            heapAlignment: 8u32.
+            heapSize: 8u32.
+            methodDict: SymbolHashtable().
+        }.
+        isCompileTimePure: false.
+        isVariadic: false.
+        argumentTypes: [MacroContext . BasicIntrinsicTypesSingleton array].
+        resultType: ParseTreeNode.
+    })
+).
+
+$primitive_RecordWithFields($(MacroContext)context $(Array)arguments :: TypedValue) := {
+    assert: arguments size = 2.
+    $name := match: (arguments at: 0) ofType: ParseTreeNode withPatterns: #{ 
+        $(ParseTreeIdentifierReferenceNode)identifier : identifier value.
+        $(ParseTreeLiteralSymbolNode)literal : literal value.
+        _: {
+            $nameValue := context semanticsState analyzeAndEvaluateWithEnvironment: context environment script: (arguments at: 0).
+            printLine(nameValue).
+            abort()
+        }
+    }.
+
+    $fieldsAndTypesDictionary := extractImmutableDictionaryFromValue((context semanticsState analyzeAndEvaluateWithEnvironment: context environment script: (arguments at: 1)) value).
+    $fieldCount := fieldsAndTypesDictionary size.
+
+    $fieldNameArray := Array new: fieldCount.
+    $fieldTypeArray := Array new: fieldCount.
+
+    $!i := 0. while: i < fieldCount do: {
+        $assoc := fieldsAndTypesDictionary associationAt: i.
+        $fieldName := assoc key.
+        $fieldType := extractTypeFromValue(assoc value).
+        fieldNameArray at: i put: fieldName.
+        fieldTypeArray at: i put: fieldType.
+    } continueWith: (i := i + 1).
+
+    $recordType := SysmelType(SysmelTupleAndRecordType#{
+            common: SysmelTypeCommon#{
+                name: name.
+                isValueType: false.
+                valueAlignment: 8u32.
+                valueSize: 8u32.
+                heapAlignment: 8u32.
+                heapSize: 8u32.
+                methodDict: SymbolHashtable().
+            }.
+            supertype: BasicIntrinsicTypesSingleton record.
+            fields: fieldTypeArray.
+            fieldNames: fieldNameArray.
+        }).
+
+    $result := TypedValue(Value(SysmelTypeValue(recordType)). BasicIntrinsicTypesSingleton universe).
+    if: name isNotNull then: {
+        context environment addLocalSymbol: name withValue: result.
+    }.
+    
+    return: result
+}.
+
+addGlobalMacroIntrinsicMethod(#Record:withFields:. primitive_RecordWithFields.
+    SysmelType(SysmelSimpleFunctionType#{
+        common: SysmelTypeCommon#{
+            isValueType: true.
+            valueAlignment: 8u32.
+            valueSize: 8u32.
+            heapAlignment: 8u32.
+            heapSize: 8u32.
+            methodDict: SymbolHashtable().
+        }.
+        isCompileTimePure: false.
+        isVariadic: false.
         argumentTypes: [MacroContext . BasicIntrinsicTypesSingleton array].
         resultType: ParseTreeNode.
     })
@@ -755,7 +1044,7 @@ $immutableDictPrimitive_includesKey($(Array)arguments :: TypedValue) := {
     assert: arguments size = 2.
     $typedDict := arguments at: 0.
     $dict := extractImmutableDictionaryFromValue(typedDict value).
-    $key := extractValueForPrinting((arguments at: 1) value).
+    $key := extractValueForAnalysis((arguments at: 1) value).
     $result := dict includesKey: key.
     TypedValue(Value(BooleanValue(result)) . BasicIntrinsicTypesSingleton boolean )
 }.
@@ -764,7 +1053,7 @@ $immutableDictPrimitive_at($(Array)arguments :: TypedValue) := {
     assert: arguments size = 2.
     $typedDict := arguments at: 0.
     $dict := extractImmutableDictionaryFromValue(typedDict value).
-    $key := extractValueForPrinting((arguments at: 1) value).
+    $key := extractValueForAnalysis((arguments at: 1) value).
     $result := dict at: key.
     TypedValue(Value(BooleanValue(result)) . BasicIntrinsicTypesSingleton boolean )
 }.
@@ -788,6 +1077,32 @@ addImmutableDictionaryPrimitives().
 public: [
     $getBasicIntrinsicTypes(:: BasicIntrinsicTypes) := BasicIntrinsicTypesSingleton.
     $getDefaultIntrinsicsEnvironment(:: Environment) := Environment(DefaultIntrinsicsEnvironment).
+
+    $instantiateTypeWithArguments($(SysmelType)typeToInstantiate $(Array)arguments :: TypedValue) := 
+    {
+        match: typeToInstantiate ofType: SysmelType withPatterns: #{
+            $(SysmelTupleAndRecordType) tupleAndRecord : {
+                $tuple := Tuple new: tupleAndRecord fields size.
+                $record := Record#{
+                    type: typeToInstantiate.
+                    tuple: tuple.
+                }.
+
+                if: (arguments size = 1) then: {
+                    printLine("arg0: ".arguments at: 0)
+                    
+                }.
+
+                $result := TypedValue(Value(RecordValue(record)). typeToInstantiate).
+                return: result
+            }.
+            _: {
+                printLine("Unsupported instantiation of type: ". typeToInstantiate).
+            }
+        }.
+        printLine("TODO: instantiateTypeWithArguments: ". typeToInstantiate).
+        abort()
+    }.
 
     SysmelType
         withSelector: #lookupSelector: addMethod: {

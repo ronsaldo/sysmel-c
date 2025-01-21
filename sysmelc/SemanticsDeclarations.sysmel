@@ -135,9 +135,19 @@ public: [
         }.
     ].
 
+    Record: SemanticsState withFields: #{
+        currentExpectedType: SysmelType
+    }.
+
     Record: MacroContext withFields: #{
         sourcePosition: SourcePosition.
         environment: Environment.
+        semanticsState: SemanticsState.
+    }.
+    
+    Record: Record withFields: #{
+        type: SysmelType.
+        tuple: Tuple.
     }.
 
     ## A value with its different alternatives.
@@ -189,6 +199,9 @@ public: [
         Record: TupleValue withFields: #{
             value: Tuple
         }.
+        Record: RecordValue withFields: #{
+            value: Record
+        }.
         Record: AssociationValue withFields: #{
             value: Association.
         }.
@@ -202,7 +215,7 @@ public: [
             value: MidValue
         }.
     ].
-    $extractValueForPrinting($(Value)value :: Gradual) := {
+    $extractValueForAnalysis($(Value)value :: Gradual) := {
         match: value ofType: Value withPatterns: #{
             $(IntegerValue)value : value value.
             $(BooleanValue)value : value value.
@@ -215,6 +228,33 @@ public: [
             $(AssociationValue)value : value value.
             $(ImmutableDictionaryValue)value : value value.
             $(GradualValue)value : value value.
+            _: {
+                value
+            }
+        }
+    }.
+    $extractValueForPrinting($(Value)value :: Gradual) := {
+        match: value ofType: Value withPatterns: #{
+            $(IntegerValue)value : value value.
+            $(BooleanValue)value : value value.
+            $(FloatValue)value : value value.
+            $(CharacterValue)value : value value.
+            $(StringValue)value : value value.
+            $(SymbolValue)value : value value.
+            $(ArrayValue)value : value value.
+            $(TupleValue)value : value value.
+            $(RecordValue)value : value value tuple.
+            $(AssociationValue)value : value value.
+            $(ImmutableDictionaryValue)value : value value.
+            $(GradualValue)value : value value.
+            $(SysmelTypeValue)value : {
+                $name := value value getCommonSection name.
+                if: name isNull then: {
+                    value value
+                } else: {
+                    name
+                }
+            }.
             _: {
                 value
             }
@@ -313,6 +353,21 @@ public: [
             }
         }.
     }.
+    $valueContainsParseTreeFromValue($(Value)value :: Bool) := {
+        match: value ofType: Value withPatterns: #{
+            $(ParseTreeNodeValue)parseTreeValue : true.
+            _: false.
+        }.
+    }.
+    $extractParseTreeNodeFromValue($(Value)value :: ParseTreeNode) := {
+        match: value ofType: Value withPatterns: #{
+            $(ParseTreeNodeValue)parseTreeValue : parseTreeValue value.
+            _: {
+                printLine("Not a valid array value").
+                abort()
+            }
+        }.
+    }.
     $extractBooleanFromValue($(Value)value :: Boolean) := {
         match: value ofType: Value withPatterns: #{
             $(BooleanValue)booleanValue : booleanValue value.
@@ -358,6 +413,12 @@ public: [
             }
         }.
     }.
+    $isTypeValue($(Value)value :: Boolean) := {
+        match: value ofType: Value withPatterns: #{
+            $(SysmelTypeValue)typeValue : true.
+            _: false.
+        }.
+    }.
     $extractFunctionFromValue($(Value)value :: SysmelFunction) := {
         match: value ofType: Value withPatterns: #{
             $(SysmelFunctionValue)functionValue : functionValue value.
@@ -365,6 +426,12 @@ public: [
                 printLine("Not a valid function value").
                 abort()
             }
+        }
+    }.
+    $isFunctionValue($(Value)value :: Bool) := {
+        match: value ofType: Value withPatterns: #{
+            $(SysmelFunctionValue)functionValue : true.
+            _: false.
         }
     }.
     $sysmelFunctionIsMacro($(SysmelFunction)function :: Boolean) := {
