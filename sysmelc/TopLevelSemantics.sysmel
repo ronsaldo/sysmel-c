@@ -1,6 +1,71 @@
 namespace: SysmelC definition: {
 public: [
     SemanticsState
+        withSelector: #analyzeAndEvaluateWithEnvironment:messageSendReceiver:selector:arguments: addMethod: {
+            | $(SemanticsState)self $(Environment)environment $(TypedValue)receiverTypedValue $(TypedValue)selectorTypedValue $(Array)arguments :: TypedValue |
+            $receiverType := receiverTypedValue type.
+            $selector := extractSymbolFromValue(selectorTypedValue value).
+
+            $method := receiverType lookupSelector: selector.
+            if: method value isInvalidErrorValue then: {
+                match: receiverType ofType: SysmelType withPatterns: #{
+                    $(SysmelTupleAndRecordType)tupleAndRecord : {
+                        $recordValue := extractRecordFromValue(receiverTypedValue value).
+
+                        if: arguments size = 0 then: {
+                            $fieldIndex := findIndexOfRecordFieldWithName(tupleAndRecord. selector).
+                            if: fieldIndex >= 0 then: {
+                                ## Implicit getter.
+                                $fieldType := tupleAndRecord fields at: fieldIndex.
+                                $fieldValue := recordValue tuple at: fieldIndex.
+                                return: TypedValue(fieldValue. fieldType)
+                            }
+                        }.
+                        if: arguments size = 1 then: {
+                            $selectorWithoutTrailingColon := selector withoutTrailingColon.
+                            $fieldIndex := findIndexOfRecordFieldWithName(tupleAndRecord. selectorWithoutTrailingColon).
+                            if: fieldIndex >= 0 then: {
+                                ## Implicit setter
+                                $value := self analyzeAndEvaluateWithEnvironment: environment script: (arguments at: 0).
+                                recordValue tuple at: fieldIndex put: value value.
+                                return: value
+                            }
+                        }.
+
+
+                    }.
+                    _: {
+                        ## Nothing required here. 
+                    }
+                }.
+                printLine(method value getInvalidErrorValueMessage. " " . selector).
+                abort()
+            }.
+
+            ## TODO: add support for macro methods.
+            $methodFunction := extractFunctionFromValue(method value).
+
+            $invocationArguments := OrderedCollection().
+            invocationArguments add: receiverTypedValue.
+            $i := 0. while:(i < arguments size) do: {
+                $argument := arguments at: i.
+                $analyzedArgument := self analyzeAndEvaluateWithEnvironment: environment script: argument.
+                invocationArguments add: analyzedArgument.
+            } continueWith:(i := i + 1).
+
+            match: methodFunction ofType: SysmelFunction withPatterns: #{
+                $(SysmelIntrinsicPrimitive)intrinsic : {
+                    return: intrinsic implementation(invocationArguments asArray)
+                }.
+                $(SysmelCompiledFunction)compiledFunction : {
+                    return: (compiledFunction midIR evaluateWithArguments: invocationArguments asArray)
+                }.
+                _: {
+                    printLine("Unsupported method function kind. " . methodFunction).
+                    abort()
+                }
+            }
+        };
         withSelector: #analyzeAndEvaluateWithEnvironment:script: addMethod: {
         | $(SemanticsState)self $(Environment)environment $(ParseTreeNode)ast :: TypedValue |
         match: ast ofType: ParseTreeNode withPatterns: #{
@@ -109,69 +174,24 @@ public: [
             $(ParseTreeMessageSendNode)messageSend : {
                 $receiverTypedValue := self analyzeAndEvaluateWithEnvironment: environment script: messageSend receiver.
                 $selectorTypedValue := self analyzeAndEvaluateWithEnvironment: environment script: messageSend selector.
-
-                $receiverType := receiverTypedValue type.
-                $selector := extractSymbolFromValue(selectorTypedValue value).
-
-                $method := receiverType lookupSelector: selector.
-                if: method value isInvalidErrorValue then: {
-                    match: receiverType ofType: SysmelType withPatterns: #{
-                        $(SysmelTupleAndRecordType)tupleAndRecord : {
-                            $recordValue := extractRecordFromValue(receiverTypedValue value).
-
-                            if: messageSend arguments size = 0 then: {
-                                $fieldIndex := findIndexOfRecordFieldWithName(tupleAndRecord. selector).
-                                if: fieldIndex >= 0 then: {
-                                    ## Implicit getter.
-                                    $fieldType := tupleAndRecord fields at: fieldIndex.
-                                    $fieldValue := recordValue tuple at: fieldIndex.
-                                    return: TypedValue(fieldValue. fieldType)
-                                }
-                            }.
-                            if: messageSend arguments size = 1 then: {
-                                $selectorWithoutTrailingColon := selector withoutTrailingColon.
-                                $fieldIndex := findIndexOfRecordFieldWithName(tupleAndRecord. selectorWithoutTrailingColon).
-                                if: fieldIndex >= 0 then: {
-                                    ## Implicit setter
-                                    $value := self analyzeAndEvaluateWithEnvironment: environment script: (messageSend arguments at: 0).
-                                    recordValue tuple at: fieldIndex put: value value.
-                                    return: value
-                                }
-                            }.
-
-
-                        }.
-                        _: {
-                            ## Nothing required here. 
+                $result := self analyzeAndEvaluateWithEnvironment: environment messageSendReceiver: receiverTypedValue selector: selectorTypedValue arguments: messageSend arguments.
+                return: result
+            }.
+            $(ParseTreeMessageCascadeNode)messageCascade : {
+                $receiverTypedValue := self analyzeAndEvaluateWithEnvironment: environment script: messageCascade receiver.
+                $!result := receiverTypedValue.
+                $!i := 0. while: (i < messageCascade cascadedMessages size) do: {
+                    $cascadedNode := messageCascade cascadedMessages at: i.
+                    match: cascadedNode ofType: ParseTreeNode withPatterns: #{
+                        $(ParseTreeCascadedMessageNode)cascadedMessage : {
+                            $selectorTypedValue := self analyzeAndEvaluateWithEnvironment: environment script: cascadedMessage selector.
+                            
+                            $result := self analyzeAndEvaluateWithEnvironment: environment messageSendReceiver: receiverTypedValue selector: selectorTypedValue arguments: cascadedMessage arguments.
                         }
                     }.
-                    printLine(method value getInvalidErrorValueMessage. " " . selector).
-                    abort()
-                }.
-
-                ## TODO: add support for macro methods.
-                $methodFunction := extractFunctionFromValue(method value).
-
-                $invocationArguments := OrderedCollection().
-                invocationArguments add: receiverTypedValue.
-                $i := 0. while:(i < messageSend arguments size) do: {
-                    $argument := messageSend arguments at: i.
-                    $analyzedArgument := self analyzeAndEvaluateWithEnvironment: environment script: argument.
-                    invocationArguments add: analyzedArgument.
                 } continueWith:(i := i + 1).
-
-                match: methodFunction ofType: SysmelFunction withPatterns: #{
-                    $(SysmelIntrinsicPrimitive)intrinsic : {
-                        return: intrinsic implementation(invocationArguments asArray)
-                    }.
-                    $(SysmelCompiledFunction)compiledFunction : {
-                        return: (compiledFunction midIR evaluateWithArguments: invocationArguments asArray)
-                    }.
-                    _: {
-                        printLine("Unsupported method function kind. " . methodFunction).
-                        abort()
-                    }
-                }
+                
+                return: result
             }.
             $(ParseTreeBinaryOperatorSequenceNode)binopSequence : {
                 if: binopSequence elements size = 1 then: {
