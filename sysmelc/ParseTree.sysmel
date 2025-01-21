@@ -11,8 +11,7 @@ public: [
         }.
         Record: ParseTreeAssertNode withFields: #{
             sourcePosition: SourcePosition.
-            errorMessage: String.
-            innerNodes: ParseTreeNode
+            condition: ParseTreeNode
         }.
         
         ## Literals

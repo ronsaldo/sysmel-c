@@ -160,12 +160,25 @@ IntrinsicsEnvironment
             }
         }.
         void
+    };
+    withSelector: #addTypedValue:withName: addMethod: {
+        |$(IntrinsicsEnvironment)self $(TypedValue)value $(Symbol)name :: Void |
+        self localSymbols at: name put: value.
+        void
     }.
     
 
 DefaultIntrinsicsEnvironment
     addType: BasicIntrinsicTypesSingleton null;
+    addTypedValue: TypedValue(Value(NullValue()). BasicIntrinsicTypesSingleton null) withName: #null;
+
+    addType: BasicIntrinsicTypesSingleton voidType;
+    addTypedValue: TypedValue(Value(VoidValue()). BasicIntrinsicTypesSingleton voidType) withName: #void;
+
     addType: BasicIntrinsicTypesSingleton boolean;
+    addTypedValue: TypedValue(Value(BooleanValue(true)). BasicIntrinsicTypesSingleton boolean) withName: #true;
+    addTypedValue: TypedValue(Value(BooleanValue(false)). BasicIntrinsicTypesSingleton boolean) withName: #false;
+
     addType: BasicIntrinsicTypesSingleton integer;
     addType: BasicIntrinsicTypesSingleton character;
     addType: BasicIntrinsicTypesSingleton float;
@@ -795,6 +808,33 @@ $primitive_Public($(MacroContext)context $(Array)arguments :: TypedValue) := {
 }.
 
 addGlobalMacroIntrinsicMethod(#public:. primitive_Public.
+    SysmelType(SysmelSimpleFunctionType#{
+        common: SysmelTypeCommon#{
+            isValueType: true.
+            valueAlignment: 8u32.
+            valueSize: 8u32.
+            heapAlignment: 8u32.
+            heapSize: 8u32.
+            methodDict: SymbolHashtable().
+        }.
+        isCompileTimePure: false.
+        isVariadic: false.
+        argumentTypes: [MacroContext . BasicIntrinsicTypesSingleton array].
+        resultType: ParseTreeNode.
+    })
+).
+
+$primitive_Assert($(MacroContext)context $(Array)arguments :: TypedValue) := {
+    assert: arguments size = 1.
+    $parseNode := ParseTreeNode(ParseTreeAssertNode#{
+        sourcePosition: context sourcePosition.
+        condition: (arguments at: 0)
+    }).
+    $typedParseNodeValue := TypedValue(Value(ParseTreeNodeValue(parseNode)). BasicIntrinsicTypesSingleton parseTreeNode).
+    return: typedParseNodeValue
+}.
+
+addGlobalMacroIntrinsicMethod(#assert:. primitive_Assert.
     SysmelType(SysmelSimpleFunctionType#{
         common: SysmelTypeCommon#{
             isValueType: true.

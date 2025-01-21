@@ -97,7 +97,13 @@ public: [
                 printLine(errorNode errorMessage).
                 abort()
             }.
-
+            $(ParseTreeAssertNode)assertNode : {
+                $conditionValue := extractBooleanFromValue((self analyzeAndEvaluateWithEnvironment: environment script: assertNode condition) value).
+                if: conditionValue not then: {
+                    printLine("Assertion failure: ". assertNode sourcePosition getText).
+                    abort()
+                }.
+            }.
             ## Literals.
             $(ParseTreeLiteralIntegerNode)literal : {
                 return: TypedValue(Value(IntegerValue(literal value)). getBasicIntrinsicTypes() integer).
