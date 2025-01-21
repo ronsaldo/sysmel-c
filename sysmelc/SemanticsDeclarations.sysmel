@@ -467,6 +467,18 @@ public: [
         } continueWith:(i := i + 1).
 
         return: 1 negated.
+    }.
+    $findIndexOfEnumValueWithName($(SysmelEnumType)enumType $(Symbol)valueName :: Integer) := {
+        $valueCount := enumType valueCount.
+        $!i := 0. while: (i < valueCount) do: {
+            $enumValueName := enumType valueNames at: i.
+            if: valueName == enumValueName then:{
+                return: i
+            }.
+
+        } continueWith:(i := i + 1).
+
+        return: 1 negated.
     }
 ]
 }

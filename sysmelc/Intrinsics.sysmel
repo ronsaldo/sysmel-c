@@ -625,6 +625,93 @@ addGlobalMacroIntrinsicMethod(#Record:withFields:. primitive_RecordWithFields.
     })
 ).
 
+$primitive_EnumWithBaseTypeAndValues($(MacroContext)context $(Array)arguments :: TypedValue) := {
+    assert: arguments size = 3.
+    $name := match: (arguments at: 0) ofType: ParseTreeNode withPatterns: #{ 
+        $(ParseTreeIdentifierReferenceNode)identifier : identifier value.
+        $(ParseTreeLiteralSymbolNode)literal : literal value.
+        _: {
+            $nameValue := context semanticsState analyzeAndEvaluateWithEnvironment: context environment script: (arguments at: 0).
+            printLine(nameValue).
+            abort()
+        }
+    }.
+
+    ##printLine("arguments ". arguments at: 1).
+    $baseType := extractTypeFromValue((context semanticsState analyzeAndEvaluateWithEnvironment: context environment script: (arguments at: 1)) value).
+
+    ##printLine("Arg: ". (arguments at: 2)).
+    $namesAndValuesDictionary := extractImmutableDictionaryFromValue((context semanticsState analyzeAndEvaluateWithEnvironment: context environment script: (arguments at: 2)) value).
+    ##printLine("namesAndValuesDictionary ". namesAndValuesDictionary).
+
+    $valueCount := namesAndValuesDictionary size.
+    $!nextValue := 0.
+
+    $valueNameArray := Array new: valueCount.
+    $valuesArray := Array new: valueCount.
+    $!i := 0. while: i < valueCount do: {
+        $nameAndValueAssociation := namesAndValuesDictionary associationAt: i.
+        $valueName := extractSymbolFromValue(nameAndValueAssociation key).
+        $value := if: nameAndValueAssociation value isNull then: {
+            Value(IntegerValue(nextValue))
+        } else: {
+            nameAndValueAssociation value
+        }.
+        ##printLine(i. " nameAndValueAssociation: ". nameAndValueAssociation).
+        ##printLine(i. " name: ". valueName).
+        ##printLine(i. " value: ". value).
+
+        valueNameArray at: i put: valueName.
+        valuesArray at: i put: value.
+
+        nextValue := extractIntegerFromValue(value) + 1.
+    } continueWith: (i := i + 1).
+
+
+    ##extractImmutableDictionaryFromValue
+    ##$valueCount := namesAndValuesDictionary size.
+
+    $enumType := SysmelType(SysmelEnumType#{
+            common: SysmelTypeCommon#{
+                name: name.
+                isValueType: true.
+                valueAlignment: 8u32.
+                valueSize: 8u32.
+                heapAlignment: 8u32.
+                heapSize: 8u32.
+                methodDict: SymbolHashtable().
+            }.
+            supertype: baseType.
+            valueCount: valueCount asUInt32.
+            values: valuesArray.
+            valueNames: valueNameArray.
+        }).
+
+    $result := TypedValue(Value(SysmelTypeValue(enumType)). BasicIntrinsicTypesSingleton universe).
+    if: name isNotNull then: {
+        context environment addLocalSymbol: name withValue: result.
+    }.
+
+    return: result
+}.
+
+addGlobalMacroIntrinsicMethod(#Enum:withBaseType:values:. primitive_EnumWithBaseTypeAndValues.
+    SysmelType(SysmelSimpleFunctionType#{
+        common: SysmelTypeCommon#{
+            isValueType: true.
+            valueAlignment: 8u32.
+            valueSize: 8u32.
+            heapAlignment: 8u32.
+            heapSize: 8u32.
+            methodDict: SymbolHashtable().
+        }.
+        isCompileTimePure: false.
+        isVariadic: false.
+        argumentTypes: [MacroContext . BasicIntrinsicTypesSingleton array].
+        resultType: ParseTreeNode.
+    })
+).
+
 $integerPrimitive_bitInvert($(Array)arguments :: TypedValue) := {
     assert: arguments size = 1.
     $argument := arguments at: 0.

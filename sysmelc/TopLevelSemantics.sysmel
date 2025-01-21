@@ -8,6 +8,25 @@ public: [
 
             $method := receiverType lookupSelector: selector.
             if: method value isInvalidErrorValue then: {
+                if: isTypeValue(receiverTypedValue value) then: {
+                    $receiverTypeValue := extractTypeFromValue(receiverTypedValue value).
+                    match: receiverTypeValue ofType: SysmelType withPatterns: #{
+                        $(SysmelEnumType)enumType : {
+                            if: arguments size = 0 then: {
+                                $enumValueIndex := findIndexOfEnumValueWithName(enumType. selector).
+                                if: enumValueIndex >= 0 then: {
+                                    $valueAtEnumIndex := enumType values at: enumValueIndex.
+                                    $typedResult := TypedValue(valueAtEnumIndex. enumType supertype).
+                                    return: typedResult
+                                }
+                            }.
+                        }.
+                        _: {
+                            ## Ignored by default.
+                        }
+                    }.
+                }.
+
                 match: receiverType ofType: SysmelType withPatterns: #{
                     $(SysmelTupleAndRecordType)tupleAndRecord : {
                         $recordValue := extractRecordFromValue(receiverTypedValue value).
@@ -31,8 +50,6 @@ public: [
                                 return: value
                             }
                         }.
-
-
                     }.
                     _: {
                         ## Nothing required here. 
@@ -249,7 +266,7 @@ public: [
             $(ParseTreeAssociationNode)association : {
                 $key := (self analyzeAndEvaluateWithEnvironment: environment script: association key) value.
                 $!value := null.
-                if: association value isNotNull then: {
+                if: association value isNullNode not then: {
                     value := (self analyzeAndEvaluateWithEnvironment: environment script: association value) value.
                 }.
 

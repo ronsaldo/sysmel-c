@@ -211,6 +211,13 @@ $getSourcePositionFromNode($(ParseTreeNode)node :: SourcePosition) := {
 ].
 
 ParseTreeNode
+    withSelector: #isNullNode addMethod: {
+        |$(ParseTreeNode)self :: Boolean | 
+        match: self ofType: ParseTreeNode withPatterns: #{
+            $(ParseTreeNullNode)nullNode : true.
+            _: false
+        }
+    };
     withSelector: #isFunctionalDependentTypeNode addMethod: {
         |$(ParseTreeNode)self :: Boolean | 
         match: self ofType: ParseTreeNode withPatterns: #{
