@@ -328,13 +328,8 @@ public: [
 
                         $initialValue := self analyzeAndEvaluateWithEnvironment: environment script: value.
                         if: bindable isMutable then: {
-                            printLine("mutable bindable assignment ". name).
-                            printLine("mutable box". SysmelValueBox(initialValue))
-                            environment addLocalSymbol: name withValue: TypedValue(Value(SysmelValueBox(initialValue)). getBasicIntrinsicTypes gradual)
-
-                            printLine("bindable assignment ". name).
-                            printLine("bindable type is function type: ". bindable typeExpression isFunctionalDependentTypeNode ).
-                            abort()
+                            value := TypedValue(Value(SysmelValueBox(initialValue)). getBasicIntrinsicTypes() gradual).
+                            environment addLocalSymbol: name withValue: value.
                         }
                         else: {
                             environment addLocalSymbol: name withValue: initialValue
