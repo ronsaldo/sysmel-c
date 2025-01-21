@@ -325,10 +325,21 @@ public: [
 
                             return: (self analyzeWithEnvironment: environment andCompileClosure: functionNode)
                         }.
-                        printLine("bindable assignment ". name).
-                        printLine("bindable type is function type: ". bindable typeExpression isFunctionalDependentTypeNode ).
-                        abort()
 
+                        $initialValue := self analyzeAndEvaluateWithEnvironment: environment script: value.
+                        if: bindable isMutable then: {
+                            printLine("mutable bindable assignment ". name).
+                            printLine("mutable box". SysmelValueBox(initialValue))
+                            environment addLocalSymbol: name withValue: TypedValue(Value(SysmelValueBox(initialValue)). getBasicIntrinsicTypes gradual)
+
+                            printLine("bindable assignment ". name).
+                            printLine("bindable type is function type: ". bindable typeExpression isFunctionalDependentTypeNode ).
+                            abort()
+                        }
+                        else: {
+                            environment addLocalSymbol: name withValue: initialValue
+                        }.
+                        return: initialValue.
                     }.
                     _: {
                         $selectorLiteral := ParseTreeNode(ParseTreeLiteralSymbolNode#{
@@ -345,6 +356,15 @@ public: [
                 }
             }.
             ## Blocks
+            $(ParseTreeBlockClosureNode)blockClosure : {
+                $functionNode := ParseTreeFunctionNode#{
+                    sourcePosition: blockClosure sourcePosition.
+                    functionDependentType: blockClosure functionType.
+                    bodyExpression: blockClosure body.
+                    isAnonymous: true
+                }.
+                return: (self analyzeWithEnvironment: environment andCompileClosure: functionNode)
+            }.
             $(ParseTreeLexicalBlockNode)lexicalBlock : {
                 $blockLexicalScope := Environment(LexicalEnvironment#{
                     parent: environment.

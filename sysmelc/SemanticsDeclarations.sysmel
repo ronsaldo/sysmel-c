@@ -214,6 +214,9 @@ public: [
         Record: SysmelMidValue withFields: #{
             value: MidValue
         }.
+        Record: SysmelValueBox withFields: #{
+            value: Value
+        }.
     ].
     $extractValueForAnalysis($(Value)value :: Gradual) := {
         match: value ofType: Value withPatterns: #{
