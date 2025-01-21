@@ -247,6 +247,7 @@ public: [
             $(AssociationValue)value : value value.
             $(ImmutableDictionaryValue)value : value value.
             $(GradualValue)value : value value.
+            $(NamespaceValue)value : value value.
             $(SysmelTypeValue)value : {
                 $name := value value getCommonSection name.
                 if: name isNull then: {
@@ -317,6 +318,16 @@ public: [
             |$(TypedValue)self :: Integer |
             self value getIntegerValue
         }.
+
+    SysmelFunction
+        withSelector: #getName addMethod: {
+            | $(SysmelFunction) self |
+            match:self ofType: SysmelFunction withPatterns: #{
+                $(SysmelIntrinsicPrimitive)intrinsic : intrinsic name.
+                $(SysmelCompiledFunction)compiled : compiled name.
+            }
+        }.
+
     $extractArrayFromValue($(Value)value :: Array) := {
         match: value ofType: Value withPatterns: #{
             $(ArrayValue)arrayValue : arrayValue value.
@@ -422,6 +433,21 @@ public: [
     $isTypeValue($(Value)value :: Boolean) := {
         match: value ofType: Value withPatterns: #{
             $(SysmelTypeValue)typeValue : true.
+            _: false.
+        }.
+    }.
+    $extractNamespaceFromValue($(Value)value :: Namespace) := {
+        match: value ofType: Value withPatterns: #{
+            $(NamespaceValue)namespaceValue : namespaceValue value.
+            _: {
+                printLine("Not a valid sysmel namespace value").
+                abort()
+            }
+        }.
+    }.
+    $isNamespaceValue($(Value)value :: Boolean) := {
+        match: value ofType: Value withPatterns: #{
+            $(NamespaceValue)namespaceValue : true.
             _: false.
         }.
     }.

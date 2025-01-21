@@ -23,6 +23,7 @@ public: [
         immutableDictionary: SysmelType.
         parseTreeNode: SysmelType.
         function: SysmelType.
+        namespace: SysmelType.
         universe: SysmelType.
 
         uint8:  SysmelType.
@@ -92,6 +93,9 @@ $BasicIntrinsicTypesSingleton := BasicIntrinsicTypes#{
     })).
     function: SysmelType(SysmelBasicType(SysmelTypeCommon#{
         name: #Function. isValueType: false. valueAlignment: 8u8. valueSize: 8u8. heapAlignment: 8u8. heapSize: 8u8. methodDict: SymbolHashtable().
+    })).
+    namespace: SysmelType(SysmelBasicType(SysmelTypeCommon#{
+        name: #NamespaceType. isValueType: false. valueAlignment: 8u8. valueSize: 8u8. heapAlignment: 8u8. heapSize: 8u8. methodDict: SymbolHashtable().
     })).
     universe: SysmelType(SysmelBasicType(SysmelTypeCommon#{
         name: #TypeUniverse. isValueType: false. valueAlignment: 8u8. valueSize: 8u8. heapAlignment: 8u8. heapSize: 8u8. methodDict: SymbolHashtable().
@@ -696,6 +700,101 @@ $primitive_EnumWithBaseTypeAndValues($(MacroContext)context $(Array)arguments ::
 }.
 
 addGlobalMacroIntrinsicMethod(#Enum:withBaseType:values:. primitive_EnumWithBaseTypeAndValues.
+    SysmelType(SysmelSimpleFunctionType#{
+        common: SysmelTypeCommon#{
+            isValueType: true.
+            valueAlignment: 8u32.
+            valueSize: 8u32.
+            heapAlignment: 8u32.
+            heapSize: 8u32.
+            methodDict: SymbolHashtable().
+        }.
+        isCompileTimePure: false.
+        isVariadic: false.
+        argumentTypes: [MacroContext . BasicIntrinsicTypesSingleton array].
+        resultType: ParseTreeNode.
+    })
+).
+
+$primitive_NamespaceDefinition($(MacroContext)context $(Array)arguments :: TypedValue) := {
+    assert: arguments size = 2.
+    $name := match: (arguments at: 0) ofType: ParseTreeNode withPatterns: #{ 
+        $(ParseTreeIdentifierReferenceNode)identifier : identifier value.
+        $(ParseTreeLiteralSymbolNode)literal : literal value.
+        _: {
+            $nameValue := context semanticsState analyzeAndEvaluateWithEnvironment: context environment script: (arguments at: 0).
+            abort()
+        }
+    }.
+
+    $currentNamespace := context environment lookupNamespace.
+    $newNamespace := currentNamespace getOrCreateChildNamespaceNamed: name.
+
+    $namespaceNode := ParseTreeNode(ParseTreeNamespaceDefinitionNode#{
+        sourcePosition: context sourcePosition.
+        namespace: newNamespace.
+        definition: (arguments at: 1).
+    }).
+
+    return: TypedValue(Value(ParseTreeNodeValue(namespaceNode)). BasicIntrinsicTypesSingleton parseTreeNode).
+}.
+
+addGlobalMacroIntrinsicMethod(#namespace:definition:. primitive_NamespaceDefinition.
+    SysmelType(SysmelSimpleFunctionType#{
+        common: SysmelTypeCommon#{
+            isValueType: true.
+            valueAlignment: 8u32.
+            valueSize: 8u32.
+            heapAlignment: 8u32.
+            heapSize: 8u32.
+            methodDict: SymbolHashtable().
+        }.
+        isCompileTimePure: false.
+        isVariadic: false.
+        argumentTypes: [MacroContext . BasicIntrinsicTypesSingleton array].
+        resultType: ParseTreeNode.
+    })
+).
+
+$primitive_Public($(MacroContext)context $(Array)arguments :: TypedValue) := {
+    assert: arguments size = 1.
+    $expressionsArray := match: (arguments at: 0) ofType: ParseTreeNode withPatterns: #{
+        $(ParseTreeArrayNode)arrayNode : arrayNode elements.
+        _: {
+            printLine("The public: macro expects an array with definitions.").
+            abort()
+        }
+    }.
+
+    $ownerNamespace := context environment lookupNamespace.
+    $!lastElement := TypedValue(Value(VoidValue()). BasicIntrinsicTypesSingleton voidType).
+
+    $i := 0. while: (i < expressionsArray size) do: {
+        $valueAST := expressionsArray at: i.
+        $typedValueToExport := context semanticsState analyzeAndEvaluateWithEnvironment: context environment script: valueAST.
+        ##printLine("valueToExport ". typedValueToExport value).
+        lastElement := match: typedValueToExport value ofType: Value withPatterns: #{
+            $(SysmelTypeValue)typeValue : {
+                $typeName := typeValue value getCommonSection name.
+                ownerNamespace exportTypedValue: typedValueToExport withName: typeName.
+                typedValueToExport
+            }.
+            $(SysmelFunctionValue)functionValue : {
+                $functionName := functionValue value getName.
+                ownerNamespace exportTypedValue: typedValueToExport withName: functionName.
+                typedValueToExport
+            }.
+            _: {
+                printLine("Unsupported value to export ". typedValueToExport value).
+                abort()
+            }
+        }.
+    } continueWith: (i := i + 1).
+
+    return: lastElement
+}.
+
+addGlobalMacroIntrinsicMethod(#public:. primitive_Public.
     SysmelType(SysmelSimpleFunctionType#{
         common: SysmelTypeCommon#{
             isValueType: true.

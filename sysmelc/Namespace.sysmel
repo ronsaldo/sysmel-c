@@ -1,5 +1,21 @@
 namespace: SysmelC definition: {
-public: [
-
-]
+Namespace
+    withSelector: #getOrCreateChildNamespaceNamed: addMethod: {
+        |$(Namespace)self $(Symbol) childName|
+        if: (self exportedObjectTable includesKey: childName) then: {
+            return: (self exportedObjectTable at: childName)
+        } else: {
+            $newChild := MakeNamespaceNamed(childName).
+            $typedValue := TypedValue(Value(NamespaceValue(newChild)). getBasicIntrinsicTypes() namespace).
+            self exportedObjectTable at: childName put: typedValue.
+            self exportedObjectList add: typedValue.
+            return: newChild
+        }.
+    };
+    withSelector: #exportTypedValue:withName: addMethod: {
+        |$(Namespace)self $(TypedValue)valueToExport $(Symbol) childName|
+            self exportedObjectTable at: childName put: valueToExport.
+            self exportedObjectList add: valueToExport.
+            return: valueToExport
+    }.
 }

@@ -10,6 +10,8 @@ public: [
 ].
 }.
 
+TestNamespace.
+printLine(TestNamespace).
 printLine(TestNamespace TestPair).
 printLine(TestNamespace TestPair(1i32, 2i32)).
 printLine(TestNamespace sum(5 . 8)).

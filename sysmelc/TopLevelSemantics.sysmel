@@ -26,6 +26,13 @@ public: [
                         }
                     }.
                 }.
+                if: arguments size = 0 && isNamespaceValue(receiverTypedValue value) then: {
+                    $namespace := extractNamespaceFromValue(receiverTypedValue value).
+
+                    if: (namespace exportedObjectTable includesKey: selector) then: {
+                        return: (namespace exportedObjectTable at: selector)
+                    }.
+                }.
 
                 match: receiverType ofType: SysmelType withPatterns: #{
                     $(SysmelTupleAndRecordType)tupleAndRecord : {
@@ -346,6 +353,21 @@ public: [
                 $condition := self analyzeAndEvaluateWithEnvironment: environment script: ifSelection condition.
                 printLine(condition).
                 abort().
+            }.
+
+            ## Namespace
+            $(ParseTreeNamespaceDefinitionNode)namespaceDefinition : {
+                $newNamespaceEnvironment := Environment(NamespaceEnvironment#{
+                    parent: environment.
+                    namespace: namespaceDefinition namespace
+                }).
+
+                $newLexicalEnvironment := Environment(LexicalEnvironment#{
+                    parent: newNamespaceEnvironment.
+                    localSymbols: SymbolHashtable().
+                }).
+
+                return: (self analyzeAndEvaluateWithEnvironment: newLexicalEnvironment script: namespaceDefinition definition).
             }.
 
             _: {
