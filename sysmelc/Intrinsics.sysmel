@@ -579,7 +579,7 @@ $primitive_RecordWithFields($(MacroContext)context $(Array)arguments :: TypedVal
 
     $!i := 0. while: i < fieldCount do: {
         $assoc := fieldsAndTypesDictionary associationAt: i.
-        $fieldName := assoc key.
+        $fieldName := extractSymbolFromValue(assoc key).
         $fieldType := extractTypeFromValue(assoc value).
         fieldNameArray at: i put: fieldName.
         fieldTypeArray at: i put: fieldType.
@@ -1252,7 +1252,6 @@ public: [
                     tuple: tuple.
                 }.
 
-                printLine("Argument count ". arguments size).
                 if: (arguments size = 1 && isValueWithImmutableDictionaryFromValue((arguments at: 0) value)) then: {
                     $dictionary := extractImmutableDictionaryFromValue((arguments at: 0) value).
                     if: dictionary size > tupleSize then: {
@@ -1261,7 +1260,7 @@ public: [
 
                     $!i := 0. while: i < dictionary size do: {
                         $association := dictionary associationAt: i.
-                        $fieldName := association key.
+                        $fieldName := extractSymbolFromValue(association key).
                         $fieldIndex := findIndexOfRecordFieldWithName(tupleAndRecord. fieldName).
                         if: fieldIndex < 0 then: {
                             printLine("Record does not have a field name ". fieldName)
@@ -1305,7 +1304,7 @@ public: [
             }.
 
             $supertype := self getSupertype.
-            if: supertype ~~ null then: {
+            if: null ~~ supertype then: {
                 return: (supertype lookupSelector: selector)
             }.
 

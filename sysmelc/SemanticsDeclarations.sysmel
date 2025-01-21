@@ -447,6 +447,15 @@ public: [
         }
     }.
 
+    $extractRecordFromValue($(Value)value :: SysmelFunction) := {
+        match: value ofType: Value withPatterns: #{
+            $(RecordValue)recordValue : recordValue value.
+            _: {
+                printLine("Not a valid record value").
+                abort()
+            }
+        }
+    }.
     $findIndexOfRecordFieldWithName($(SysmelTupleAndRecordType)recordType $(Symbol)fieldName :: Integer) := {
         $fieldCount := recordType fieldNames size.
         $!i := 0. while: (i < fieldCount) do: {

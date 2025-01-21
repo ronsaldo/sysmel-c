@@ -115,6 +115,32 @@ public: [
 
                 $method := receiverType lookupSelector: selector.
                 if: method value isInvalidErrorValue then: {
+                    match: receiverType ofType: SysmelType withPatterns: #{
+                        $(SysmelTupleAndRecordType)tupleAndRecord : {
+                            $recordValue := extractRecordFromValue(receiverTypedValue value).
+
+                            if: messageSend arguments size = 0 then: {
+                                $fieldIndex := findIndexOfRecordFieldWithName(tupleAndRecord. selector).
+                                if: fieldIndex >= 0 then: {
+                                    ## Implicit getter.
+                                    $fieldType := tupleAndRecord fields at: fieldIndex.
+                                    $fieldValue := recordValue tuple at: fieldIndex.
+                                    return: TypedValue(fieldValue. fieldType)
+                                }
+                            }.
+                            if: messageSend arguments size = 1 then: {
+
+                            }.
+
+
+                        }.
+                        _: {
+                            ## Nothing required here. 
+                        }
+                    }.
+                    printLine("receiver type. ". receiverType).
+
+
                     printLine(method value getInvalidErrorValueMessage. " " . selector).
                     abort()
                 }.
@@ -197,10 +223,10 @@ public: [
 
             ## Association and immutable dictionary.
             $(ParseTreeAssociationNode)association : {
-                $key := extractValueForAnalysis((self analyzeAndEvaluateWithEnvironment: environment script: association key) value).
+                $key := (self analyzeAndEvaluateWithEnvironment: environment script: association key) value.
                 $!value := null.
                 if: association value isNotNull then: {
-                    value := extractValueForAnalysis((self analyzeAndEvaluateWithEnvironment: environment script: association value) value).
+                    value := (self analyzeAndEvaluateWithEnvironment: environment script: association value) value.
                 }.
 
                 return: TypedValue(Value(AssociationValue(key : value)). getBasicIntrinsicTypes() association)
