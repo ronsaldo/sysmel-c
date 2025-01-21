@@ -344,6 +344,12 @@ public: [
             }
         }.
     }.
+    $isValueWithImmutableDictionaryFromValue($(Value)value :: Boolean) := {
+        match: value ofType: Value withPatterns: #{
+            $(ImmutableDictionaryValue)dict : true.
+            _: false
+        }.
+    }.
     $extractImmutableDictionaryFromValue($(Value)value :: ImmutableDictionary) := {
         match: value ofType: Value withPatterns: #{
             $(ImmutableDictionaryValue)dict : dict value.
@@ -440,5 +446,18 @@ public: [
             $(SysmelCompiledFunction)compiled : compiled isMacro.
         }
     }.
+
+    $findIndexOfRecordFieldWithName($(SysmelTupleAndRecordType)recordType $(Symbol)fieldName :: Integer) := {
+        $fieldCount := recordType fieldNames size.
+        $!i := 0. while: (i < fieldCount) do: {
+            $recordFieldName := recordType fieldNames at: i.
+            if: fieldName == recordFieldName then:{
+                return: i
+            }.
+
+        } continueWith:(i := i + 1).
+
+        return: 1 negated.
+    }
 ]
 }

@@ -689,6 +689,66 @@ $integerPrimitive_integerModulo($(Array)arguments :: TypedValue) := {
     result
 }.
 
+$integerPrimitive_integerBitAnd($(Array)arguments :: TypedValue) := {
+    assert: arguments size = 2.
+    $left := arguments at: 0.
+    $leftValue := left getIntegerValue.
+    $rightValue := (arguments at: 1) getIntegerValue.
+
+    $result := TypedValue(Value(IntegerValue(leftValue & rightValue)). left type).
+    result
+}.
+
+$integerPrimitive_integerBitOr($(Array)arguments :: TypedValue) := {
+    assert: arguments size = 2.
+    $left := arguments at: 0.
+    $leftValue := left getIntegerValue.
+    $rightValue := (arguments at: 1) getIntegerValue.
+
+    $result := TypedValue(Value(IntegerValue(leftValue | rightValue)). left type).
+    result
+}.
+
+$integerPrimitive_integerBitXor($(Array)arguments :: TypedValue) := {
+    assert: arguments size = 2.
+    $left := arguments at: 0.
+    $leftValue := left getIntegerValue.
+    $rightValue := (arguments at: 1) getIntegerValue.
+
+    $result := TypedValue(Value(IntegerValue(leftValue ^ rightValue)). left type).
+    result
+}.
+
+$integerPrimitive_integerShiftLeft($(Array)arguments :: TypedValue) := {
+    assert: arguments size = 2.
+    $left := arguments at: 0.
+    $leftValue := left getIntegerValue.
+    $rightValue := (arguments at: 1) getIntegerValue.
+
+    $result := TypedValue(Value(IntegerValue(leftValue << rightValue)). left type).
+    result
+}.
+
+$integerPrimitive_integerLogicalShiftRight($(Array)arguments :: TypedValue) := {
+    assert: arguments size = 2.
+    $left := arguments at: 0.
+    $leftValue := left getIntegerValue.
+    $rightValue := (arguments at: 1) getIntegerValue.
+
+    $result := TypedValue(Value(IntegerValue(leftValue >> rightValue)). left type).
+    result
+}.
+
+$integerPrimitive_integerArithmeticShiftRight($(Array)arguments :: TypedValue) := {
+    assert: arguments size = 2.
+    $left := arguments at: 0.
+    $leftValue := left getIntegerValue.
+    $rightValue := (arguments at: 1) getIntegerValue.
+
+    $result := TypedValue(Value(IntegerValue(leftValue >>> rightValue)). left type).
+    result
+}.
+
 $integerPrimitive_equals($(Array)arguments :: TypedValue) := {
     assert: arguments size = 2.
     $left := arguments at: 0.
@@ -749,6 +809,105 @@ $integerPrimitive_greaterOrEquals($(Array)arguments :: TypedValue) := {
     result
 }.
 
+$integerPrimitive_asInt8($(Array)arguments :: TypedValue) := {
+    assert: arguments size = 1.
+    $sourceValue := (arguments at: 0) getIntegerValue.
+    $masked := (sourceValue & 16r7F) - (sourceValue & 16r80).
+
+    $result := TypedValue(Value(IntegerValue(masked)). BasicIntrinsicTypesSingleton int8).
+    result
+}.
+
+$integerPrimitive_asInt16($(Array)arguments :: TypedValue) := {
+    assert: arguments size = 1.
+    $sourceValue := (arguments at: 0) getIntegerValue.
+    $masked := (sourceValue & 16r7FFF) - (sourceValue & 16r8000).
+
+    $result := TypedValue(Value(IntegerValue(masked)). BasicIntrinsicTypesSingleton int16).
+    result
+}.
+
+$integerPrimitive_asInt32($(Array)arguments :: TypedValue) := {
+    assert: arguments size = 1.
+    $sourceValue := (arguments at: 0) getIntegerValue.
+    $masked := (sourceValue & 16r7FFFFFFF) - (sourceValue & 16r80000000).
+
+    $result := TypedValue(Value(IntegerValue(masked)). BasicIntrinsicTypesSingleton int32).
+    result
+}.
+
+$integerPrimitive_asInt64($(Array)arguments :: TypedValue) := {
+    assert: arguments size = 1.
+    $sourceValue := (arguments at: 0) getIntegerValue.
+    $masked := (sourceValue & 16r7FFFFFFFFFFFFFFF) - (sourceValue & 16r8000000000000000).
+
+    $result := TypedValue(Value(IntegerValue(masked)). BasicIntrinsicTypesSingleton int64).
+    result
+}.
+
+$integerPrimitive_asUInt8($(Array)arguments :: TypedValue) := {
+    assert: arguments size = 1.
+    $sourceValue := (arguments at: 0) getIntegerValue.
+    $masked := sourceValue & 16rFF.
+
+    $result := TypedValue(Value(IntegerValue(masked)). BasicIntrinsicTypesSingleton uint8).
+    result
+}.
+
+$integerPrimitive_asUInt16($(Array)arguments :: TypedValue) := {
+    assert: arguments size = 1.
+    $sourceValue := (arguments at: 0) getIntegerValue.
+    $masked := sourceValue & 16rFFFF.
+
+    $result := TypedValue(Value(IntegerValue(masked)). BasicIntrinsicTypesSingleton uint16).
+    result
+}.
+
+$integerPrimitive_asUInt32($(Array)arguments :: TypedValue) := {
+    assert: arguments size = 1.
+    $sourceValue := (arguments at: 0) getIntegerValue.
+    $masked := sourceValue & 16rFFFFFFFF.
+
+    $result := TypedValue(Value(IntegerValue(masked)). BasicIntrinsicTypesSingleton uint32).
+    result
+}.
+
+$integerPrimitive_asUInt64($(Array)arguments :: TypedValue) := {
+    assert: arguments size = 1.
+    $sourceValue := (arguments at: 0) getIntegerValue.
+    $masked := sourceValue & 16rFFFFFFFFFFFFFFFF.
+
+    $result := TypedValue(Value(IntegerValue(masked)). BasicIntrinsicTypesSingleton uint64).
+    result
+}.
+
+$integerPrimitive_asChar8($(Array)arguments :: TypedValue) := {
+    assert: arguments size = 1.
+    $sourceValue := (arguments at: 0) getIntegerValue.
+    $masked := sourceValue & 16rFF.
+
+    $result := TypedValue(Value(IntegerValue(masked)). BasicIntrinsicTypesSingleton char8).
+    result
+}.
+
+$integerPrimitive_asChar16($(Array)arguments :: TypedValue) := {
+    assert: arguments size = 1.
+    $sourceValue := (arguments at: 0) getIntegerValue.
+    $masked := sourceValue & 16rFFFF.
+
+    $result := TypedValue(Value(IntegerValue(masked)). BasicIntrinsicTypesSingleton char16).
+    result
+}.
+
+$integerPrimitive_asChar32($(Array)arguments :: TypedValue) := {
+    assert: arguments size = 1.
+    $sourceValue := (arguments at: 0) getIntegerValue.
+    $masked := sourceValue & 16rFFFFFFFF.
+
+    $result := TypedValue(Value(IntegerValue(masked)). BasicIntrinsicTypesSingleton char32).
+    result
+}.
+
 $addIntegerIntrinsicMethod($(SymbolHashtable)methodDict $(Symbol)name $(Function)primitive $(SysmelType)functionType :: Void) := {
     $primitiveValue := TypedValue(Value(SysmelFunctionValue(SysmelFunction(SysmelIntrinsicPrimitive#{
         name: name.
@@ -760,47 +919,9 @@ $addIntegerIntrinsicMethods($(SysmelType)intrinsicType :: Void) := {
     $commonPart := intrinsicType getCommonSection.
     $methodDict := commonPart methodDict.
 
-    $unaryFunctionType := SysmelType(SysmelSimpleFunctionType#{
-        common: SysmelTypeCommon#{
-            isValueType: true.
-            valueAlignment: 8u32.
-            valueSize: 8u32.
-            heapAlignment: 8u32.
-            heapSize: 8u32.
-            methodDict: SymbolHashtable().
-        }.
-        isCompileTimePure: true.
-        argumentTypes: [intrinsicType].
-        resultType: intrinsicType.
-    }).
-
-    $binaryFunctionType := SysmelType(SysmelSimpleFunctionType#{
-        common: SysmelTypeCommon#{
-            isValueType: true.
-            valueAlignment: 8u32.
-            valueSize: 8u32.
-            heapAlignment: 8u32.
-            heapSize: 8u32.
-            methodDict: SymbolHashtable().
-        }.
-        isCompileTimePure: true.
-        argumentTypes: [intrinsicType . intrinsicType].
-        resultType: intrinsicType.
-    }).
-
-    $binaryComparisonFunctionType := SysmelType(SysmelSimpleFunctionType#{
-        common: SysmelTypeCommon#{
-            isValueType: true.
-            valueAlignment: 8u32.
-            valueSize: 8u32.
-            heapAlignment: 8u32.
-            heapSize: 8u32.
-            methodDict: SymbolHashtable().
-        }.
-        isCompileTimePure: true.
-        argumentTypes: [intrinsicType . intrinsicType].
-        resultType: BasicIntrinsicTypesSingleton boolean.
-    }).
+    $unaryFunctionType := makeSimplePureFunctionType([intrinsicType] . intrinsicType).
+    $binaryFunctionType := makeSimplePureFunctionType([intrinsicType . intrinsicType] . intrinsicType).
+    $binaryComparisonFunctionType := makeSimplePureFunctionType([intrinsicType . intrinsicType] . BasicIntrinsicTypesSingleton boolean).
 
     addIntegerIntrinsicMethod(methodDict. #bitInvert. integerPrimitive_bitInvert. unaryFunctionType).
     addIntegerIntrinsicMethod(methodDict. #negated. integerPrimitive_negated. unaryFunctionType).
@@ -811,12 +932,33 @@ $addIntegerIntrinsicMethods($(SysmelType)intrinsicType :: Void) := {
     addIntegerIntrinsicMethod(methodDict. #//. integerPrimitive_integerDivision. binaryFunctionType).
     addIntegerIntrinsicMethod(methodDict. #%. integerPrimitive_integerModulo. binaryFunctionType).
 
+    addIntegerIntrinsicMethod(methodDict. #&. integerPrimitive_integerBitAnd. binaryFunctionType).
+    addIntegerIntrinsicMethod(methodDict. #|. integerPrimitive_integerBitOr. binaryFunctionType).
+    addIntegerIntrinsicMethod(methodDict. #^. integerPrimitive_integerBitXor. binaryFunctionType).
+    addIntegerIntrinsicMethod(methodDict. #<<. integerPrimitive_integerShiftLeft. binaryFunctionType).
+    addIntegerIntrinsicMethod(methodDict. #>>. integerPrimitive_integerLogicalShiftRight. binaryFunctionType).
+    addIntegerIntrinsicMethod(methodDict. #>>>. integerPrimitive_integerArithmeticShiftRight. binaryFunctionType).
+
     addIntegerIntrinsicMethod(methodDict. #=. integerPrimitive_equals. binaryComparisonFunctionType).
     addIntegerIntrinsicMethod(methodDict. #~=. integerPrimitive_notEquals. binaryComparisonFunctionType).
     addIntegerIntrinsicMethod(methodDict. #<. integerPrimitive_lessThan. binaryComparisonFunctionType).
     addIntegerIntrinsicMethod(methodDict. #<=. integerPrimitive_lessOrEquals. binaryComparisonFunctionType).
     addIntegerIntrinsicMethod(methodDict. #>. integerPrimitive_greaterThan. binaryComparisonFunctionType).
     addIntegerIntrinsicMethod(methodDict. #>=. integerPrimitive_greaterOrEquals. binaryComparisonFunctionType).
+
+    addIntegerIntrinsicMethod(methodDict. #asInt8.  integerPrimitive_asInt8.  makeSimplePureFunctionType([intrinsicType] . BasicIntrinsicTypesSingleton int8)).
+    addIntegerIntrinsicMethod(methodDict. #asInt16. integerPrimitive_asInt16. makeSimplePureFunctionType([intrinsicType] . BasicIntrinsicTypesSingleton int16)).
+    addIntegerIntrinsicMethod(methodDict. #asInt32. integerPrimitive_asInt32. makeSimplePureFunctionType([intrinsicType] . BasicIntrinsicTypesSingleton int32)).
+    addIntegerIntrinsicMethod(methodDict. #asInt64. integerPrimitive_asInt64. makeSimplePureFunctionType([intrinsicType] . BasicIntrinsicTypesSingleton int64)).
+
+    addIntegerIntrinsicMethod(methodDict. #asUInt8.  integerPrimitive_asUInt8.  makeSimplePureFunctionType([intrinsicType] . BasicIntrinsicTypesSingleton uint8)).
+    addIntegerIntrinsicMethod(methodDict. #asUInt16. integerPrimitive_asUInt16. makeSimplePureFunctionType([intrinsicType] . BasicIntrinsicTypesSingleton uint16)).
+    addIntegerIntrinsicMethod(methodDict. #asUInt32. integerPrimitive_asUInt32. makeSimplePureFunctionType([intrinsicType] . BasicIntrinsicTypesSingleton uint32)).
+    addIntegerIntrinsicMethod(methodDict. #asUInt64. integerPrimitive_asUInt64. makeSimplePureFunctionType([intrinsicType] . BasicIntrinsicTypesSingleton uint64)).
+
+    addIntegerIntrinsicMethod(methodDict. #asChar8.  integerPrimitive_asChar8.  makeSimplePureFunctionType([intrinsicType] . BasicIntrinsicTypesSingleton char8)).
+    addIntegerIntrinsicMethod(methodDict. #asChar16. integerPrimitive_asChar16. makeSimplePureFunctionType([intrinsicType] . BasicIntrinsicTypesSingleton char16)).
+    addIntegerIntrinsicMethod(methodDict. #asChar32. integerPrimitive_asChar32. makeSimplePureFunctionType([intrinsicType] . BasicIntrinsicTypesSingleton char32)).
 
     void
 }.
@@ -839,6 +981,27 @@ addIntegerIntrinsicMethods(BasicIntrinsicTypesSingleton char8).
 addIntegerIntrinsicMethods(BasicIntrinsicTypesSingleton char16).
 addIntegerIntrinsicMethods(BasicIntrinsicTypesSingleton char32).
 
+$addIntegerIntrinsicConversionSuffixes($(SysmelType)intrinsicType :: Void) := {
+    $commonPart := intrinsicType getCommonSection.
+    $methodDict := commonPart methodDict.
+
+    addIntegerIntrinsicMethod(methodDict. #i8.  integerPrimitive_asInt8.  makeSimplePureFunctionType([intrinsicType] . BasicIntrinsicTypesSingleton int8)).
+    addIntegerIntrinsicMethod(methodDict. #i16. integerPrimitive_asInt16. makeSimplePureFunctionType([intrinsicType] . BasicIntrinsicTypesSingleton int16)).
+    addIntegerIntrinsicMethod(methodDict. #i32. integerPrimitive_asInt32. makeSimplePureFunctionType([intrinsicType] . BasicIntrinsicTypesSingleton int32)).
+    addIntegerIntrinsicMethod(methodDict. #i64. integerPrimitive_asInt64. makeSimplePureFunctionType([intrinsicType] . BasicIntrinsicTypesSingleton int64)).
+
+    addIntegerIntrinsicMethod(methodDict. #u8.  integerPrimitive_asUInt8.  makeSimplePureFunctionType([intrinsicType] . BasicIntrinsicTypesSingleton uint8)).
+    addIntegerIntrinsicMethod(methodDict. #u16. integerPrimitive_asUInt16. makeSimplePureFunctionType([intrinsicType] . BasicIntrinsicTypesSingleton uint16)).
+    addIntegerIntrinsicMethod(methodDict. #u32. integerPrimitive_asUInt32. makeSimplePureFunctionType([intrinsicType] . BasicIntrinsicTypesSingleton uint32)).
+    addIntegerIntrinsicMethod(methodDict. #u64. integerPrimitive_asUInt64. makeSimplePureFunctionType([intrinsicType] . BasicIntrinsicTypesSingleton uint64)).
+
+    addIntegerIntrinsicMethod(methodDict. #c8.  integerPrimitive_asChar8.  makeSimplePureFunctionType([intrinsicType] . BasicIntrinsicTypesSingleton char8)).
+    addIntegerIntrinsicMethod(methodDict. #c16. integerPrimitive_asChar16. makeSimplePureFunctionType([intrinsicType] . BasicIntrinsicTypesSingleton char16)).
+    addIntegerIntrinsicMethod(methodDict. #c32. integerPrimitive_asChar32. makeSimplePureFunctionType([intrinsicType] . BasicIntrinsicTypesSingleton char32)).
+}.
+
+addIntegerIntrinsicConversionSuffixes(BasicIntrinsicTypesSingleton integer).
+addIntegerIntrinsicConversionSuffixes(BasicIntrinsicTypesSingleton character).
 
 $addIntrinsicMethod($(SymbolHashtable)methodDict $(Symbol)name $(Function)primitive $(SysmelType)functionType :: Void) := {
     $primitiveValue := TypedValue(Value(SysmelFunctionValue(SysmelFunction(SysmelIntrinsicPrimitive#{
@@ -1082,16 +1245,45 @@ public: [
     {
         match: typeToInstantiate ofType: SysmelType withPatterns: #{
             $(SysmelTupleAndRecordType) tupleAndRecord : {
-                $tuple := Tuple new: tupleAndRecord fields size.
+                $tupleSize := tupleAndRecord fields size.
+                $tuple := Tuple new: tupleSize.
                 $record := Record#{
                     type: typeToInstantiate.
                     tuple: tuple.
                 }.
 
-                if: (arguments size = 1) then: {
-                    printLine("arg0: ".arguments at: 0)
-                    
+                printLine("Argument count ". arguments size).
+                if: (arguments size = 1 && isValueWithImmutableDictionaryFromValue((arguments at: 0) value)) then: {
+                    $dictionary := extractImmutableDictionaryFromValue((arguments at: 0) value).
+                    if: dictionary size > tupleSize then: {
+                        printLine("Dictionary has more elements than the record.")
+                    }
+
+                    $!i := 0. while: i < dictionary size do: {
+                        $association := dictionary associationAt: i.
+                        $fieldName := association key.
+                        $fieldIndex := findIndexOfRecordFieldWithName(tupleAndRecord. fieldName).
+                        if: fieldIndex < 0 then: {
+                            printLine("Record does not have a field name ". fieldName)
+                        }.
+
+                        tuple at: fieldIndex put: association value
+                    } continueWith:(i := i + 1).
+
+                    $result := TypedValue(Value(RecordValue(record)). typeToInstantiate).
+                    return: result
                 }.
+
+                if: (arguments size > tupleSize) then:
+                {
+                    printLine("Excessive number of paramters to construct record.")
+                    abort().
+                }.
+
+                $!i := 0. while: (i < arguments size) do: {
+
+                    tuple at: i put: (arguments at: i)
+                } continueWith: (i := i + 1).
 
                 $result := TypedValue(Value(RecordValue(record)). typeToInstantiate).
                 return: result

@@ -3,12 +3,12 @@ Record: TestPair withFields: #{
     second: Int32
 }.
 
-printLine(TestPair).
-printLine(TestPair()).
-printLine(TestPair(1i32 . 2i32)).
-#*printLine(TestPair#{first: 42i32. second: 8i32}).
+##printLine(TestPair).
+##printLine(TestPair()).
+##printLine(TestPair(1i32 . 2i32)).
+printLine(TestPair#{first: 42i32. second: 8i32}).
 
-printLine(TestPair#{first: 42i32. second: 8i32} at: 0).
+#*printLine(TestPair#{first: 42i32. second: 8i32} at: 0).
 printLine(TestPair#{first: 42i32. second: 8i32} at: 1).
 
 printLine(TestPair#{first: 42i32. second: 8i32} first).

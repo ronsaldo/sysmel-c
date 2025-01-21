@@ -526,6 +526,66 @@ static sysmelb_Value_t sysmelb_primitive_integerModule(size_t argumentCount, sys
     return result;
 }
 
+static sysmelb_Value_t sysmelb_primitive_integerBitAnd(size_t argumentCount, sysmelb_Value_t *arguments)
+{
+    assert(argumentCount == 2);
+    sysmelb_Value_t leftValue = sysmelb_decayValue(arguments[0]);
+    sysmelb_Value_t rightValue = sysmelb_decayValue(arguments[1]);
+    sysmelb_Value_t result = leftValue;
+    result.integer = sysmelb_normalizeIntegerValue(result.type, leftValue.integer & rightValue.integer);
+    return result;
+}
+
+static sysmelb_Value_t sysmelb_primitive_integerBitOr(size_t argumentCount, sysmelb_Value_t *arguments)
+{
+    assert(argumentCount == 2);
+    sysmelb_Value_t leftValue = sysmelb_decayValue(arguments[0]);
+    sysmelb_Value_t rightValue = sysmelb_decayValue(arguments[1]);
+    sysmelb_Value_t result = leftValue;
+    result.integer = sysmelb_normalizeIntegerValue(result.type, leftValue.integer | rightValue.integer);
+    return result;
+}
+
+static sysmelb_Value_t sysmelb_primitive_integerBitXor(size_t argumentCount, sysmelb_Value_t *arguments)
+{
+    assert(argumentCount == 2);
+    sysmelb_Value_t leftValue = sysmelb_decayValue(arguments[0]);
+    sysmelb_Value_t rightValue = sysmelb_decayValue(arguments[1]);
+    sysmelb_Value_t result = leftValue;
+    result.integer = sysmelb_normalizeIntegerValue(result.type, leftValue.integer ^ rightValue.integer);
+    return result;
+}
+
+static sysmelb_Value_t sysmelb_primitive_integerBitShiftLeft(size_t argumentCount, sysmelb_Value_t *arguments)
+{
+    assert(argumentCount == 2);
+    sysmelb_Value_t leftValue = sysmelb_decayValue(arguments[0]);
+    sysmelb_Value_t rightValue = sysmelb_decayValue(arguments[1]);
+    sysmelb_Value_t result = leftValue;
+    result.integer = sysmelb_normalizeIntegerValue(result.type, leftValue.integer << rightValue.integer);
+    return result;
+}
+
+static sysmelb_Value_t sysmelb_primitive_integerBitShiftRight(size_t argumentCount, sysmelb_Value_t *arguments)
+{
+    assert(argumentCount == 2);
+    sysmelb_Value_t leftValue = sysmelb_decayValue(arguments[0]);
+    sysmelb_Value_t rightValue = sysmelb_decayValue(arguments[1]);
+    sysmelb_Value_t result = leftValue;
+    result.integer = sysmelb_normalizeIntegerValue(result.type, leftValue.unsignedInteger >> rightValue.unsignedInteger);
+    return result;
+}
+
+static sysmelb_Value_t sysmelb_primitive_integerBitArithmeicShiftRight(size_t argumentCount, sysmelb_Value_t *arguments)
+{
+    assert(argumentCount == 2);
+    sysmelb_Value_t leftValue = sysmelb_decayValue(arguments[0]);
+    sysmelb_Value_t rightValue = sysmelb_decayValue(arguments[1]);
+    sysmelb_Value_t result = leftValue;
+    result.integer = sysmelb_normalizeIntegerValue(result.type, leftValue.integer >> rightValue.integer);
+    return result;
+}
+
 static sysmelb_Value_t sysmelb_primitive_integerEquals(size_t argumentCount, sysmelb_Value_t *arguments)
 {
     assert(argumentCount == 2);
@@ -773,6 +833,14 @@ static void sysmelb_createBasicIntegersPrimitives(void)
         sysmelb_type_addPrimitiveMethod(type, sysmelb_internSymbolC("*"), sysmelb_primitive_times);
         sysmelb_type_addPrimitiveMethod(type, sysmelb_internSymbolC("//"), sysmelb_primitive_integerDivision);
         sysmelb_type_addPrimitiveMethod(type, sysmelb_internSymbolC("%"), sysmelb_primitive_integerModule);
+
+        sysmelb_type_addPrimitiveMethod(type, sysmelb_internSymbolC("&"), sysmelb_primitive_integerBitAnd);
+        sysmelb_type_addPrimitiveMethod(type, sysmelb_internSymbolC("|"), sysmelb_primitive_integerBitOr);
+        sysmelb_type_addPrimitiveMethod(type, sysmelb_internSymbolC("^"), sysmelb_primitive_integerBitXor);
+        sysmelb_type_addPrimitiveMethod(type, sysmelb_internSymbolC("<<"), sysmelb_primitive_integerBitShiftLeft);
+        sysmelb_type_addPrimitiveMethod(type, sysmelb_internSymbolC(">>"), sysmelb_primitive_integerBitShiftRight);
+        sysmelb_type_addPrimitiveMethod(type, sysmelb_internSymbolC(">>>"), sysmelb_primitive_integerBitArithmeicShiftRight);
+
         sysmelb_type_addPrimitiveMethod(type, sysmelb_internSymbolC("="), sysmelb_primitive_integerEquals);
         sysmelb_type_addPrimitiveMethod(type, sysmelb_internSymbolC("~="), sysmelb_primitive_integerNotEquals);
         sysmelb_type_addPrimitiveMethod(type, sysmelb_internSymbolC("=="), sysmelb_primitive_integerEquals);
@@ -1022,6 +1090,7 @@ static sysmelb_Value_t sysmelb_primitive_parseCEscapeSequences(size_t argumentCo
 
 static void sysmelb_createBasicStringPrimitives(void)
 {
+    
     sysmelb_type_addPrimitiveMethod(sysmelb_BasicTypesData.string, sysmelb_internSymbolC("="), sysmelb_primitive_stringEquals);
     sysmelb_type_addPrimitiveMethod(sysmelb_BasicTypesData.string, sysmelb_internSymbolC("~="), sysmelb_primitive_stringNotEquals);
     sysmelb_type_addPrimitiveMethod(sysmelb_BasicTypesData.string, sysmelb_internSymbolC("--"), sysmelb_primitive_concatenateString);
@@ -1031,6 +1100,38 @@ static void sysmelb_createBasicStringPrimitives(void)
     sysmelb_type_addPrimitiveMethod(sysmelb_BasicTypesData.string, sysmelb_internSymbolC("asFloat"), sysmelb_primitive_stringAsFloat);
     sysmelb_type_addPrimitiveMethod(sysmelb_BasicTypesData.string, sysmelb_internSymbolC("asSymbol"), sysmelb_primitive_stringAsSymbol);
     sysmelb_type_addPrimitiveMethod(sysmelb_BasicTypesData.string, sysmelb_internSymbolC("parseCEscapeSequences"), sysmelb_primitive_parseCEscapeSequences);
+}
+
+static sysmelb_Value_t sysmelb_primitive_symbolIdentityEquals(size_t argumentCount, sysmelb_Value_t *arguments)
+{
+    assert(argumentCount == 2);
+    assert(arguments[0].kind == SysmelValueKindSymbolReference);
+    assert(arguments[1].kind == SysmelValueKindSymbolReference);
+
+    sysmelb_Value_t result = {
+        .kind = SysmelValueKindBoolean,
+        .type = sysmelb_getBasicTypes()->boolean,
+        .boolean = arguments[0].symbolReference == arguments[1].symbolReference};
+    return result;
+}
+
+static sysmelb_Value_t sysmelb_primitive_symbolIdentityNotEquals(size_t argumentCount, sysmelb_Value_t *arguments)
+{
+    assert(argumentCount == 2);
+    assert(arguments[0].kind == SysmelValueKindSymbolReference);
+    assert(arguments[1].kind == SysmelValueKindSymbolReference);
+
+    sysmelb_Value_t result = {
+        .kind = SysmelValueKindBoolean,
+        .type = sysmelb_getBasicTypes()->boolean,
+        .boolean = arguments[0].symbolReference != arguments[1].symbolReference};
+    return result;
+}
+
+static void sysmelb_createBasicSymbolPrimitives(void)
+{
+    sysmelb_type_addPrimitiveMethod(sysmelb_BasicTypesData.symbol, sysmelb_internSymbolC("=="), sysmelb_primitive_symbolIdentityEquals);
+    sysmelb_type_addPrimitiveMethod(sysmelb_BasicTypesData.symbol, sysmelb_internSymbolC("~~"), sysmelb_primitive_symbolIdentityNotEquals);
 }
 
 static sysmelb_Value_t sysmelb_primitive_concatenateArrays(size_t argumentCount, sysmelb_Value_t *arguments)
@@ -1333,7 +1434,7 @@ static sysmelb_Value_t sysmelb_primitive_newWithSize(size_t argumentCount, sysme
         tuple->size = tupleSize;
         sysmelb_Value_t result = {
             .kind = SysmelValueKindTupleReference,
-            .type = sysmelb_getBasicTypes()->array,
+            .type = sysmelb_getBasicTypes()->tuple,
             .tupleReference = tuple
         };
         return result;
@@ -1700,6 +1801,7 @@ static void sysmelb_createBasicTypesPrimitives(void)
     sysmelb_createBasicIntegersPrimitives();
     sysmelb_createBasicArrayPrimitives();
     sysmelb_createBasicStringPrimitives();
+    sysmelb_createBasicSymbolPrimitives();
     sysmelb_createBasicTuplePrimitives();
     sysmelb_createBasicAssociationPrimitives();
     sysmelb_createBasicImmutableDictionaryPrimitives();
