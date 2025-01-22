@@ -13,3 +13,6 @@ printLine(TestPair(1i32. 2i32) increment).
 
 $MakePair(:: TestPair) := TestPair#{first: 1i32. second: 2i32}.
 printLine(MakePair()).
+
+$MakePair2(:: TestPair) := TestPair(1i32. 2i32).
+printLine(MakePair2()).

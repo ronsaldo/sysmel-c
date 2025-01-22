@@ -234,7 +234,18 @@ public: [
                             }
                         }.
 
-                        ##return: (instantiateTypeWithArguments(typeToConstruct . invocationArguments asArray))*#
+                        if: isRecordType(typeToConstruct) then: {
+                            $recordType := extractRecordType(typeToConstruct).
+                            $recordFieldCount := recordType fields size.
+                            if: invocationArguments size ~= recordFieldCount then: {
+                                printLine("Construction of record is missing arguments. Expected ". recordFieldCount. " arguments instead of". invocationArguments size)
+                            }.
+
+                            midBuilder sourcePosition: functionApplication sourcePosition.
+                            $recordValue := midBuilder makeRecord: typeToConstruct withElements: invocationArguments.
+                            return: recordValue
+                        }.
+
                         printLine("TODO: instantiate objects with numbered fields").
                         abort()
                     }.
