@@ -32,6 +32,11 @@ public: [
         name: Symbol
     }.
 
+    Class: MidIntrinsicFunction withSuperclass: MidGlobalValue fields: #{
+        name: Symbol.
+        primitive: Function.
+        isMacro: Boolean.
+    }.
 
     Class: MidControlNode withSuperclass: MidValue fields: #{
         previousControl: MidValue.
@@ -56,7 +61,8 @@ public: [
         arguments: Array.
         startNode: MidStartNode.
         stopNode: MidStopNode.
-        instructionSchedule: Array
+        instructionSchedule: Array.
+        isMacro: Boolean.
     }.
 
     Class: MidData withSuperclass: MidValue fields: #{
@@ -604,29 +610,16 @@ MidCallFunction
     };
     withSelector: #evaluateInActivationContext: addMethod: {
         | $(MidCallFunction)self $(MidActivationContext)context :: Void |
-        $functionalTypedValue := self functional getCurrentValueForActivationContext: context.
+        $functionToCall := (self functional getCurrentValueForActivationContext: context) value getMidValue.
 
-        $function := extractFunctionFromValue(functionalTypedValue value).
-
-        $invocationArguments := OrderedCollection().
+        $invocationArguments := Array new: self arguments size.
         $i := 0. while:(i < self arguments size) do: {
             $argument := (self arguments at: i) getCurrentValueForActivationContext: context.
-            ##printLine("Arg". i. " ". argument).
-            invocationArguments add: argument.
+            invocationArguments at: i put: argument
         } continueWith:(i := i + 1).
 
-        match: function ofType: SysmelFunction withPatterns: #{
-            $(SysmelIntrinsicPrimitive)intrinsic : {
-                context setValueInCurrentPC: intrinsic implementation(invocationArguments asArray)
-            }.
-            $(SysmelCompiledFunction)compiledFunction : {
-                context setValueInCurrentPC: (compiledFunction midIR evaluateWithArguments: invocationArguments asArray)
-            }.
-            _: {
-                printLine("Unsupported method function kind. " . function).
-                abort()
-            }
-        }.
+        $result := functionToCall evaluateWithArguments: invocationArguments.
+        context setValueInCurrentPC: result.
         context advancePC.
     }.
 
@@ -777,7 +770,33 @@ MidValue
         self usageTopoSort: visitedSet into: sortedElements.
 
         sortedElements asArray
+    };
+    withSelector: #isFunctionalValue addMethod: {
+        | $(MidValue)self :: Boolean |
+        false
     }.
+
+MidIntrinsicFunction
+    withSelector: #isFunctionalValue addMethod: {
+        | $(MidIntrinsicFunction)self :: Boolean |
+        true
+    };
+    withSelector: #invokeAsMacroWithContext:andArguments: addMethod: {
+        | $(MidIntrinsicFunction)self $(MacroContext)context $(Array)arguments :: TypedValue |
+        ##printLine("Intrinsic primitive " . self primitive).
+        ##printLine("Intrinsic context " . context).
+        ##printLine("Intrinsic arguments size " . arguments size).
+        self primitive(context. arguments)
+    };
+    withSelector: #getCurrentValueForActivationContext: addMethod: {
+        | $(MidIntrinsicFunction)self $(MidActivationContext)context :: Void |
+        TypedValue(Value(SysmelMidValue(self)). self type).
+    };
+    withSelector: #evaluateWithArguments: addMethod: {
+        | $(MidIntrinsicFunction)self $(Array)arguments :: TypedValue |
+        self primitive(arguments)
+    }.
+
 MidClosureFunction
     withSelector: #makeBuilder addMethod: {
         | $(MidClosureFunction) self :: MidFunctionBuilder |
@@ -795,7 +814,10 @@ MidClosureFunction
         }.
         builder
     };
-
+    withSelector: #isFunctionalValue addMethod: {
+        | $(MidClosureFunction)self :: Boolean |
+        true
+    };
     withSelector: #ensureInstructionSchedule addMethod: {
         | $(MidClosureFunction)self :: Void |
         if: self instructionSchedule isNotNull then: {
@@ -866,6 +888,10 @@ MidClosureFunction
         } continueWith: (i := i + 1).
 
         printLine("}").
+    };
+    withSelector: #getCurrentValueForActivationContext: addMethod: {
+        | $(MidClosureFunction)self $(MidActivationContext)context :: Void |
+        TypedValue(Value(SysmelMidValue(self)). self type).
     };
     withSelector: #evaluateWithArguments: addMethod: {
         | $(MidClosureFunction)self $(Array)arguments :: TypedValue |
@@ -959,11 +985,17 @@ MidFunctionBuilder
     };
     withSelector: #call:withArguments: addMethod: {
         | $(MidFunctionBuilder)self $(MidValue)functional $(Array)arguments :: MidCallFunction |
+        $resultType := match: functional type ofType: SysmelType withPatterns: #{
+            $(SysmelSimpleFunctionType)functionType : functionType resultType.
+            _: getBasicIntrinsicTypes() gradual
+        }.
+
         $node := MidCallFunction#{
             previousControl: self currentControlNode.
             sourcePosition: self sourcePosition.
             functional: functional.
             arguments: arguments.
+            type: resultType.
         }.
         node connectWithUsed.
         self currentControlNode: node.
@@ -977,6 +1009,7 @@ MidFunctionBuilder
             receiver: receiver.
             selector: selector.
             arguments: arguments.
+            type: getBasicIntrinsicTypes() gradual ## TODO: Use the correct type.
         }.
         node connectWithUsed.
         self currentControlNode: node.

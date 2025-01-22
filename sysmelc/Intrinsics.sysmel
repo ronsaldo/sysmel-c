@@ -1469,8 +1469,17 @@ $immutableDictPrimitive_includesKey($(Array)arguments :: TypedValue) := {
     $typedDict := arguments at: 0.
     $dict := extractImmutableDictionaryFromValue(typedDict value).
     $key := extractValueForAnalysis((arguments at: 1) value).
-    $result := dict includesKey: key.
-    TypedValue(Value(BooleanValue(result)) . BasicIntrinsicTypesSingleton boolean )
+    $!result := false.
+    $associationCount := dict size.
+
+    $!i := 0. while: (i < associationCount) do: {
+        $assoc := dict associationAt: i
+        $assocKey := extractValueForAnalysis(assoc key).
+        if: assocKey == key then: {
+            return: TypedValue(Value(BooleanValue(true)) . BasicIntrinsicTypesSingleton boolean )
+        }
+    } continueWith: (i := i +1).
+    TypedValue(Value(BooleanValue(false)) . BasicIntrinsicTypesSingleton boolean )
 }.
 
 $immutableDictPrimitive_at($(Array)arguments :: TypedValue) := {
@@ -1478,8 +1487,20 @@ $immutableDictPrimitive_at($(Array)arguments :: TypedValue) := {
     $typedDict := arguments at: 0.
     $dict := extractImmutableDictionaryFromValue(typedDict value).
     $key := extractValueForAnalysis((arguments at: 1) value).
-    $result := dict at: key.
-    TypedValue(Value(BooleanValue(result)) . BasicIntrinsicTypesSingleton boolean )
+    $!result := false.
+    $associationCount := dict size.
+    ##printLine("associationCount ". associationCount).
+    $!i := 0. while: (i < associationCount) do: {
+        $assoc := dict associationAt: i
+        $assocKey := extractValueForAnalysis(assoc key).
+        if: assocKey == key then: {
+            ##printLine("Found value " . assoc value).
+            return: TypedValue(assoc value. BasicIntrinsicTypesSingleton gradual)
+        }
+    } continueWith: (i := i +1).
+
+    printLine("Requested key is not present in dictionary.").
+    abort()
 }.
 
 $addImmutableDictionaryPrimitives() := {

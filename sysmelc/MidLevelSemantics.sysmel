@@ -62,7 +62,8 @@ public: [
                 sourcePosition: ast sourcePosition.
                 name: ast name.
                 captures: [].
-                arguments: []
+                arguments: [].
+                isMacro: false.
             }.
 
             $interpretedFunction := SysmelCompiledFunction#{
@@ -76,7 +77,6 @@ public: [
             }.
 
             $functionType := self processDependentType: ast functionDependentType withEnvironment: analysisEnvironment forClosureFunction: midFunction.
-
             if: ast isAnonymous not then: {
                 interpretedFunction name: ast name.
                 environment addLocalSymbol: ast name withValue: TypedValue(Value(SysmelFunctionValue(SysmelFunction(interpretedFunction))). functionType).
@@ -139,6 +139,24 @@ public: [
                         return: value value getMidValue 
                     }.
 
+                    if: isFunctionValue(value value) then: {
+                        $functionValue := extractFunctionFromValue(value value).
+
+                        match: functionValue ofType: SysmelFunction withPatterns: #{
+                            $(SysmelIntrinsicPrimitive)intrinsicPrimitive : {
+                                return: MidIntrinsicFunction#{
+                                    name: intrinsicPrimitive name.
+                                    primitive: intrinsicPrimitive implementation.
+                                    isMacro: intrinsicPrimitive isMacro.
+                                }
+                            }.
+                            $(SysmelCompiledFunction)compiledFunction : {
+                                if: compiledFunction midIR isNotNull then: {
+                                    return: compiledFunction midIR
+                                }
+                            }.
+                        }
+                    }.
                     midBuilder sourcePosition: identifier sourcePosition.
                     return: (midBuilder constantValue: value value).
                 }.
@@ -150,16 +168,11 @@ public: [
                     $receiverType := receiverValue type.
                     $selectorSymbolValue := selectorValue value.
                     $arguments := messageSend arguments.
-                    ##printLine("receiverValue " . receiverValue).
-                    ##printLine("receiverType " . receiverType).
-                    ##printLine("selectorSymbolValue " . selectorSymbolValue).
 
                     $method := receiverType lookupSelector: selectorSymbolValue.
-                    ##printLine("Method:". method).
                     
 
                     if: method value isInvalidErrorValue then: {
-                        ##printLine("Method not found.").
 
                         match: receiverType ofType: SysmelType withPatterns: #{
                             $(SysmelTupleAndRecordType)tupleAndRecord : {
@@ -206,9 +219,9 @@ public: [
                 $(ParseTreeFunctionApplicationNode)functionApplication : {
                     $functional := self analyzeWithEnvironment: environment andCompileClosure: midBuilder withBody: functionApplication functional.
                                     ## Is this a type constructor invocation?
-                    if: isTypeValue(functional value) then: {
+                    if: functional isFunctionalValue not && isTypeValue(functional value) then: {
                         $typeToConstruct := extractTypeFromValue(functional value).
-                        printLine("typeToConstruct: ". typeToConstruct).
+                        ##printLine("typeToConstruct: ". typeToConstruct).
 
                         $argumentCount := functionApplication arguments size.
                         $invocationArguments := Array new: argumentCount.
@@ -262,41 +275,26 @@ public: [
                         abort()
                     }.
 
-
-                    $functionalValue := extractFunctionFromValue(functional value).
-                    $functionalIsMacro := sysmelFunctionIsMacro(functionalValue).
-
-                    if: functionalIsMacro then: {
+                    if: functional isMacro then: {
                         $macroContext := MacroContext#{
                             sourcePosition: functionApplication sourcePosition.
                             environment: environment.
                         }.
 
-                        $macroResult := match: functionalValue ofType: SysmelFunction withPatterns: #{
-                            $(SysmelIntrinsicPrimitive)intrinsic : {
-                                intrinsic implementation(macroContext . functionApplication arguments)
-                            }.
-                            $(SysmelCompiledFunction)compiledFunction : {
-                                (compiledFunction midIR evaluateWithArguments: [macroContext] -- functionApplication arguments)
-                            }.
-                            _: {
-                                printLine("Unsupported method function kind. " . functionalValue).
-                                abort()
-                            }
-                        }.
+                        $macroResult := functional invokeAsMacroWithContext: macroContext andArguments: functionApplication arguments.
 
-                        ##printLine("Macro result". macroResult).
+                        ##printLine("Macro result ". macroResult).
                         if: valueContainsParseTreeFromValue(macroResult value) then: {
                             $macroASTResult := extractParseTreeNodeFromValue(macroResult value).
+                            ##printLine("Macro ast result". macroASTResult).
                             return: (self analyzeWithEnvironment: environment andCompileClosure: midBuilder withBody: macroASTResult).
                         }
                         else: {
                             printLine("TODO: Put the macro result in a constant.").
                             abort()
                         }
-
-                        
                     }.
+
                     $invocationArguments := OrderedCollection().
                     $i := 0. while:(i < functionApplication arguments size) do: {
                         $argument := functionApplication arguments at: i.
