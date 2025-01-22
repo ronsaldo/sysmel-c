@@ -3,10 +3,20 @@ public: [
     SemanticsState
         withSelector: #analyzeAndEvaluateWithEnvironment:messageSendReceiver:selector:arguments: addMethod: {
             | $(SemanticsState)self $(Environment)environment $(TypedValue)receiverTypedValue $(TypedValue)selectorTypedValue $(Array)arguments :: TypedValue |
-            $receiverType := receiverTypedValue type.
+            $!receiverType := receiverTypedValue type.
             $selector := extractSymbolFromValue(selectorTypedValue value).
+            $!decayedReceiverTypedValue := receiverTypedValue.
 
-            $method := receiverType lookupSelector: selector.
+            $!method := receiverType lookupSelector: selector.
+            if: method value isInvalidErrorValue then: {
+                if: isValueBoxValue(receiverTypedValue value) then: {
+                    $box := extractBoxFromValue(receiverTypedValue value).
+                    decayedReceiverTypedValue := box value.
+                    receiverType := decayedReceiverTypedValue type.
+                    method := receiverType lookupSelector: selector.
+                }.
+            }.
+
             if: method value isInvalidErrorValue then: {
                 if: isTypeValue(receiverTypedValue value) then: {
                     $receiverTypeValue := extractTypeFromValue(receiverTypedValue value).
@@ -70,7 +80,7 @@ public: [
             $methodFunction := extractFunctionFromValue(method value).
 
             $invocationArguments := OrderedCollection().
-            invocationArguments add: receiverTypedValue.
+            invocationArguments add: decayedReceiverTypedValue.
             $i := 0. while:(i < arguments size) do: {
                 $argument := arguments at: i.
                 $analyzedArgument := self analyzeAndEvaluateWithEnvironment: environment script: argument.
@@ -336,6 +346,13 @@ public: [
                         }.
                         return: initialValue.
                     }.
+                    $(ParseTreeIdentifierReferenceNode)identifier : {
+                        $storeValue := self analyzeAndEvaluateWithEnvironment: environment script: store.
+                        $storeBox := extractBoxFromValue(storeValue value).
+
+                        $valueToStore := self analyzeAndEvaluateWithEnvironment: environment script: value.
+                        storeBox value: valueToStore.
+                    }.
                     _: {
                         $selectorLiteral := ParseTreeNode(ParseTreeLiteralSymbolNode#{
                             sourcePosition: ast sourcePosition.
@@ -372,8 +389,32 @@ public: [
             ## Control flow. Exposed via macros
             $(ParseTreeIfSelectionNode)ifSelection : {
                 $condition := self analyzeAndEvaluateWithEnvironment: environment script: ifSelection condition.
-                printLine(condition).
-                abort().
+                $conditionBoolean := extractBooleanFromValue(condition value).
+                $result := if: conditionBoolean then: {
+                    self analyzeAndEvaluateWithEnvironment: environment script: ifSelection trueExpression.
+                } else: {
+                    if: ifSelection falseExpression isNotNull then: {
+                        self analyzeAndEvaluateWithEnvironment: environment script: ifSelection falseExpression.
+                    } else: {
+                        null
+                    }
+                }.
+                return: result
+            }.
+            $(ParseTreeWhileLoopNode)whileLoop : {
+                $result := TypedValue(Value(VoidValue()). getBasicIntrinsicTypes() voidType).
+
+                while: extractBooleanFromValue((self analyzeAndEvaluateWithEnvironment: environment script: whileLoop condition) value)
+                do: {
+                    ## Body
+                    self analyzeAndEvaluateWithEnvironment: environment script: whileLoop body.
+
+                    if: whileLoop continueExpression isNotNull then: {
+                        self analyzeAndEvaluateWithEnvironment: environment script: whileLoop continueExpression.
+                    }
+                }.
+
+                return: result
             }.
 
             ## Namespace

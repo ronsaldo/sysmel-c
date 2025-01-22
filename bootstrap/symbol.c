@@ -13,6 +13,55 @@ typedef struct sysmelb_symbolHashSet_s
 
 static sysmelb_symbolHashSet_t sysmelb_internedSymbolSet;
 
+int32_t sysmelb_symbolScanForCapacityIncrement(sysmelb_symbol_t *symbol)
+{
+    if(sysmelb_internedSymbolSet.capacity == 0)
+        return -1;
+
+    uint32_t hash = symbol->hash;
+    uint32_t hashIndex = hash % sysmelb_internedSymbolSet.capacity;
+
+    for(uint32_t i = hashIndex; i < sysmelb_internedSymbolSet.capacity; ++i)
+    {
+        if(!sysmelb_internedSymbolSet.internedSymbols[i] ||
+            sysmelb_internedSymbolSet.internedSymbols[i] == symbol)
+                return i;
+    }
+
+    for(uint32_t i = 0; i < hashIndex; ++i)
+    {
+        if(!sysmelb_internedSymbolSet.internedSymbols[i] ||
+            sysmelb_internedSymbolSet.internedSymbols[i] == symbol)
+                return i;
+    }
+
+    return -1;
+}
+
+void symbol_hashsetIncreaseCapacity(void)
+{
+    sysmelb_symbolHashSet_t oldStateAndCapacity = sysmelb_internedSymbolSet;
+    size_t newCapacity = oldStateAndCapacity.capacity * 2;
+    if(newCapacity < 1024)
+        newCapacity = 1024;
+    
+    sysmelb_internedSymbolSet.capacity = newCapacity;
+    sysmelb_internedSymbolSet.targetCapacity = sysmelb_internedSymbolSet.capacity * 80 / 100;
+    sysmelb_internedSymbolSet.internedSymbols = sysmelb_allocate(sysmelb_internedSymbolSet.capacity * sizeof(sysmelb_symbol_t *));
+    sysmelb_internedSymbolSet.size = 0;
+
+    for(size_t i = 0; i < oldStateAndCapacity.capacity; ++i)
+    {
+        sysmelb_symbol_t *symbol = oldStateAndCapacity.internedSymbols[i];
+        if(!symbol)
+            continue;
+        
+        int scanLocation = sysmelb_symbolScanForCapacityIncrement(symbol);
+        assert(scanLocation >= 0);
+        sysmelb_internedSymbolSet.internedSymbols[scanLocation] = symbol;
+    }
+}
+
 bool sysmelb_symbolEquals(sysmelb_symbol_t *a, sysmelb_symbol_t *b)
 {
     return a->size == b->size
@@ -83,6 +132,9 @@ sysmelb_symbol_t *sysmelb_internSymbol(size_t stringSize, const char *string)
 
     sysmelb_internedSymbolSet.internedSymbols[slotIndex] = newSymbol;
     ++sysmelb_internedSymbolSet.size;
+
+    if(sysmelb_internedSymbolSet.size >= sysmelb_internedSymbolSet.targetCapacity)
+        symbol_hashsetIncreaseCapacity();
 
     return newSymbol;
 }

@@ -439,6 +439,21 @@ public: [
             _: false.
         }.
     }.
+    $extractBoxFromValue($(Value)value :: SysmelType) := {
+        match: value ofType: Value withPatterns: #{
+            $(SysmelValueBox)valueBox : valueBox.
+            _: {
+                printLine("Not a valid sysmel box value").
+                abort()
+            }
+        }.
+    }.
+    $isValueBoxValue($(Value)value :: Boolean) := {
+        match: value ofType: Value withPatterns: #{
+            $(SysmelValueBox)typeValue : true.
+            _: false.
+        }.
+    }.
     $extractNamespaceFromValue($(Value)value :: Namespace) := {
         match: value ofType: Value withPatterns: #{
             $(NamespaceValue)namespaceValue : namespaceValue value.
@@ -448,6 +463,7 @@ public: [
             }
         }.
     }.
+
     $isNamespaceValue($(Value)value :: Boolean) := {
         match: value ofType: Value withPatterns: #{
             $(NamespaceValue)namespaceValue : true.
