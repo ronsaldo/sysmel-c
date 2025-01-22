@@ -26,6 +26,8 @@ public: [
     Class: MidConstantValue withSuperclass: MidConstant fields: #{
         value: Value
     }.
+    Class: MidConstantVoid withSuperclass: MidConstant fields: #{
+    }.
     Class: MidGlobalValue withSuperclass: MidConstant fields: #{
         name: Symbol
     }.

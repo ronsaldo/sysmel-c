@@ -851,6 +851,41 @@ addGlobalMacroIntrinsicMethod(#assert:. primitive_Assert.
     })
 ).
 
+$universePrimitiveWithSelectorAddMethod($(Array)arguments) := {
+    $type := arguments at: 0.
+    $selector := arguments at: 1.
+    $method := arguments at: 2.
+
+    $typeMethodDictionary := extractTypeFromValue(type value) getCommonSection methodDict.
+    $selector := extractSymbolFromValue(selector value).
+    $function := extractFunctionFromValue(method value).
+    if: function getName isNull then: {
+        function setName: selector
+    }.
+
+    typeMethodDictionary at: selector put: method.
+    
+    void
+}.
+
+$addUniverseIntrinsicMethod($(SymbolHashtable)methodDict $(Symbol)name $(Function)primitive $(SysmelType)functionType :: Void) := {
+    $primitiveValue := TypedValue(Value(SysmelFunctionValue(SysmelFunction(SysmelIntrinsicPrimitive#{
+        name: name.
+        implementation: primitive
+    }))). functionType).
+    methodDict at: name put: primitiveValue
+}.
+
+$addTypeUniverseIntrinsicMethods($(SysmelType)typeUniverse :: Void) := {
+    $commonPart := typeUniverse getCommonSection.
+    $methodDict := commonPart methodDict.
+
+    addUniverseIntrinsicMethod(methodDict. #withSelector:addMethod:. universePrimitiveWithSelectorAddMethod. makeSimplePureFunctionType([typeUniverse. BasicIntrinsicTypesSingleton gradual] . BasicIntrinsicTypesSingleton voidType)).
+    void
+}.
+addTypeUniverseIntrinsicMethods(BasicIntrinsicTypesSingleton universe)
+
+
 $integerPrimitive_bitInvert($(Array)arguments :: TypedValue) := {
     assert: arguments size = 1.
     $argument := arguments at: 0.

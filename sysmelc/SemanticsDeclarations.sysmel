@@ -330,7 +330,18 @@ public: [
                 $(SysmelCompiledFunction)compiled : compiled name.
             }
         }.
-
+    SysmelFunction
+        withSelector: #setName: addMethod: {
+            | $(SysmelFunction)self $(Symbol) newName :: Void  |
+            match:self ofType: SysmelFunction withPatterns: #{
+                $(SysmelIntrinsicPrimitive)intrinsic :{
+                    intrinsic name: newName
+                }.
+                $(SysmelCompiledFunction)compiled : {
+                    compiled name: newName.
+                }
+            }
+        }.
     $extractArrayFromValue($(Value)value :: Array) := {
         match: value ofType: Value withPatterns: #{
             $(ArrayValue)arrayValue : arrayValue value.

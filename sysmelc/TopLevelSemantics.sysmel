@@ -255,7 +255,7 @@ public: [
             }.
             ## Sequences, array, tuples
             $(ParseTreeSequenceNode)sequenceNode : {
-                $!result := TypedValue(Value(VoidValue()). getBasicIntrinsicTypes() voidType)
+                $!result := TypedValue(Value(VoidValue()). getBasicIntrinsicTypes() voidType).
                 $!i := 0.
                 while: i < sequenceNode elements size do: {
                     $element := sequenceNode elements at: i.

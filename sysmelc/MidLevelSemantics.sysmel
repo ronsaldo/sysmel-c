@@ -211,6 +211,21 @@ public: [
 
                     return: (self analyzeWithEnvironment: environment andCompileClosure: midBuilder withBody: receiver)
                 }.
+
+                ## Sequences, tuples, arrays.
+                $(ParseTreeSequenceNode)sequenceNode : {
+                    $!result := MidConstantVoid#{
+                        sourcePosition: sequenceNode sourcePosition.
+                        type: getBasicIntrinsicTypes() voidType
+                    }.
+                    $!i := 0.
+                    while: i < sequenceNode elements size do: {
+                        $element := sequenceNode elements at: i.
+                        result := self analyzeWithEnvironment: environment andCompileClosure: midBuilder withBody: element.
+                    } continueWith: (i := i + 1).
+                    return: result
+                }.
+                
                 ## Blocks
                 $(ParseTreeLexicalBlockNode)lexicalBlock : {
                     $blockLexicalScope := Environment(LexicalEnvironment#{
