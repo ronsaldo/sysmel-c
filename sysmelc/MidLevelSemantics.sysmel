@@ -193,6 +193,29 @@ public: [
                 }.
                 $(ParseTreeFunctionApplicationNode)functionApplication : {
                     $functional := self analyzeWithEnvironment: environment andCompileClosure: midBuilder withBody: functionApplication functional.
+                                    ## Is this a type constructor invocation?
+                    if: isTypeValue(functional value) then: {
+                        $typeToConstruct := extractTypeFromValue(functional value).
+                        printLine("typeToConstruct: ". typeToConstruct).
+
+                        $argumentCount := functionApplication arguments size.
+                        $invocationArguments := Array new: argumentCount.
+                        $!i := 0. while: (i < argumentCount) do: {
+                            $argumentValue := self analyzeWithEnvironment: environment andCompileClosure: midBuilder withBody: (functionApplication arguments at: i).
+                            invocationArguments at: i put: argumentValue
+                        } continueWith: (i := i + 1).
+
+                        if: (invocationArguments size = 1) && (invocationArguments at: 0) isImmutableDictionary then: {
+                            printLine("TODO: instantiate object with named fields.").
+                            abort()
+                        }.
+
+                        ##return: (instantiateTypeWithArguments(typeToConstruct . invocationArguments asArray))*#
+                        printLine("TODO: instantiate objects with numbered fields").
+                        abort()
+                    }.
+
+
                     $functionalValue := extractFunctionFromValue(functional value).
                     $functionalIsMacro := sysmelFunctionIsMacro(functionalValue).
 
@@ -270,6 +293,30 @@ public: [
                         result := self analyzeWithEnvironment: environment andCompileClosure: midBuilder withBody: element.
                     } continueWith: (i := i + 1).
                     return: result
+                }.
+
+                ## Association, dictionary
+                $(ParseTreeAssociationNode)association : {
+                    $key := self analyzeWithEnvironment: environment andCompileClosure: midBuilder withBody: association key.
+                    $value := if: association value isNull then: {
+                        null
+                    } else: {
+                        self analyzeWithEnvironment: environment andCompileClosure: midBuilder withBody: association value.
+                    }.
+                    midBuilder sourcePosition: association sourcePosition.
+                    midBuilder makeAssociationWithKey: key value: value.
+                }.
+                $(ParseTreeImmutableDictionaryNode)immutableDictionary : {
+                    $dictionarySize := immutableDictionary elements size.
+                    $associationsArray := Array new: dictionarySize.
+                    $i := 0. while: i < dictionarySize do: {
+                        $element := immutableDictionary elements at: i.
+                        $associationValue := self analyzeWithEnvironment: environment andCompileClosure: midBuilder withBody: element.
+                        associationsArray at: i put: associationValue
+                    } continueWith: (i := i + 1).
+
+                    midBuilder sourcePosition: immutableDictionary sourcePosition.
+                    midBuilder makeImmutableDictionaryWithAssociations: associationsArray.
                 }.
 
                 ## Blocks

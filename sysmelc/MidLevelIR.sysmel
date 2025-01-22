@@ -53,7 +53,27 @@ public: [
         stopNode: MidStopNode.
         instructionSchedule: Array
     }.
-    
+
+    Class: MidData withSuperclass: MidValue fields: #{
+    }.
+
+    Class: MidMakeArray withSuperclass: MidData fields: #{
+        elements: Array
+    }.
+
+    Class: MidMakeTuple withSuperclass: MidData fields: #{
+        elements: Array
+    }.
+
+    Class: MidMakeAssociation withSuperclass: MidData fields: #{
+        key: MidValue.
+        value: MidValue.
+    }.
+
+    Class: MidMakeImmutableDictionary withSuperclass: MidData fields: #{
+        associations: Array
+    }.
+
     Class: MidFunctionLocalValue withSuperclass: MidValue fields: #{
         owner: MidClosureFunction
     }.
@@ -302,6 +322,44 @@ MidBranchSequenceEnd
         | $(MidStartNode)self $(MidActivationContext)context :: Void |
         context jumpToPCOf: self mergeNode.
         void.
+    }.
+MidMakeAssociation
+    withSelector: #usedValues addMethod: {
+        | $(MidMakeAssociation)self :: Array |
+        if: self value isNull then: {
+            [ self key ]
+        } else: {
+            [ self key . self value ]
+        }
+    };
+    withSelector: #connectWithUsed addMethod: {
+        | $(MidMakeAssociation)self :: Array |
+        self key addUser: self.
+        if: self value isNotNull then: {
+            self value addUser: self
+        }.
+    }.
+
+MidValue
+    withSelector: #isImmutableDictionary addMethod: {
+        | $(MidValue)self :: Boolean |
+        false
+    }.
+
+MidMakeImmutableDictionary
+    withSelector: #isImmutableDictionary addMethod: {
+        | $(MidMakeImmutableDictionary)self :: Boolean |
+        true
+    };
+    withSelector: #usedValues addMethod: {
+        | $(MidMakeImmutableDictionary)self :: Array |
+        self associations
+    };
+    withSelector: #connectWithUsed addMethod: {
+        | $(MidMakeImmutableDictionary)self :: Array |
+        $!i := 0. while: (i < self associations size) do: {
+            (self associations at: i) addUser: self
+        } continueWith: (i := i + 1)
     }.
 
 MidExtractCompositeElement
@@ -799,7 +857,7 @@ MidFunctionBuilder
         node connectWithUsed.
         self currentControlNode: node.
         node
-    };    
+    };
     withSelector: #send:to:withArguments: addMethod: {
         | $(MidFunctionBuilder)self $(MidValue)selector $(MidValue)receiver $(Array)arguments  :: MidSendMessage |
         $node := MidSendMessage#{
@@ -852,6 +910,51 @@ MidFunctionBuilder
         self currentControlNode: node.
         node
     };
+
+    withSelector: #makeArrayWithElements: addMethod: {
+        | $(MidFunctionBuilder)self $(Array)elements :: MidMakeArray |
+        $node := MidMakeArray#{
+            sourcePosition: self sourcePosition.
+            elements: elements.
+            type: getBasicIntrinsicTypes() array
+        }.
+        node connectWithUsed.
+        node
+    };
+
+    withSelector: #makeTupleWithElements: addMethod: {
+        | $(MidFunctionBuilder)self $(Array)elements :: MidMakeArray |
+        $node := MidMakeArray#{
+            sourcePosition: self sourcePosition.
+            elements: elements.
+            type: getBasicIntrinsicTypes() tuple
+        }.
+        node connectWithUsed.
+        node
+    };
+
+    withSelector: #makeAssociationWithKey:value: addMethod: {
+        | $(MidFunctionBuilder)self $(MidValue)key $(MidValue)value :: MidMakeAssociation |
+        $node := MidMakeAssociation#{
+            sourcePosition: self sourcePosition.
+            key: key.
+            value: value.
+            type: getBasicIntrinsicTypes() association
+        }.
+        node connectWithUsed.
+        node
+    };
+    withSelector: #makeImmutableDictionaryWithAssociations: addMethod: {
+        | $(MidFunctionBuilder)self $(Array)elements :: MidMakeImmutableDictionary |
+        $node := MidMakeImmutableDictionary#{
+            sourcePosition: self sourcePosition.
+            associations: elements.
+            type: getBasicIntrinsicTypes() immutableDictionary
+        }.
+        node connectWithUsed.
+        node
+    };
+
     withSelector: #makeBranchDestination: addMethod: {
         | $(MidFunctionBuilder)self $(MidConditionalBranch)branch :: MidBranchDestinationNode |
         $node := MidBranchDestinationNode#{
