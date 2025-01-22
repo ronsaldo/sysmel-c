@@ -206,8 +206,32 @@ public: [
                         } continueWith: (i := i + 1).
 
                         if: (invocationArguments size = 1) && (invocationArguments at: 0) isImmutableDictionary then: {
-                            printLine("TODO: instantiate object with named fields.").
-                            abort()
+                            if: isRecordType(typeToConstruct) then: {
+                                $dictionaryArgument := invocationArguments at: 0.
+                                $recordType := extractRecordType(typeToConstruct).
+                                $constructionArguments := Array new: recordType fields size.
+
+                                $associations := dictionaryArgument associations
+                                $!j := 0. while: (j < associations size) do: {
+                                    $assoc := associations at: j.
+                                    $keySymbol := assoc key asSymbol.
+                                    ##printLine(j. " keySymbol ". keySymbol).
+                                    $fieldIndex := findIndexOfRecordFieldWithName(recordType. keySymbol).
+                                    if: (fieldIndex < 0) || (fieldIndex >= constructionArguments size) then: {
+                                        printLine("Invalid field index [". fieldIndex. "] for construction of a ". recordType name).
+                                        abort()
+                                    } else: {
+                                        constructionArguments at: fieldIndex put: assoc value
+                                    }
+                                } continueWith: (j := j + 1).
+                                ##printLine("dictionaryArgument" . dictionaryArgument).
+                                ##printLine("constructionArguments" . constructionArguments).
+
+                                ##printLine("Record type: ". recordType).
+                                midBuilder sourcePosition: functionApplication sourcePosition.
+                                $recordValue := midBuilder makeRecord: typeToConstruct withElements: constructionArguments.
+                                return: recordValue
+                            }
                         }.
 
                         ##return: (instantiateTypeWithArguments(typeToConstruct . invocationArguments asArray))*#

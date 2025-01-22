@@ -503,6 +503,23 @@ public: [
         }
     }.
 
+    $isRecordType($(SysmelType)type :: Boolean) := {
+        match: type ofType: SysmelType withPatterns: #{
+            $(SysmelTupleAndRecordType)tupleAndRecord : true.
+            _: false.
+        }
+    }.
+
+    $extractRecordType($(SysmelType)type :: SysmelTupleAndRecordType) := {
+        match: type ofType: SysmelType withPatterns: #{
+            $(SysmelTupleAndRecordType)tupleAndRecord : tupleAndRecord.
+            _: {
+                printLine("Not a valid record type.").
+                abort()
+            }
+        }
+    }.
+
     $extractRecordFromValue($(Value)value :: SysmelFunction) := {
         match: value ofType: Value withPatterns: #{
             $(RecordValue)recordValue : recordValue value.

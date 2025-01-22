@@ -65,6 +65,10 @@ public: [
         elements: Array
     }.
 
+    Class: MidMakeRecord withSuperclass: MidMakeTuple fields: #{
+        elements: Array
+    }.
+
     Class: MidMakeAssociation withSuperclass: MidData fields: #{
         key: MidValue.
         value: MidValue.
@@ -180,6 +184,17 @@ MidValue
         | $(MidValue)self $(MidActivationContext)context :: Void |
         printLine("subclassResponsibility #evaluateInActivationContext: ". self class).
         abort().
+    };
+    withSelector: #asSymbol addMethod: {
+        | $(MidValue)self :: Symbol |
+        printLine("Not a symbol constant.").
+        abort()
+    }.
+
+MidConstantSymbol
+    withSelector: #asSymbol addMethod: {
+        | $(MidConstantSymbol)self :: Symbol |
+        self value
     }.
 
 MidActivationContext
@@ -323,6 +338,61 @@ MidBranchSequenceEnd
         context jumpToPCOf: self mergeNode.
         void.
     }.
+
+MidMakeArray
+    withSelector: #usedValues addMethod: {
+        | $(MidMakeArray)self :: Array |
+        self elements
+    };
+    withSelector: #connectWithUsed addMethod: {
+        | $(MidMakeArray)self :: Array |
+        $!i := 0. while: i < self elements size do: {
+            (self elements at: i) addUser: self
+        } continueWith: (i := i + 1)
+    }.
+
+MidMakeTuple
+    withSelector: #usedValues addMethod: {
+        | $(MidMakeTuple)self :: Array |
+        self elements
+    };
+    withSelector: #connectWithUsed addMethod: {
+        | $(MidMakeTuple)self :: Array |
+        $!i := 0. while: i < self elements size do: {
+            (self elements at: i) addUser: self
+        } continueWith: (i := i + 1)
+    };
+    withSelector: #evaluateInActivationContext: addMethod: {
+        | $(MidMakeTuple)self $(MidActivationContext)context :: Void |
+        $elementCount := self elements size.
+        $tuple := Tuple new: elementCount.
+        $!i := 0. while: i < elementCount do: {
+            $elementValue := (self elements at: i) getCurrentValueForActivationContext: context.
+            tuple at: i put: elementValue
+        } continueWith: (i := i + 1).
+        $tupleTypedValue := TypedValue(Value(TupleValue(tuple)). getBasicIntrinsicTypes() tuple).
+        context setValueInCurrentPC: tupleTypedValue.
+        context advancePC.
+    }.
+
+MidMakeRecord
+    withSelector: #evaluateInActivationContext: addMethod: {
+        | $(MidMakeRecord)self $(MidActivationContext)context :: Void |
+        $elementCount := self elements size.
+        $tuple := Tuple new: elementCount.
+        $!i := 0. while: i < elementCount do: {
+            $elementValue := (self elements at: i) getCurrentValueForActivationContext: context.
+            tuple at: i put: elementValue
+        } continueWith: (i := i + 1).
+        $record := Record#{
+            tuple: tuple.
+            type: self type
+        }.
+        $typedRecord := TypedValue(Value(RecordValue(record)). self type).
+        context setValueInCurrentPC: typedRecord.
+        context advancePC.
+    }.
+
 MidMakeAssociation
     withSelector: #usedValues addMethod: {
         | $(MidMakeAssociation)self :: Array |
@@ -924,10 +994,21 @@ MidFunctionBuilder
 
     withSelector: #makeTupleWithElements: addMethod: {
         | $(MidFunctionBuilder)self $(Array)elements :: MidMakeArray |
-        $node := MidMakeArray#{
+        $node := MidMakeTuple#{
             sourcePosition: self sourcePosition.
             elements: elements.
             type: getBasicIntrinsicTypes() tuple
+        }.
+        node connectWithUsed.
+        node
+    };
+
+    withSelector: #makeRecord:withElements: addMethod: {
+        | $(MidFunctionBuilder)self $(SysmelType)recordType $(Array)elements :: MidMakeArray |
+        $node := MidMakeRecord#{
+            sourcePosition: self sourcePosition.
+            elements: elements.
+            type: recordType
         }.
         node connectWithUsed.
         node
