@@ -68,6 +68,31 @@ public: [
                 _: Value(InvalidErrorValue("Symbol not found"))
             }
         };
+        withSelector: #lookupModule addMethod: {
+            | $(Environment)self :: Module |
+            match: self ofType: Environment withPatterns: #{
+                $(EmptyEnvironment) empty : {
+                    printLine("Failed to find environment with the module").
+                    abort()
+                }.
+                $(IntrinsicsEnvironment)intrinsics : {
+                    (intrinsics parent lookupModule)
+                }.
+                $(ModuleEnvironment)moduleEnv : {
+                    return: (moduleEnv module)
+                }.
+                $(NamespaceEnvironment)nspaceEnv : {
+                    return: nspaceEnv parent lookupModule
+                }.
+                $(LexicalEnvironment)lexical : {
+                    lexical parent lookupModule
+                }.
+                $(FunctionAnalysisEnvironment)functionalEnv : {
+                    functionalEnv parent lookupModule
+                }.
+                _: Value(InvalidErrorValue("Symbol not found"))
+            }
+        };
         withSelector: #addLocalSymbol:withValue: addMethod: {
             | $(Environment)self $(Symbol)symbol $(Value)value :: Void |
             match: self ofType: Environment withPatterns: #{

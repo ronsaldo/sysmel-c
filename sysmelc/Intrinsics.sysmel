@@ -251,6 +251,7 @@ $addGlobalIntrinsicMethod($(Symbol)name $(Function)primitive $(SysmelType)functi
     DefaultIntrinsicsEnvironment localSymbols at: name put: primitiveValue
 }.
 
+public: [
 $addGlobalMacroIntrinsicMethod($(Symbol)name $(Function)primitive $(SysmelType)functionType :: Void) := {
     $primitiveValue := TypedValue(Value(SysmelFunctionValue(SysmelFunction(SysmelIntrinsicPrimitive#{
         name: name.
@@ -259,7 +260,7 @@ $addGlobalMacroIntrinsicMethod($(Symbol)name $(Function)primitive $(SysmelType)f
     }))). functionType).
     DefaultIntrinsicsEnvironment localSymbols at: name put: primitiveValue
 }.
-
+].
 $primitive_print($(Array) arguments :: Void) := {
     $!i := 0.
     while: i < arguments size do: {

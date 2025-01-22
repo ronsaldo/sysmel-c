@@ -17,7 +17,8 @@ public: [
         $ast := parseTokenList(sourceCode . tokens).
         $environment := module createTopLevelScriptEnvironment.
         SemanticsState()
-            analyzeAndEvaluateWithEnvironment: environment script: ast
+            analyzeAndEvaluateWithEnvironment: environment script: ast.
+        void
     }.
 
     $MainFrontEnd($(Array)arguments :: Int32) := {
@@ -46,4 +47,42 @@ public: [
 ].
 
 setMainEntryPoint: MainFrontEnd.
+
+$primitive_loadFileOnce($(MacroContext)context $(Array)arguments :: TypedValue) := {
+    assert: arguments size = 1.
+    $filenameValue := (context semanticsState analyzeAndEvaluateWithEnvironment: context environment script: (arguments at: 0)) value.
+    $filenameString := match: filenameValue ofType: Value withPatterns: #{
+        $(StringValue)string : string value.
+        _: {
+            printLine("Unsupported file name value ". filenameValue)
+        }
+    }.
+    $localSourceDirectory := context sourcePosition sourceCode directory.
+    ## TODO: Support absolute names.
+    $filenameToLoad := localSourceDirectory -- filenameString.
+    $fileContents := readWholeFileAsText: filenameToLoad.
+    $module := context environment lookupModule.
+    ##printLine("module". module).
+    ##printLine("fileContents: ". fileContents).
+
+    evaluateFileContents(module. filenameToLoad. fileContents).
+    TypedValue(Value(VoidValue()). getBasicIntrinsicTypes() voidType)
+}.
+
+addGlobalMacroIntrinsicMethod(#loadFileOnce:. primitive_loadFileOnce.
+    SysmelType(SysmelSimpleFunctionType#{
+        common: SysmelTypeCommon#{
+            isValueType: true.
+            valueAlignment: 8u32.
+            valueSize: 8u32.
+            heapAlignment: 8u32.
+            heapSize: 8u32.
+            methodDict: SymbolHashtable().
+        }.
+        isCompileTimePure: false.
+        isVariadic: false.
+        argumentTypes: [MacroContext . getBasicIntrinsicTypes() array].
+        resultType: ParseTreeNode.
+    })
+).
 }
