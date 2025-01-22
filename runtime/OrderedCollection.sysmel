@@ -1,0 +1,41 @@
+public: [
+Record: OrderedCollection withFields: #{
+    size: Integer.
+    capacity: Integer.
+    data: Array.
+}.
+].
+
+OrderedCollection
+    withSelector: #increaseCapacity addMethod: {
+        |$(OrderedCollection)self :: OrderedCollection|
+
+        $newCapacity := self capacity * 2.
+        $newDataStore := Array new: newCapacity.
+        $oldData := self data.
+        $oldDataSize := self size.
+        $!i := 0. while: (i < oldDataSize) do: {
+            newDataStore at: i put: (oldData at: i)
+        } continueWith: (i := i + 1).
+
+        self capacity: newCapacity.
+        self data: newDataStore.
+    };
+    withSelector: #ensureCapacity addMethod: {
+        | $(OrderedCollection)self :: OrderedCollection |
+        if: self capacity is isNull then: {
+            self size: 0.
+            self capacity: 32.
+            self data: (Array new: self capacity).
+        }.
+        return: self.
+    };
+    withSelector: #add: addMethod: {
+        | $(OrderedCollection)self $(Gradual)element :: Gradual |
+        self ensureCapacity.
+        if: self size >= self capacity then: {
+            self increaseCapacity
+        }.
+        
+        return: element
+    }
