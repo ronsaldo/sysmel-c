@@ -25,7 +25,8 @@ public: [
                     owner: closureFunction.
                     index: i asUInt32.
                     name: argumentName.
-                    typeExpression: midType
+                    typeExpression: midType.
+                    type: argumentType
                 }.
 
                 if: argumentBindable isAnonymous not then: {
@@ -134,6 +135,51 @@ public: [
                 $(ParseTreeMessageSendNode)messageSend : {
                     $receiverValue := self analyzeWithEnvironment: environment andCompileClosure: midBuilder withBody: messageSend receiver.
                     $selectorValue := self analyzeWithEnvironment: environment andCompileClosure: midBuilder withBody: messageSend selector.
+                    $receiverType := receiverValue type.
+                    $selectorSymbolValue := selectorValue value.
+                    $arguments := messageSend arguments.
+                    ##printLine("receiverValue " . receiverValue).
+                    ##printLine("receiverType " . receiverType).
+                    ##printLine("selectorSymbolValue " . selectorSymbolValue).
+
+                    $method := receiverType lookupSelector: selectorSymbolValue.
+                    ##printLine("Method:". method).
+                    
+
+                    if: method value isInvalidErrorValue then: {
+                        ##printLine("Method not found.").
+
+                        match: receiverType ofType: SysmelType withPatterns: #{
+                            $(SysmelTupleAndRecordType)tupleAndRecord : {
+                                ##printLine("tupleAndRecord ". arguments size).
+                                if: arguments size = 0 then: {
+                                    $fieldIndex := findIndexOfRecordFieldWithName(tupleAndRecord. selectorSymbolValue).
+                                    if: fieldIndex >= 0 then: {
+                                        ## Implicit getter.
+                                        $fieldType := tupleAndRecord fields at: fieldIndex.
+                                        ##printLine("Emit instruction for getting field ". fieldIndex).
+                                        $extractInstruction := midBuilder fromComposite: receiverValue extractAtIndex: fieldIndex withType: fieldType.
+                                        return: extractInstruction
+                                    }
+                                }.
+                                if: arguments size = 1 then: {
+                                    
+                                    $selectorWithoutTrailingColon := selectorSymbolValue withoutTrailingColon.
+                                    $fieldIndex := findIndexOfRecordFieldWithName(tupleAndRecord. selectorWithoutTrailingColon).
+                                    ##printLine("Setter ". selectorWithoutTrailingColon . " fieldIndex ". fieldIndex).
+                                    if: fieldIndex >= 0 then: {
+                                        ## Implicit setter
+                                        $setterValue := self analyzeWithEnvironment: environment andCompileClosure: midBuilder withBody: (arguments at: 0).
+                                        $insertInstruction := midBuilder inComposite: receiverValue insertValue: setterValue atIndex: fieldIndex.
+                                        return: insertInstruction
+                                    }
+                                }.
+                            }.
+                            _: {
+                                ## Nothing required here. 
+                            }
+                        }.
+                    }.
 
                     $invocationArguments := OrderedCollection().
                     $i := 0. while:(i < messageSend arguments size) do: {
@@ -225,7 +271,7 @@ public: [
                     } continueWith: (i := i + 1).
                     return: result
                 }.
-                
+
                 ## Blocks
                 $(ParseTreeLexicalBlockNode)lexicalBlock : {
                     $blockLexicalScope := Environment(LexicalEnvironment#{

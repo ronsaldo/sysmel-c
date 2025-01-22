@@ -11,5 +11,5 @@ TestPair
 
 printLine(TestPair(1i32. 2i32) increment).
 
-$MakePair(:: TestPair) := TestPair#{first: 1i32. second: 2i32}.
-printLine(MakePair()).
+##$MakePair(:: TestPair) := TestPair#{first: 1i32. second: 2i32}.
+##printLine(MakePair()).

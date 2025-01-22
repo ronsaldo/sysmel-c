@@ -85,6 +85,17 @@ public: [
         arguments: Array.
     }.
 
+    Class: MidExtractCompositeElement withSuperclass: MidControlNode fields: #{
+        composite: MidValue.
+        index: Integer.
+    }.
+
+    Class: MidSetCompositeElement withSuperclass: MidControlNode fields: #{
+        composite: MidValue.
+        index: Integer.
+        elementValue: MidValue.
+    }.
+
     Class: MidConditionalBranch withSuperclass: MidControlNode fields: #{
         condition: MidValue.
         trueDestination: MidControlNode.
@@ -290,6 +301,58 @@ MidBranchSequenceEnd
     withSelector: #evaluateInActivationContext: addMethod: {
         | $(MidStartNode)self $(MidActivationContext)context :: Void |
         context jumpToPCOf: self mergeNode.
+        void.
+    }.
+
+MidExtractCompositeElement
+    withSelector: #usedValues addMethod: {
+        | $(MidExtractCompositeElement)self :: Array |
+        [ self composite ]
+    };
+    withSelector: #usedControlNodes addMethod: {
+        | $(MidExtractCompositeElement)self :: Array |
+        [self previousControl ]
+    };
+    withSelector: #connectWithUsed addMethod: {
+        | $(MidExtractCompositeElement)self :: Void |
+        self composite addUser: self.
+    };
+    withSelector: #evaluateInActivationContext: addMethod: {
+        | $(MidExtractCompositeElement)self $(MidActivationContext)context :: Void |
+        $composite := (self composite getCurrentValueForActivationContext: context) value.
+        $extractedRecord := extractRecordFromValue(composite).
+        
+        $extractedValue := extractedRecord tuple at: self index.
+        context setValueInCurrentPC: extractedValue.
+        context advancePC.
+        void.
+    }.
+
+MidSetCompositeElement
+    withSelector: #usedValues addMethod: {
+        | $(MidSetCompositeElement)self :: Array |
+        [ self composite . self elementValue ]
+    };
+    withSelector: #usedControlNodes addMethod: {
+        | $(MidSetCompositeElement)self :: Array |
+        [self previousControl ]
+    };
+    withSelector: #connectWithUsed addMethod: {
+        | $(MidSetCompositeElement)self :: Void |
+        self composite addUser: self.
+        self elementValue addUser: self.
+    };
+    withSelector: #evaluateInActivationContext: addMethod: {
+        | $(MidExtractCompositeElement)self $(MidActivationContext)context :: Void |
+        $composite := (self composite getCurrentValueForActivationContext: context) value.
+        $elementValue := self elementValue getCurrentValueForActivationContext: context.
+        $extractedRecord := extractRecordFromValue(composite).
+
+        ##printLine("elementValue ". elementValue).
+        
+        extractedRecord tuple at: self index put: elementValue.
+        context setValueInCurrentPC: TypedValue(Value(VoidValue()). getBasicIntrinsicTypes() voidType).
+        context advancePC.
         void.
     }.
 
@@ -605,8 +668,8 @@ MidClosureFunction
         }.
         
         self instructionSchedule: enumeratedInstructions asArray.
-        ##self dumpSchedule.
-        ##self dumpGraph
+        self dumpSchedule.
+        self dumpGraph
 
     };
     withSelector: #dumpSchedule addMethod: {
@@ -750,6 +813,34 @@ MidFunctionBuilder
         self currentControlNode: node.
         node
     };
+    withSelector: #fromComposite:extractAtIndex:withType: addMethod: {
+        | $(MidFunctionBuilder)self $(MidValue)composite $(Integer)elementIndex $(SysmelType)fieldType :: MidExtractCompositeElement |
+        $node := MidExtractCompositeElement#{
+            previousControl: self currentControlNode.
+            sourcePosition: self sourcePosition.
+            composite: composite.
+            index: elementIndex.
+            type: fieldType.
+        }.
+        node connectWithUsed.
+        self currentControlNode: node.
+        node
+    };
+    withSelector: #inComposite:insertValue:atIndex: addMethod: {
+        | $(MidFunctionBuilder)self $(MidValue)composite $(MidValue)valueToInsert $(Integer)elementIndex :: MidSetCompositeElement |
+        $node := MidSetCompositeElement#{
+            previousControl: self currentControlNode.
+            sourcePosition: self sourcePosition.
+            composite: composite.
+            index: elementIndex.
+            elementValue: valueToInsert.
+            type: getBasicIntrinsicTypes() voidType
+        }.
+        node connectWithUsed.
+        self currentControlNode: node.
+        node
+    };
+
     withSelector: #conditionBranch: addMethod: {
         | $(MidFunctionBuilder)self $(MidValue)condition :: MidConditionalBranch |
         $node := MidConditionalBranch#{
