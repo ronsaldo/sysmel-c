@@ -93,6 +93,18 @@ public: [
         withSelector: #analyzeWithEnvironment:andCompileClosure:withBody: addMethod: {
             | $(SemanticsState)self $(Environment)environment $(MidFunctionBuilder)midBuilder $(ParseTreeNode)ast :: MidValue |
             match: ast ofType: ParseTreeNode withPatterns: #{
+                ## Errors.
+                $(ParseTreeErrorNode)errorNode : {
+                    printLine("Error ". errorNode errorMessage).
+                    abort()
+                }.
+                $(ParseTreeAssertNode)assertNode : {
+                    $condition := self analyzeWithEnvironment: environment andCompileClosure: midBuilder withBody: assertNode condition.
+
+                    midBuilder sourcePosition: assertNode sourcePosition.
+                    midBuilder assert: condition withDescription: assertNode sourcePosition getText.
+                }.
+
                 ## Literals.
                 $(ParseTreeLiteralIntegerNode)literal : {
                     midBuilder sourcePosition: literal sourcePosition.

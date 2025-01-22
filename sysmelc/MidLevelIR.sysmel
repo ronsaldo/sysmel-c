@@ -46,6 +46,11 @@ public: [
         exitPoints: Array
     }.
 
+    Class: MidAssertNode withSuperclass: MidControlNode fields: #{
+        condition: MidValue.
+        description: String
+    }.
+
     Class: MidClosureFunction withSuperclass: MidGlobalValue fields: #{
         captures: Array.
         arguments: Array.
@@ -683,6 +688,29 @@ MidSendMessage
         context advancePC.
     }.
 
+MidAssertNode
+    withSelector: #usedValues addMethod: {
+        | $(MidAssertNode)self :: Array |
+        [self condition]
+    };
+    withSelector: #usedControlNodes addMethod: {
+        | $(MidAssertNode)self :: Array |
+        [self previousControl]
+    };
+    withSelector: #connectWithUsed addMethod: {
+        | $(MidAssertNode)self :: Void |
+        self condition addUser: self.
+    };
+    withSelector: #evaluateInActivationContext: addMethod: {
+        | $(MidAssertNode)self $(MidActivationContext)context :: Void |
+        $conditionValue := extractBooleanFromValue((self condition getCurrentValueForActivationContext: context) value).
+        if: conditionValue not then: {
+            printLine("Assertion failure: ". self description)
+        }.
+
+        context advancePC
+    }.
+
 MidReturn
     withSelector: #usedValues addMethod: {
         | $(MidReturn)self :: Array |
@@ -916,6 +944,19 @@ MidFunctionBuilder
         }.
     };
 
+    withSelector: #assert:withDescription: addMethod: {
+        | $(MidFunctionBuilder)self $(MidValue)condition $(String)description :: MidAssertNode |
+        $node := MidAssertNode#{
+            previousControl: self currentControlNode.
+            sourcePosition: self sourcePosition.
+            condition: condition.
+            description: description.
+            type: getBasicIntrinsicTypes() voidType
+        }.
+        node connectWithUsed.
+        self currentControlNode: node.
+        node
+    };
     withSelector: #call:withArguments: addMethod: {
         | $(MidFunctionBuilder)self $(MidValue)functional $(Array)arguments :: MidCallFunction |
         $node := MidCallFunction#{
