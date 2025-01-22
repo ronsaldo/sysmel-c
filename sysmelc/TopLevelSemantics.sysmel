@@ -416,6 +416,20 @@ public: [
 
                 return: result
             }.
+            $(ParseTreeDoWhileLoopNode)doWhile : {
+                $result := TypedValue(Value(VoidValue()). getBasicIntrinsicTypes() voidType).
+
+                do:
+                {
+                    ## Body
+                    self analyzeAndEvaluateWithEnvironment: environment script: doWhile body.
+
+                    if: doWhile continueExpression isNotNull then: {
+                        self analyzeAndEvaluateWithEnvironment: environment script: doWhile continueExpression.
+                    }
+                } while: extractBooleanFromValue((self analyzeAndEvaluateWithEnvironment: environment script: doWhile condition) value).
+                return: result
+            }.
 
             ## Namespace
             $(ParseTreeNamespaceDefinitionNode)namespaceDefinition : {
