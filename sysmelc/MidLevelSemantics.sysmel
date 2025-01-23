@@ -382,7 +382,6 @@ public: [
                                 $nameValue := self analyzeAndEvaluateWithEnvironment: environment script: bindable nameExpression.
                                 name := extractSymbolFromValue(nameValue value)
                             }.
-                            printLine("Bindable name ". name).
 
                             if: bindable hasPostTypeExpression && bindable typeExpression isFunctionalDependentTypeNode then: {
                                 $functionNode := ParseTreeFunctionNode#{
@@ -511,6 +510,46 @@ public: [
                     midBuilder beginWithControlNode: phiMerge.
 
                     return: phiMerge
+                }.
+                $(ParseTreeWhileLoopNode)whileLoopNode : {
+                    midBuilder sourcePosition: whileLoopNode sourcePosition.
+                    $loopPreheader := midBuilder makeLoopPreheader.
+                    $loopHeader := midBuilder makeLoopHeader.
+                    $loopMerge := midBuilder makeLoopMerge: loopHeader
+                    $loopContinue := midBuilder makeLoopContinue: loopHeader.
+                    $loopBody := midBuilder makeLoopBody: loopHeader.
+
+                    loopPreheader entryDestination: loopHeader.
+
+                    loopHeader previousControl: loopPreheader.
+                    midBuilder beginWithControlNode: loopHeader.
+                    $condition := self analyzeWithEnvironment: environment andCompileClosure: midBuilder withBody: whileLoopNode condition.
+                    $loopCondition := midBuilder makeLoop: loopHeader condition: condition.
+                    loopCondition trueDestination: loopBody.
+                    loopCondition falseDestination: loopMerge.
+
+                    loopBody previousControl: loopCondition. 
+                    midBuilder beginWithControlNode: loopBody.
+                    self analyzeWithEnvironment: environment andCompileClosure: midBuilder withBody: whileLoopNode body.
+
+                    loopContinue previousControl: midBuilder currentControlNode.
+                    midBuilder beginWithControlNode: loopContinue.
+                    if: whileLoopNode continueExpression isNotNull then: {
+                        self analyzeWithEnvironment: environment andCompileClosure: midBuilder withBody: whileLoopNode continueExpression.
+                    }.
+
+                    $loopContinueEnd := midBuilder makeLoopContinueEnd: loopHeader.
+                    loopContinueEnd previousControl: midBuilder currentControlNode.
+
+                    loopHeader continuePredecessor: loopContinueEnd.
+
+                    midBuilder beginWithControlNode: loopMerge.
+                    loopMerge previousControl: loopCondition.
+
+                    MidConstantVoid#{
+                        sourcePosition: whileLoopNode sourcePosition.
+                        type: getBasicIntrinsicTypes() voidType
+                    }
                 }.
                 _: {
                     printLine("Unsupported node for compilation. ". ast).

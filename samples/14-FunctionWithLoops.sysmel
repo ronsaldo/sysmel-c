@@ -1,13 +1,14 @@
 $whileCountTo($(Integer)n :: Void) := {
     $!x := 0.
     while: (x < n) do: {
-        printLine("While: " . x)
+        ##printLine("While: " . x)
+        x*20
     } continueWith: (x := x + 1).
 }.
 
 whileCountTo(10).
 
-
+#*
 $doContinueWhileCountTo($(Integer)n :: Void) := {
     $!x := 0.
 
@@ -28,3 +29,4 @@ $doWhileCountTo($(Integer)n :: Void) := {
 }.
 
 doWhileCountTo(10)
+*#

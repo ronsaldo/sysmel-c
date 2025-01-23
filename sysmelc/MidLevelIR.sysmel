@@ -150,6 +150,7 @@ public: [
         falseDestination: MidControlNode.
         branchMerge: MidControlNode.
     }.
+
     Class: MidBranchDestinationNode withSuperclass: MidControlNode fields: #{
     }.
 
@@ -160,6 +161,38 @@ public: [
 
     Class: MidBranchSequenceEnd withSuperclass: MidControlNode fields: #{
         mergeNode: MidControlNode
+    }.
+
+    Class: MidLoopPreheaderNode withSuperclass: MidControlNode fields: #{
+        loopMerge: MidControlNode.
+        loopContinue: MidControlNode.
+        entryDestination: MidControlNode.
+    }.
+
+    Class: MidLoopHeaderNode withSuperclass: MidControlNode fields: #{
+        continuePredecessor: MidControlNode.
+    }.
+
+    Class: MidLoopConditionNode withSuperclass: MidControlNode fields: #{
+        condition: MidValue.
+        loopHeaderNode: MidControlNode.
+        trueDestination: MidControlNode.
+        falseDestination: MidControlNode.
+    }.
+
+    Class: MidLoopBodyNode withSuperclass: MidControlNode fields: #{
+        loopHeaderNode: MidControlNode.
+    }.
+
+    Class: MidLoopContinueNode withSuperclass: MidControlNode fields: #{
+        loopHeaderNode: MidControlNode.
+    }.
+    Class: MidLoopContinueEndNode withSuperclass: MidControlNode fields: #{
+        loopHeaderNode: MidControlNode.
+    }.
+
+    Class: MidLoopMergeNode withSuperclass: MidControlNode fields: #{
+        loopHeaderNode: MidControlNode.
     }.
 
     Class: MidMergePhiNode withSuperclass: MidControlNode fields: #{
@@ -205,7 +238,7 @@ MidValue
         false
     };
     withSelector: #getCurrentValueForActivationContext: addMethod: {
-        | $(MidValue)self $(MidActivationContext)context :: Void |
+        | $(MidValue)self $(MidActivationContext)context :: TypedValue |
         return: (context getValueFromPC: self scheduleIndex)
     };
     withSelector: #evaluateInActivationContext: addMethod: {
@@ -314,7 +347,7 @@ MidConditionalBranch
         self condition addUser: self.
     };
     withSelector: #evaluateInActivationContext: addMethod: {
-        | $(MidStartNode)self $(MidActivationContext)context :: Void |
+        | $(MidConditionalBranch)self $(MidActivationContext)context :: Void |
         $condition := extractBooleanFromValue((self condition getCurrentValueForActivationContext: context) value).
         if: condition then: {
             context jumpToPCOf: self trueDestination
@@ -323,6 +356,113 @@ MidConditionalBranch
         }.
         void.
     }.
+
+MidLoopPreheaderNode  
+    withSelector: #usedValues addMethod: {
+        | $(MidLoopPreheaderNode)self :: Array |
+        []
+    };
+    withSelector: #usedControlNodes addMethod: {
+        | $(MidLoopPreheaderNode)self :: Array |
+        [self previousControl.]
+    };
+    withSelector: #evaluateInActivationContext: addMethod: {
+        | $(MidLoopPreheaderNode)self $(MidActivationContext)context :: Void |
+        context jumpToPCOf: self entryDestination.
+        void.
+    }.
+
+MidLoopHeaderNode  
+    withSelector: #usedValues addMethod: {
+        | $(MidLoopPreheaderNode)self :: Array |
+        []
+    };
+    withSelector: #usedControlNodes addMethod: {
+        | $(MidLoopPreheaderNode)self :: Array |
+        [self previousControl. self continuePredecessor]
+    };
+    withSelector: #evaluateInActivationContext: addMethod: {
+        | $(MidLoopPreheaderNode)self $(MidActivationContext)context :: Void |
+        context advancePC.
+        void.
+    }.
+
+MidLoopConditionNode  
+    withSelector: #usedValues addMethod: {
+        | $(MidLoopConditionNode)self :: Array |
+        [self condition]
+    };
+    withSelector: #usedControlNodes addMethod: {
+        | $(MidLoopConditionNode)self :: Array |
+        [self previousControl . self loopHeaderNode ]
+    };
+    withSelector: #evaluateInActivationContext: addMethod: {
+        | $(MidLoopConditionNode)self $(MidActivationContext)context :: Void |
+        $condition := extractBooleanFromValue((self condition getCurrentValueForActivationContext: context) value).
+        if: condition then: {
+            context jumpToPCOf: self trueDestination
+        } else: {
+            context jumpToPCOf: self falseDestination
+        }.
+        void.
+    }.
+
+MidLoopBodyNode  
+    withSelector: #usedValues addMethod: {
+        | $(MidLoopBodyNode)self :: Array |
+        []
+    };
+    withSelector: #usedControlNodes addMethod: {
+        | $(MidLoopBodyNode)self :: Array |
+        [self previousControl . self loopHeaderNode]
+    };
+    withSelector: #evaluateInActivationContext: addMethod: {
+        | $(MidLoopBodyNode)self $(MidActivationContext)context :: Void |
+        context advancePC.
+    }.
+
+MidLoopContinueNode  
+    withSelector: #usedValues addMethod: {
+        | $(MidLoopContinueNode)self :: Array |
+        []
+    };
+    withSelector: #usedControlNodes addMethod: {
+        | $(MidLoopContinueNode)self :: Array |
+        [self previousControl . self loopHeaderNode]
+    };
+    withSelector: #evaluateInActivationContext: addMethod: {
+        | $(MidLoopContinueNode)self $(MidActivationContext)context :: Void |
+        context advancePC
+    }.
+
+MidLoopContinueEndNode  
+    withSelector: #usedValues addMethod: {
+        | $(MidLoopContinueEndNode)self :: Array |
+        []
+    };
+    withSelector: #usedControlNodes addMethod: {
+        | $(MidLoopContinueEndNode)self :: Array |
+        [self previousControl . self loopHeaderNode]
+    };
+    withSelector: #evaluateInActivationContext: addMethod: {
+        | $(MidLoopContinueEndNode)self $(MidActivationContext)context :: Void |
+        context jumpToPCOf: self loopHeaderNode
+    }.
+
+MidLoopMergeNode  
+    withSelector: #usedValues addMethod: {
+        | $(MidLoopMergeNode)self :: Array |
+        []
+    };
+    withSelector: #usedControlNodes addMethod: {
+        | $(MidLoopMergeNode)self :: Array |
+        [self previousControl . self loopHeaderNode]
+    };
+    withSelector: #evaluateInActivationContext: addMethod: {
+        | $(MidLoopMergeNode)self $(MidActivationContext)context :: Void |
+        context advancePC
+    }.
+
 MidBranchDestinationNode
     withSelector: #usedValues addMethod: {
         | $(MidBranchDestinationNode)self :: Array |
@@ -557,34 +697,39 @@ MidConstant
         true
     };
     withSelector: #getCurrentValueForActivationContext: addMethod: {
-        | $(MidConstant)self $(MidActivationContext)context :: Void |
+        | $(MidConstant)self $(MidActivationContext)context :: TypedValue |
         printLine("getCurrentValueForActivationContext: subclassResponsibility ". self class).
     }.
 
 MidConstantInteger
     withSelector: #getCurrentValueForActivationContext: addMethod: {
-        | $(MidConstantInteger)self $(MidActivationContext)context :: Void |
+        | $(MidConstantInteger)self $(MidActivationContext)context :: TypedValue |
         TypedValue(Value(IntegerValue(self value)). self type)
     }.
 MidConstantFloat
     withSelector: #getCurrentValueForActivationContext: addMethod: {
-        | $(MidConstantFloat)self $(MidActivationContext)context :: Void |
+        | $(MidConstantFloat)self $(MidActivationContext)context :: TypedValue |
         TypedValue(Value(FloatValue(self value)). self type)
     }.
 MidConstantString
     withSelector: #getCurrentValueForActivationContext: addMethod: {
-        | $(MidConstantString)self $(MidActivationContext)context :: Void |
+        | $(MidConstantString)self $(MidActivationContext)context :: TypedValue |
         TypedValue(Value(StringValue(self value)). self type)
     }.
 MidConstantSymbol
     withSelector: #getCurrentValueForActivationContext: addMethod: {
-        | $(MidConstantString)self $(MidActivationContext)context :: Void |
+        | $(MidConstantString)self $(MidActivationContext)context :: TypedValue |
         TypedValue(Value(SymbolValue(self value)). self type)
     }.
 MidConstantValue
     withSelector: #getCurrentValueForActivationContext: addMethod: {
-        | $(MidConstantValue)self $(MidActivationContext)context :: Void |
+        | $(MidConstantValue)self $(MidActivationContext)context :: TypedValue |
         TypedValue(self value. self type).
+    }.
+MidConstantVoid
+    withSelector: #getCurrentValueForActivationContext: addMethod: {
+        | $(MidConstantValue)self $(MidActivationContext)context :: TypedValue |
+        TypedValue(Value(VoidValue()). getBasicIntrinsicTypes() voidType).
     }.
 
 MidStopNode
@@ -632,7 +777,9 @@ MidStoreIn
     };
     withSelector: #evaluateInActivationContext: addMethod: {
         | $(MidCallFunction)self $(MidActivationContext)context :: Void |
-        context setValueInCurrentPC: null.
+        $newValue := self value getCurrentValueForActivationContext: context.
+        context setValue: newValue inPCOf: self storage.
+        context setValueInCurrentPC: newValue.
         context advancePC.
     }.
 
@@ -648,8 +795,15 @@ MidLoadFrom
     withSelector: #connectWithUsed addMethod: {
         | $(MidStoreIn)self :: Void |
         self storage addUser: self.
+    };
+    withSelector: #evaluateInActivationContext: addMethod: {
+        | $(MidStoreIn)self $(MidActivationContext)context :: Void |
+        $value := self storage getCurrentValueForActivationContext: context.
+        context setValueInCurrentPC: value.
+        context advancePC.
     }.
     
+
 MidCallFunction
     withSelector: #usedValues addMethod: {
         | $(MidCallFunction)self :: Array |
@@ -856,7 +1010,7 @@ MidIntrinsicFunction
         self primitive(context. arguments)
     };
     withSelector: #getCurrentValueForActivationContext: addMethod: {
-        | $(MidIntrinsicFunction)self $(MidActivationContext)context :: Void |
+        | $(MidIntrinsicFunction)self $(MidActivationContext)context :: TypedValue |
         TypedValue(Value(SysmelMidValue(self)). self type).
     };
     withSelector: #evaluateWithArguments: addMethod: {
@@ -957,7 +1111,7 @@ MidClosureFunction
         printLine("}").
     };
     withSelector: #getCurrentValueForActivationContext: addMethod: {
-        | $(MidClosureFunction)self $(MidActivationContext)context :: Void |
+        | $(MidClosureFunction)self $(MidActivationContext)context :: TypedValue |
         TypedValue(Value(SysmelMidValue(self)). self type).
     };
     withSelector: #evaluateWithArguments: addMethod: {
@@ -1087,6 +1241,7 @@ MidFunctionBuilder
 
     withSelector: #call:withArguments: addMethod: {
         | $(MidFunctionBuilder)self $(MidValue)functional $(Array)arguments :: MidCallFunction |
+        printLine("functional type". functional type)
         $resultType := match: functional type ofType: SysmelType withPatterns: #{
             $(SysmelSimpleFunctionType)functionType : functionType resultType.
             _: getBasicIntrinsicTypes() gradual
@@ -1212,6 +1367,60 @@ MidFunctionBuilder
         node
     };
 
+    withSelector: #makeLoopPreheader addMethod: {
+        | $(MidFunctionBuilder)self :: MidLoopPreheaderNode |
+        $node := MidLoopPreheaderNode#{
+            previousControl: self currentControlNode.
+            sourcePosition: self sourcePosition.
+        }.
+    };
+
+    withSelector: #makeLoopHeader addMethod: {
+        | $(MidFunctionBuilder)self :: MidLoopPreheaderNode |
+        $node := MidLoopHeaderNode#{
+            previousControl: self currentControlNode.
+            sourcePosition: self sourcePosition.
+        }.
+    };
+    
+    withSelector: #makeLoop:condition: addMethod: {
+        | $(MidFunctionBuilder)self $(MidLoopPreheaderNode)loopHeader $(MidValue)condition :: MidConditionalBranch |
+        MidLoopConditionNode#{
+            previousControl: self currentControlNode.
+            sourcePosition: self sourcePosition.
+            loopHeaderNode: loopHeader.
+            condition: condition.
+        }.
+    };
+    withSelector: #makeLoopBody: addMethod: {
+        | $(MidFunctionBuilder)self $(MidLoopPreheaderNode)loopHeader :: MidConditionalBranch |
+        MidLoopBodyNode#{
+            previousControl: self currentControlNode.
+            sourcePosition: self sourcePosition.
+            loopHeaderNode: loopHeader.
+        }.
+    };
+    withSelector: #makeLoopContinue: addMethod: {
+        | $(MidFunctionBuilder)self $(MidLoopPreheaderNode)header :: MidBranchMergeNode |
+        MidLoopContinueNode#{
+            sourcePosition: self sourcePosition.
+            loopHeaderNode: header.
+        }.
+    };
+    withSelector: #makeLoopContinueEnd: addMethod: {
+        | $(MidFunctionBuilder)self $(MidLoopPreheaderNode)header :: MidBranchMergeNode |
+        MidLoopContinueEndNode#{
+            sourcePosition: self sourcePosition.
+            loopHeaderNode: header.
+        }.
+    };
+    withSelector: #makeLoopMerge: addMethod: {
+        | $(MidFunctionBuilder)self $(MidLoopPreheaderNode)header :: MidBranchMergeNode |
+        MidLoopMergeNode#{
+            sourcePosition: self sourcePosition.
+            loopHeaderNode: header.
+        }.
+    };
     withSelector: #makeBranchDestination: addMethod: {
         | $(MidFunctionBuilder)self $(MidConditionalBranch)branch :: MidBranchDestinationNode |
         $node := MidBranchDestinationNode#{
