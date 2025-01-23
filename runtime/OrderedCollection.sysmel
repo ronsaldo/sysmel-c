@@ -5,8 +5,13 @@ Record: OrderedCollection withFields: #{
     data: Array.
 }.
 ].
-
 OrderedCollection
+    withSelector: #initialize addMethod: {
+        |$(OrderedCollection)self :: OrderedCollection|
+        self size: 0.
+        self capacity: 0.
+        self data: null
+    };
     withSelector: #increaseCapacity addMethod: {
         |$(OrderedCollection)self :: OrderedCollection|
 
@@ -20,10 +25,11 @@ OrderedCollection
 
         self capacity: newCapacity.
         self data: newDataStore.
+        return: self
     };
     withSelector: #ensureCapacity addMethod: {
         | $(OrderedCollection)self :: OrderedCollection |
-        if: self capacity is isNull then: {
+        if: self data isNull then: {
             self size: 0.
             self capacity: 32.
             self data: (Array new: self capacity).
@@ -36,6 +42,26 @@ OrderedCollection
         if: self size >= self capacity then: {
             self increaseCapacity
         }.
-        
+        self data at: self size put: element.
+        self size: self size + 1.
         return: element
-    }
+    };
+    withSelector: #at: addMethod: {
+        | $(OrderedCollection)self $(Integer)index :: Gradual |
+        if: index >= self size then: {
+            printLine("Index out of bounds").
+            abort()
+        }.
+
+        self data at: index. 
+    };
+    withSelector: #at:put: addMethod: {
+        | $(OrderedCollection)self $(Integer)index $(Gradual)value :: Gradual |
+        if: index >= self size then: {
+            printLine("Index out of bounds").
+            abort()
+        }.
+
+        self data at: index put: value.
+        value
+    }.

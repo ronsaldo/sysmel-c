@@ -491,7 +491,11 @@ public: [
                     $trueBranchSequenceEnd := midBuilder makeBranchSequenceEnd: truePhiValue Into: mergeRegion.
 
                     midBuilder beginWithControlNode: falseBranch.
-                    $falseResult := self analyzeWithEnvironment: environment andCompileClosure: midBuilder withBody: ifSelection falseExpression.
+                    $falseResult := if: ifSelection falseExpression isNotNull then: {
+                        self analyzeWithEnvironment: environment andCompileClosure: midBuilder withBody: ifSelection falseExpression.
+                    } else: {
+                        MidConstantVoid#{}
+                    }.
                     $falsePredecessor := midBuilder currentControlNode.
                     $falsePhiValue := midBuilder makePhiNodeValue.
 
@@ -587,6 +591,11 @@ public: [
                         sourcePosition: doWhileLoop sourcePosition.
                         type: getBasicIntrinsicTypes() voidType
                     }
+                }.
+                $(ParseTreeReturnNode)returnNode : {
+                    $returnValue := self analyzeWithEnvironment: environment andCompileClosure: midBuilder withBody: returnNode valueExpression.
+                    midBuilder sourcePosition: returnNode sourcePosition.
+                    midBuilder returnValue: returnValue
                 }.
                 _: {
                     printLine("Unsupported node for compilation. ". ast).

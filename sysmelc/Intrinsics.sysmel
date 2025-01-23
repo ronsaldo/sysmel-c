@@ -276,6 +276,11 @@ $primitive_printLine($(Array) arguments :: Void) := {
     void
 }.
 
+$primitive_abort($(Array) arguments :: Void) := {
+    abort().
+    void
+}.
+
 addGlobalIntrinsicMethod(#print. primitive_print.
     SysmelType(SysmelSimpleFunctionType#{
         common: SysmelTypeCommon#{
@@ -310,6 +315,22 @@ addGlobalIntrinsicMethod(#printLine. primitive_printLine.
     })
 ).
 
+addGlobalIntrinsicMethod(#abort. primitive_abort.
+    SysmelType(SysmelSimpleFunctionType#{
+        common: SysmelTypeCommon#{
+            isValueType: true.
+            valueAlignment: 8u32.
+            valueSize: 8u32.
+            heapAlignment: 8u32.
+            heapSize: 8u32.
+            methodDict: SymbolHashtable().
+        }.
+        isCompileTimePure: false.
+        isVariadic: false.
+        argumentTypes: [BasicIntrinsicTypesSingleton array].
+        resultType: BasicIntrinsicTypesSingleton voidType.
+    })
+).
 $primitive_ifThenElse_Macro($(MacroContext)context $(Array)arguments :: TypedValue) := {
     assert: arguments size = 3.
     TypedValue(Value(ParseTreeNodeValue(ParseTreeNode(ParseTreeIfSelectionNode#{
@@ -474,9 +495,7 @@ $primitive_Return_Macro($(MacroContext)context $(Array)arguments :: TypedValue) 
     assert: arguments size = 1.
     TypedValue(Value(ParseTreeNodeValue(ParseTreeNode(ParseTreeReturnNode#{
         sourcePosition: context sourcePosition.
-        body: (arguments at: 0).
-        continueExpression: (arguments at: 1).
-        condition: (arguments at: 2).
+        valueExpression: (arguments at: 0).
     }))). BasicIntrinsicTypesSingleton parseTreeNode).
 }.
 
