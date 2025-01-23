@@ -163,15 +163,23 @@ public: [
     
                 ## Messages and applications
                 $(ParseTreeMessageSendNode)messageSend : {
-                    $receiverValue := self analyzeWithEnvironment: environment andCompileClosure: midBuilder withBody: messageSend receiver.
+                    $!receiverValue := self analyzeWithEnvironment: environment andCompileClosure: midBuilder withBody: messageSend receiver.
                     $selectorValue := self analyzeWithEnvironment: environment andCompileClosure: midBuilder withBody: messageSend selector.
-                    $receiverType := receiverValue type.
+                    $!receiverType := receiverValue type.
                     $selectorSymbolValue := selectorValue value.
                     $arguments := messageSend arguments.
 
-                    $method := receiverType lookupSelector: selectorSymbolValue.
+                    $!method := receiverType lookupSelector: selectorSymbolValue.
+                    if: (method value isInvalidErrorValue) && (isReferenceType(receiverType)) then: {
+                        midBuilder sourcePosition: messageSend sourcePosition.
+                        $newReceiverType := receiverType getBaseType
+                        $loaded := midBuilder load: newReceiverType from: receiverValue.
+                        
+                        receiverValue := loaded.
+                        receiverType := newReceiverType.
+                        method := receiverType lookupSelector: selectorSymbolValue.
+                    }.
                     
-
                     if: method value isInvalidErrorValue then: {
 
                         match: receiverType ofType: SysmelType withPatterns: #{
@@ -362,6 +370,85 @@ public: [
 
                     midBuilder sourcePosition: immutableDictionary sourcePosition.
                     midBuilder makeImmutableDictionaryWithAssociations: associationsArray.
+                }.
+                ## Assignment
+                $(ParseTreeAssignmentNode)assignmentNode : {
+                    $store := assignmentNode store.
+                    $value := assignmentNode value.
+                    match: store ofType: ParseTreeNode withPatterns: #{
+                        $(ParseTreeBindableNameNode)bindable : {
+                            $!name := null.
+                            if: bindable isAnonymous not then: {
+                                $nameValue := self analyzeAndEvaluateWithEnvironment: environment script: bindable nameExpression.
+                                name := extractSymbolFromValue(nameValue value)
+                            }.
+                            printLine("Bindable name ". name).
+
+                            if: bindable hasPostTypeExpression && bindable typeExpression isFunctionalDependentTypeNode then: {
+                                $functionNode := ParseTreeFunctionNode#{
+                                    sourcePosition: getSourcePositionFromNode(ast).
+                                    functionDependentType: bindable typeExpression.
+                                    bodyExpression: value.
+                                    isAnonymous: bindable isAnonymous.
+                                }.
+                                if: bindable isAnonymous not then: {
+                                    functionNode name: name.
+                                }.
+
+                                ## TODO: make a proper closure.
+                                return: (self analyzeWithEnvironment: environment andCompileClosure: functionNode)
+                            }.
+
+                            $initialValue := self analyzeWithEnvironment: environment andCompileClosure: midBuilder withBody: value.
+                            ##printLine("initialValue: ". initialValue).
+                            ##printLine("initialValue type: ". initialValue type).
+                            ##printLine("initialValue type: ". initialValue type).
+                            if: bindable isMutable then: {
+                                $alloca := midBuilder alloca: initialValue type.
+                                midBuilder store: initialValue in: alloca.
+                                environment addLocalSymbol: name withValue: TypedValue(Value(SysmelMidValue(alloca)). alloca type)
+                            } else: {
+                                environment addLocalSymbol: name withValue: TypedValue(Value(SysmelMidValue(initialValue)). initialValue type)
+                            }.
+                            initialValue
+                        }.
+                        $(ParseTreeIdentifierReferenceNode)identifierReference : {
+                            $binding := environment lookupSymbolRecursively: identifierReference value.
+                            if: binding isNull then: {
+                                printLine("Failed to find binding for: ". identifierReference value).
+                                abort()
+                            }.
+
+                            if: isReferenceType(binding type) then: {
+                                if: binding value isMidValue then:
+                                {
+                                    $reference := binding value getMidValue.
+                                    $newValue := self analyzeWithEnvironment: environment andCompileClosure: midBuilder withBody: value.
+                                    midBuilder sourcePosition: assignmentNode sourcePosition.
+                                    midBuilder store: newValue in: reference.
+                                    return: newValue
+                                }
+                            }
+                            
+                            printLine("Invalid assignment.").
+                            abort()
+                        }.
+                        _: {
+                            ## Turn the assignment into a message send.
+                            $selectorLiteral := ParseTreeNode(ParseTreeLiteralSymbolNode#{
+                                sourcePosition: ast sourcePosition.
+                                value: #":="
+                            }).
+                            $messageSend := ParseTreeNode(ParseTreeMessageSendNode#{
+                                sourcePosition: ast sourcePosition.
+                                receiver: store.
+                                selector: selectorLiteral.
+                                arguments: [value]
+                            }).
+                            self analyzeWithEnvironment: environment andCompileClosure: midBuilder withBody: messageSend
+                        }
+                    }.
+
                 }.
 
                 ## Blocks

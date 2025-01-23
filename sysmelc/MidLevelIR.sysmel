@@ -68,6 +68,19 @@ public: [
     Class: MidData withSuperclass: MidValue fields: #{
     }.
 
+    Class: MidAlloca withSuperclass: MidData fields: #{
+        valueType: SysmelType
+    }.
+
+    Class: MidStoreIn withSuperclass: MidControlNode fields: #{
+        value: MidValue.
+        storage: MidValue
+    }.
+
+    Class: MidLoadFrom withSuperclass: MidControlNode fields: #{
+        storage: MidValue
+    }.
+
     Class: MidMakeArray withSuperclass: MidData fields: #{
         elements: Array
     }.
@@ -184,6 +197,10 @@ MidValue
         void
     };
     withSelector: #isConstant addMethod: {
+        | $(MidValue)self :: Boolean |
+        false
+    };
+    withSelector: #isInvalidErrorValue addMethod: {
         | $(MidValue)self :: Boolean |
         false
     };
@@ -587,6 +604,52 @@ MidStopNode
         }.
     }.
 
+
+MidAlloca
+    withSelector: #isAlloca addMethod: {
+        | $(MidAlloca)self :: Boolean |
+        true
+    };
+    withSelector: #evaluateInActivationContext: addMethod: {
+        | $(MidCallFunction)self $(MidActivationContext)context :: Void |
+        context setValueInCurrentPC: null.
+        context advancePC.
+    }.
+
+MidStoreIn
+    withSelector: #usedValues addMethod: {
+        | $(MidStoreIn)self :: Array |
+        [self value. self storage]  
+    };
+    withSelector: #usedControlNodes addMethod: {
+        | $(MidStoreIn)self :: Array |
+        [self previousControl] 
+    };
+    withSelector: #connectWithUsed addMethod: {
+        | $(MidStoreIn)self :: Void |
+        self value addUser: self.
+        self storage addUser: self.
+    };
+    withSelector: #evaluateInActivationContext: addMethod: {
+        | $(MidCallFunction)self $(MidActivationContext)context :: Void |
+        context setValueInCurrentPC: null.
+        context advancePC.
+    }.
+
+MidLoadFrom
+    withSelector: #usedValues addMethod: {
+        | $(MidStoreIn)self :: Array |
+        [self storage]  
+    };
+    withSelector: #usedControlNodes addMethod: {
+        | $(MidStoreIn)self :: Array |
+        [self previousControl] 
+    };
+    withSelector: #connectWithUsed addMethod: {
+        | $(MidStoreIn)self :: Void |
+        self storage addUser: self.
+    }.
+    
 MidCallFunction
     withSelector: #usedValues addMethod: {
         | $(MidCallFunction)self :: Array |
@@ -774,6 +837,10 @@ MidValue
     withSelector: #isFunctionalValue addMethod: {
         | $(MidValue)self :: Boolean |
         false
+    };
+    withSelector: #isAlloca addMethod: {
+        | $(MidValue)self :: Boolean |
+        false
     }.
 
 MidIntrinsicFunction
@@ -846,8 +913,8 @@ MidClosureFunction
         }.
         
         self instructionSchedule: enumeratedInstructions asArray.
-        ##self dumpSchedule.
-        ##self dumpGraph
+        self dumpSchedule.
+        self dumpGraph.
 
     };
     withSelector: #dumpSchedule addMethod: {
@@ -969,7 +1036,15 @@ MidFunctionBuilder
             value: constantValue
         }.
     };
-
+    withSelector: #alloca: addMethod: {
+        | $(MidFunctionBuilder)self $(SysmelType)valueType :: MidAlloca |
+        $node := MidAlloca#{
+            sourcePosition: self sourcePosition.
+            valueType: valueType.
+            type: valueType ref.
+        }.
+        node
+    };
     withSelector: #assert:withDescription: addMethod: {
         | $(MidFunctionBuilder)self $(MidValue)condition $(String)description :: MidAssertNode |
         $node := MidAssertNode#{
@@ -983,6 +1058,33 @@ MidFunctionBuilder
         self currentControlNode: node.
         node
     };
+    withSelector: #store:in: addMethod: {
+        | $(MidFunctionBuilder)self $(MidValue)valueToStore $(MidValue)storageLocation :: MidStoreIn |
+        $node := MidStoreIn#{
+            previousControl: self currentControlNode.
+            sourcePosition: self sourcePosition.
+            value: valueToStore.
+            storage: storageLocation.
+            type: getBasicIntrinsicTypes() voidType
+        }.
+        node connectWithUsed.
+        self currentControlNode: node.
+        node
+    };
+
+    withSelector: #load:from: addMethod: {
+        | $(MidFunctionBuilder)self $(SysmelType)valueType $(MidValue)storageLocation :: MidLoadFrom |
+        $node := MidLoadFrom#{
+            previousControl: self currentControlNode.
+            sourcePosition: self sourcePosition.
+            storage: storageLocation.
+            type: valueType
+        }.
+        node connectWithUsed.
+        self currentControlNode: node.
+        node
+    };
+
     withSelector: #call:withArguments: addMethod: {
         | $(MidFunctionBuilder)self $(MidValue)functional $(Array)arguments :: MidCallFunction |
         $resultType := match: functional type ofType: SysmelType withPatterns: #{

@@ -85,6 +85,16 @@ public: [
             argumentTypes: Array.
             resultType: SysmelType.
         }.
+        Record: SysmelPointerType withFields: #{
+            common: SysmelTypeCommon.
+            supertype: SysmelType.
+            baseType: SysmelType.
+        }.
+        Record: SysmelReferenceType withFields: #{
+            common: SysmelTypeCommon.
+            supertype: SysmelType.
+            baseType: SysmelType.
+        }.
     ].
 
     SysmelType
@@ -95,8 +105,10 @@ public: [
                 $(SysmelTupleAndRecordType)tupleAndRecord : tupleAndRecord common.
                 $(SysmelEnumType)enumType : enumType common.
                 $(SysmelSimpleFunctionType)simpleFunctionType : simpleFunctionType common.
+                $(SysmelPointerType)pointerType : pointerType common.
+                $(SysmelReferenceType)referenceType : referenceType common.
                 _: {
-                    printLine("Unsupported type kind").
+                    printLine("getCommonSection: Unsupported type kind").
                     abort()
                 }
             }
@@ -108,11 +120,53 @@ public: [
                 $(SysmelTupleAndRecordType)tupleAndRecord : tupleAndRecord supertype.
                 $(SysmelEnumType)enumType : enumType supertype.
                 $(SysmelSimpleFunctionType)simpleFunctionType : simpleFunctionType supertype.
+                $(SysmelReferenceType)referenceType : referenceType supertype.
+                $(SysmelPointerType)pointerType : pointerType supertype.
                 _: {
-                    printLine("Unsupported type kind").
+                    printLine("getSupertype: Unsupported type kind").
                     abort()
                 }
             }
+        };
+        withSelector: #getBaseType addMethod: {
+            |$(SysmelType)self :: SysmelType|
+            match: self ofType: SysmelType withPatterns: #{
+                $(SysmelEnumType)enumType : enumType baseType.
+                $(SysmelReferenceType)referenceType : referenceType baseType.
+                $(SysmelPointerType)pointerType : pointerType baseType.
+                _: {
+                    printLine("getBaseType: Unsupported type kind").
+                    abort()
+                }
+            }
+        };
+        withSelector: #pointer addMethod: {
+            |$(SysmelType)self :: SysmelType|
+            SysmelType(SysmelPointerType#{
+                common: SysmelTypeCommon#{
+                    isValueType: true.
+                    valueAlignment: 8u32.
+                    valueSize: 8u32.
+                    heapAlignment: 8u32.
+                    heapSize: 8u32.
+                    methodDict: SymbolHashtable().
+                }.
+                baseType: self
+            }).
+        };
+        withSelector: #ref addMethod: {
+            |$(SysmelType)self :: SysmelType|
+            SysmelType(SysmelReferenceType#{
+                common: SysmelTypeCommon#{
+                    isValueType: true.
+                    valueAlignment: 8u32.
+                    valueSize: 8u32.
+                    heapAlignment: 8u32.
+                    heapSize: 8u32.
+                    methodDict: SymbolHashtable().
+                }.
+                baseType: self
+            }).
         }.
 
     Class: MidValue withFields: #{
@@ -529,6 +583,38 @@ public: [
             }
         }
     }.
+
+    $isReferenceType($(SysmelType)type :: Boolean) := {
+        match: type ofType: SysmelType withPatterns: #{
+            $(SysmelReferenceType)refType : true.
+            _: false.
+        }
+    }.
+    $extractReferenceType($(SysmelType)type :: SysmelReferenceType) := {
+        match: type ofType: SysmelType withPatterns: #{
+            $(SysmelReferenceType)refType : refType.
+            _: {
+                printLine("Not a valid reference type.").
+                abort().
+            }
+        }
+    }.
+    $isPointerType($(SysmelType)type :: Boolean) := {
+        match: type ofType: SysmelType withPatterns: #{
+            $(SysmelPointerType)refType : true.
+            _: false.
+        }
+    }.
+    $extractPointerType($(SysmelType)type :: SysmelPointerType) := {
+        match: type ofType: SysmelType withPatterns: #{
+            $(SysmelPointerType)refType : refType.
+            _: {
+                printLine("Not a valid reference type.").
+                abort().
+            }
+        }
+    }.
+
     $findIndexOfRecordFieldWithName($(SysmelTupleAndRecordType)recordType $(Symbol)fieldName :: Integer) := {
         $fieldCount := recordType fieldNames size.
         $!i := 0. while: (i < fieldCount) do: {
