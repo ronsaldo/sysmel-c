@@ -145,6 +145,7 @@ public: [
                         match: functionValue ofType: SysmelFunction withPatterns: #{
                             $(SysmelIntrinsicPrimitive)intrinsicPrimitive : {
                                 return: MidIntrinsicFunction#{
+                                    type: value type.
                                     name: intrinsicPrimitive name.
                                     primitive: intrinsicPrimitive implementation.
                                     isMacro: intrinsicPrimitive isMacro.

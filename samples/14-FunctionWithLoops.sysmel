@@ -1,8 +1,7 @@
 $whileCountTo($(Integer)n :: Void) := {
     $!x := 0.
     while: (x < n) do: {
-        ##printLine("While: " . x)
-        x*20
+        printLine("While: " . x)
     } continueWith: (x := x + 1).
 }.
 

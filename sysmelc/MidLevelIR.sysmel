@@ -1241,7 +1241,6 @@ MidFunctionBuilder
 
     withSelector: #call:withArguments: addMethod: {
         | $(MidFunctionBuilder)self $(MidValue)functional $(Array)arguments :: MidCallFunction |
-        printLine("functional type". functional type)
         $resultType := match: functional type ofType: SysmelType withPatterns: #{
             $(SysmelSimpleFunctionType)functionType : functionType resultType.
             _: getBasicIntrinsicTypes() gradual
