@@ -443,7 +443,7 @@ addGlobalMacroIntrinsicMethod(#do:while:. primitive_doWhile_Macro.
 ).
 
 $primitive_doContinueWithWhile_Macro($(MacroContext)context $(Array)arguments :: TypedValue) := {
-    assert: arguments size = 2.
+    assert: arguments size = 3.
     TypedValue(Value(ParseTreeNodeValue(ParseTreeNode(ParseTreeDoWhileLoopNode#{
         sourcePosition: context sourcePosition.
         body: (arguments at: 0).

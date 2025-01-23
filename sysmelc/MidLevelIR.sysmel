@@ -1067,8 +1067,8 @@ MidClosureFunction
         }.
         
         self instructionSchedule: enumeratedInstructions asArray.
-        self dumpSchedule.
-        self dumpGraph.
+        ##self dumpSchedule.
+        ##self dumpGraph.
 
     };
     withSelector: #dumpSchedule addMethod: {

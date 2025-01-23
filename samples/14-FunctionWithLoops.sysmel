@@ -7,7 +7,6 @@ $whileCountTo($(Integer)n :: Void) := {
 
 whileCountTo(10).
 
-#*
 $doContinueWhileCountTo($(Integer)n :: Void) := {
     $!x := 0.
 
@@ -28,4 +27,3 @@ $doWhileCountTo($(Integer)n :: Void) := {
 }.
 
 doWhileCountTo(10)
-*#

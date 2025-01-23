@@ -552,6 +552,42 @@ public: [
                         type: getBasicIntrinsicTypes() voidType
                     }
                 }.
+                $(ParseTreeDoWhileLoopNode)doWhileLoop : {
+                    midBuilder sourcePosition: doWhileLoop sourcePosition.
+                    $loopPreheader := midBuilder makeLoopPreheader.
+                    $loopHeader := midBuilder makeLoopHeader.
+                    $loopMerge := midBuilder makeLoopMerge: loopHeader
+                    $loopContinue := midBuilder makeLoopContinue: loopHeader.
+                    $loopBody := midBuilder makeLoopBody: loopHeader.
+
+                    loopPreheader entryDestination: loopHeader.
+                    loopHeader previousControl: loopPreheader.
+
+                    loopBody previousControl: loopHeader.
+                    midBuilder beginWithControlNode: loopBody.
+                    self analyzeWithEnvironment: environment andCompileClosure: midBuilder withBody: doWhileLoop body.
+
+                    loopContinue previousControl: midBuilder currentControlNode.
+                    midBuilder beginWithControlNode: loopContinue.
+                    if: doWhileLoop continueExpression isNotNull then: {
+                        self analyzeWithEnvironment: environment andCompileClosure: midBuilder withBody: doWhileLoop continueExpression.
+                    }.
+
+                    $condition := self analyzeWithEnvironment: environment andCompileClosure: midBuilder withBody: doWhileLoop condition.
+                    $loopCondition := midBuilder makeLoop: loopHeader condition: condition.
+                    loopCondition trueDestination: loopHeader.
+                    loopCondition falseDestination: loopMerge.
+
+                    loopHeader continuePredecessor: loopCondition.
+
+                    midBuilder beginWithControlNode: loopMerge.
+                    loopMerge previousControl: loopCondition.
+
+                    MidConstantVoid#{
+                        sourcePosition: doWhileLoop sourcePosition.
+                        type: getBasicIntrinsicTypes() voidType
+                    }
+                }.
                 _: {
                     printLine("Unsupported node for compilation. ". ast).
                     abort()
