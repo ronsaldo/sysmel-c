@@ -224,6 +224,13 @@ ParseTreeNode
             _: false
         }
     };
+    withSelector: #extractAssociationNode addMethod: {
+        |$(ParseTreeNode)self :: ParseTreeAssociationNode | 
+        match: self ofType: ParseTreeNode withPatterns: #{
+            $(ParseTreeAssociationNode)association : association.
+            _: abort()
+        }
+    };
     withSelector: #extractFunctionalDependentTypeNode addMethod: {
         |$(ParseTreeNode)self :: ParseTreeFunctionalDependentTypeNode | 
         match: self ofType: ParseTreeNode withPatterns: #{

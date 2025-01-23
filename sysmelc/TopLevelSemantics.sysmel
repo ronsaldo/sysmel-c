@@ -430,7 +430,47 @@ public: [
                 } while: extractBooleanFromValue((self analyzeAndEvaluateWithEnvironment: environment script: doWhile condition) value).
                 return: result
             }.
+            $(ParseTreeSwitchNode)switchSelection : {
+                $switchValue := self analyzeAndEvaluateWithEnvironment: environment script: switchSelection value.
+                $switchIntegerValue := switchValue value getIntegerValue.
 
+                $switchCases := switchSelection cases.
+                match: switchCases ofType: ParseTreeNode withPatterns: #{
+                    $(ParseTreeImmutableDictionaryNode)caseDictionary : {
+                        $dictionaryElements := caseDictionary elements.
+                        $elementCount := dictionaryElements size.
+                        $!i := 0. while: (i < elementCount) do: {
+                            $caseAssociation := (dictionaryElements at: i) extractAssociationNode.
+                            $caseValue := self analyzeAndEvaluateWithEnvironment: environment script: caseAssociation key.
+
+                            match: caseValue value ofType: Value withPatterns: #{
+                                $(IntegerValue)integerValue : {
+                                    $caseIntegerValue := integerValue value.
+                                    if: switchIntegerValue = caseIntegerValue then: {
+                                        $result := self analyzeAndEvaluateWithEnvironment: environment script: caseAssociation value.
+                                        return: result.
+                                    }
+                                }.
+                                $(SymbolValue)symbolValue : {
+                                    $result := self analyzeAndEvaluateWithEnvironment: environment script: caseAssociation value.
+                                    return: result.
+                                }.
+                            }.
+                            
+
+                        } continueWith: (i := i + 1).
+
+                        printLine(caseDictionary).
+                        abort()
+                    }.
+                    _: {
+                        printLine("Expected a dictionary with cases.").
+                        abort().
+                    }
+                }.
+
+                abort().
+            }.
             ## Namespace
             $(ParseTreeNamespaceDefinitionNode)namespaceDefinition : {
                 $newNamespaceEnvironment := Environment(NamespaceEnvironment#{
