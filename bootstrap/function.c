@@ -502,6 +502,8 @@ sysmelb_Value_t sysmelb_interpretBytecodeFunction(sysmelb_function_t *function, 
                     context.calloutArguments[popCount - 1 - i] = sysmelb_bytecodeActivationContext_pop(&context);
 
                 sysmelb_Value_t receiver = context.calloutArguments[0];
+                if(receiver.kind == SysmelValueKindNull)
+                    receiver.type = sysmelb_getBasicTypes()->null;
                 assert(receiver.type != NULL);
                 sysmelb_function_t *method = sysmelb_type_lookupSelector(receiver.type, currentInstruction->messageSendSelector);
                 bool isSynthetic = false;

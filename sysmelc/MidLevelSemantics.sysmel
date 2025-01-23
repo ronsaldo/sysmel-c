@@ -159,7 +159,10 @@ public: [
                         }
                     }.
                     midBuilder sourcePosition: identifier sourcePosition.
-                    return: (midBuilder constantValue: value value).
+                    ##printLine("constant value ". value value).
+                    ##printLine("constant type ". value type).
+                    ##printLine("constant typed ". value).
+                    return: (midBuilder constantValue: value).
                 }.
     
                 ## Messages and applications

@@ -6,12 +6,6 @@ Record: OrderedCollection withFields: #{
 }.
 ].
 OrderedCollection
-    withSelector: #initialize addMethod: {
-        |$(OrderedCollection)self :: OrderedCollection|
-        self size: 0.
-        self capacity: 0.
-        self data: null
-    };
     withSelector: #increaseCapacity addMethod: {
         |$(OrderedCollection)self :: OrderedCollection|
 
@@ -64,4 +58,18 @@ OrderedCollection
 
         self data at: index put: value.
         value
+    };
+    withSelector: #asArray addMethod: {
+        | $(OrderedCollection)self :: Array |
+        $size := self size.
+        $result := Array new: size.
+        #*!i := 0. while: (i < size) do: {
+            ##result at: i put: (self data at: i) 
+        } continueWith(i := i + 1).*#
+        result
     }.
+
+$list := OrderedCollection().
+list ensureCapacity.
+list add: 1; add: 2; add: 3.
+printLine(list asArray)

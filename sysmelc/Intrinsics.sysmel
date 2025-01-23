@@ -888,6 +888,29 @@ $universePrimitiveWithSelectorAddMethod($(Array)arguments) := {
     void
 }.
 
+$universePrimitiveNewWithCount($(Array)arguments) := {
+    assert: arguments size = 2.
+    $type := arguments at: 0.
+    $count := arguments at: 1.
+
+    $countValue := extractIntegerFromValue(count value).
+    $typeName := extractTypeFromValue(type value) getCommonSection name.
+    if: typeName == #Array then: {
+        $array := Array new: countValue.
+        $typedResult := TypedValue(Value(ArrayValue(array)) . BasicIntrinsicTypesSingleton array).
+        return: typedResult
+    }.
+    if: typeName == #Tuple then: {
+        $tuple := Tuple new: countValue.
+        $typedResult := TypedValue(Value(TupleValue(tuple)) . BasicIntrinsicTypesSingleton tuple).
+        return: typedResult
+    }.
+
+    printLine().
+    printLine("TODO: ". typeName." new:").
+    abort().
+}.
+
 $addUniverseIntrinsicMethod($(SymbolHashtable)methodDict $(Symbol)name $(Function)primitive $(SysmelType)functionType :: Void) := {
     $primitiveValue := TypedValue(Value(SysmelFunctionValue(SysmelFunction(SysmelIntrinsicPrimitive#{
         name: name.
@@ -901,9 +924,10 @@ $addTypeUniverseIntrinsicMethods($(SysmelType)typeUniverse :: Void) := {
     $methodDict := commonPart methodDict.
 
     addUniverseIntrinsicMethod(methodDict. #withSelector:addMethod:. universePrimitiveWithSelectorAddMethod. makeSimplePureFunctionType([typeUniverse. BasicIntrinsicTypesSingleton gradual] . BasicIntrinsicTypesSingleton voidType)).
+    addUniverseIntrinsicMethod(methodDict. #new:. universePrimitiveNewWithCount. makeSimplePureFunctionType([typeUniverse. BasicIntrinsicTypesSingleton gradual] . BasicIntrinsicTypesSingleton voidType)).
     void
 }.
-addTypeUniverseIntrinsicMethods(BasicIntrinsicTypesSingleton universe)
+addTypeUniverseIntrinsicMethods(BasicIntrinsicTypesSingleton universe).
 
 
 $integerPrimitive_bitInvert($(Array)arguments :: TypedValue) := {

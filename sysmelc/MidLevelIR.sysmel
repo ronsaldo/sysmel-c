@@ -868,9 +868,26 @@ MidSendMessage
         $selectorTypedValue := self selector getCurrentValueForActivationContext: context.
 
         $selector := extractSymbolFromValue(selectorTypedValue value).
-        $receiverType := receiverTypedValue type.
+
+        $receiverType := if: receiverTypedValue isNull then: {
+            getBasicIntrinsicTypes() null
+        }
+        else: {
+            receiverTypedValue type
+        }.
+        
         $method := receiverType lookupSelector: selector.
         if: method value isInvalidErrorValue then: {
+            if: selector == #isNull then: {
+                context setValueInCurrentPC: TypedValue(Value(BooleanValue(receiverTypedValue isNull)). getBasicIntrinsicTypes() boolean).
+                context advancePC.
+                return: void
+            }.
+            if: selector == #isNotNull then: {
+                context setValueInCurrentPC: TypedValue(Value(BooleanValue(receiverTypedValue isNull not)). getBasicIntrinsicTypes() boolean).
+                context advancePC.
+                return: void
+            }.
             printLine(method value getInvalidErrorValueMessage. " " . selector).
             abort()
         }.
@@ -1183,11 +1200,11 @@ MidFunctionBuilder
         }.
     };
     withSelector: #constantValue: addMethod: {
-        | $(MidFunctionBuilder)self $(Value)constantValue :: MidConstantValue |
+        | $(MidFunctionBuilder)self $(TypedValue)constantTypedValue :: MidConstantValue |
         MidConstantValue#{
             sourcePosition: self sourcePosition.
-            type: getBasicIntrinsicTypes() symbol.
-            value: constantValue
+            type: constantTypedValue type.
+            value: constantTypedValue value
         }.
     };
     withSelector: #alloca: addMethod: {
