@@ -64,8 +64,21 @@ bool sysmelb_value_equals(sysmelb_Value_t a, sysmelb_Value_t b)
     }
 }
 
+
 void sysmelb_printValue(sysmelb_Value_t value)
 {
+    sysmelb_printValueWithMaxDepth(value, 8);
+}
+
+void sysmelb_printValueWithMaxDepth(sysmelb_Value_t value, int depth)
+{
+    --depth;
+    if(depth <= 0)
+    {
+        printf("[...]");
+        return;
+    }
+
     const char *printingSuffix = "";
     if(value.type && value.type->printingSuffix)
         printingSuffix = value.type->printingSuffix;
@@ -102,7 +115,7 @@ void sysmelb_printValue(sysmelb_Value_t value)
         {
             if(i != 0)
                 printf(" . ");
-            sysmelb_printValue(value.arrayReference->elements[i]);
+            sysmelb_printValueWithMaxDepth(value.arrayReference->elements[i], depth);
         }
         printf("]");
         break;
@@ -127,7 +140,7 @@ void sysmelb_printValue(sysmelb_Value_t value)
                 if(i != 0) printf(" ");
                 sysmelb_symbol_t *fieldName = value.type->tupleAndRecords.fieldNames[i];
                 printf("%.*s: ", fieldName->size, fieldName->string);
-                sysmelb_printValue(value.tupleReference->elements[i]);
+                sysmelb_printValueWithMaxDepth(value.tupleReference->elements[i], depth);
                 printf(".");
             }
             printf("}");
@@ -139,7 +152,7 @@ void sysmelb_printValue(sysmelb_Value_t value)
             {
                 if(i != 0)
                     printf(", ");
-                sysmelb_printValue(value.tupleReference->elements[i]);
+                sysmelb_printValueWithMaxDepth(value.tupleReference->elements[i], depth);
             }
             printf(")");
         }
@@ -153,15 +166,15 @@ void sysmelb_printValue(sysmelb_Value_t value)
             if(i != 0) printf(" ");
             sysmelb_symbol_t *fieldName = value.type->clazz.fieldNames[i];
             printf("%.*s: ", fieldName->size, fieldName->string);
-            sysmelb_printValue(value.objectReference->elements[value.type->clazz.superFieldCount + i]);
+            sysmelb_printValueWithMaxDepth(value.objectReference->elements[value.type->clazz.superFieldCount + i], depth);
             printf(".");
         }
         printf("}");
         break;
     case SysmelValueKindAssociationReference:
-        sysmelb_printValue(value.associationReference->key);
+        sysmelb_printValueWithMaxDepth(value.associationReference->key, depth);
         printf(" : ");
-        sysmelb_printValue(value.associationReference->value);
+        sysmelb_printValueWithMaxDepth(value.associationReference->value, depth);
         break;
     case SysmelValueKindImmutableDictionaryReference:
         {
@@ -172,9 +185,9 @@ void sysmelb_printValue(sysmelb_Value_t value)
                 if(i != 0)
                     printf(". ");
                 sysmelb_Association_t *assoc = value.immutableDictionaryReference->elements[i];
-                sysmelb_printValue(assoc->key);
+                sysmelb_printValueWithMaxDepth(assoc->key, depth);
                 printf(" : ");
-                sysmelb_printValue(assoc->value);
+                sysmelb_printValueWithMaxDepth(assoc->value, depth);
             }
             printf("}");
         }
@@ -190,7 +203,7 @@ void sysmelb_printValue(sysmelb_Value_t value)
         break;
     case SysmelValueKindValueBoxReference:
         printf("Box[");
-        sysmelb_printValue(value.valueBoxReference->currentValue);
+        sysmelb_printValueWithMaxDepth(value.valueBoxReference->currentValue, depth);
         printf("]");
         break;
     case SysmelValueKindFunctionReference:
@@ -204,14 +217,14 @@ void sysmelb_printValue(sysmelb_Value_t value)
         for(size_t i = 0; i < value.orderedCollectionReference->size; ++i)
         {
             if(i != 0) printf(" . ");
-            sysmelb_printValue(value.orderedCollectionReference->elements[i]);
+            sysmelb_printValueWithMaxDepth(value.orderedCollectionReference->elements[i], depth);
         }
         printf("]");
         break;
     case SysmelValueKindSumValueReference:
         printf("%.*s[%u:", value.type->name->size, value.type->name->string,
              value.sumTypeValueReference->alternativeIndex);
-        sysmelb_printValue(value.sumTypeValueReference->alternativeValue);
+        sysmelb_printValueWithMaxDepth(value.sumTypeValueReference->alternativeValue, depth);
         printf("]");
         break;
     case SysmelValueKindSymbolHashtableReference:

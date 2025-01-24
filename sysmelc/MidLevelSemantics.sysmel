@@ -632,6 +632,69 @@ public: [
                     return: phiMerge
                     
                 }.
+                $(ParseTreeSwitchPatternMatchingNode)switchPatternNode : {
+                    $switchValue := self analyzeWithEnvironment: environment andCompileClosure: midBuilder withBody: switchPatternNode value.
+                    $sumTypeValue := self analyzeAndEvaluateWithEnvironment: environment script: switchPatternNode valueSumType.
+                    $sumType := match: extractTypeFromValue(sumTypeValue value) ofType: SysmelType withPatterns: #{
+                        $(SysmelSumType) sumtype : sumtype.
+                        _: {
+                            printLine("Expected a sum type").
+                        }
+                    }.
+                    
+                    $!casesAlternativeIndex := OrderedCollection().
+                    $!casesActions := OrderedCollection().
+                    $!casesBindables := OrderedCollection().
+                    $!defaultAction := null.
+
+                    match: switchPatternNode cases ofType: ParseTreeNode withPatterns: #{
+                        $(ParseTreeImmutableDictionaryNode)caseDictionary : {
+                            $dictionaryElements := caseDictionary elements.
+                            $elementCount := dictionaryElements size.
+                            $!i := 0. while: (i < elementCount) do: {
+                                $caseAssociation := (dictionaryElements at: i) extractAssociationNode.
+                                ##printLine("caseAssociation key ". caseAssociation key)
+                                match: caseAssociation key ofType: ParseTreeNode withPatterns: #{
+                                    $(ParseTreeBindableNameNode)bindable : {
+                                        $bindableType := self analyzeAndEvaluateWithEnvironment: environment script: bindable typeExpression.
+                                        $bindableTypeValue := bindableType value getTypeValue.
+                                        printLine("bindableType ". bindableTypeValue).
+
+                                        $alternativeIndex := findIndexOfSumTypeAlternative(sumType. bindableTypeValue).
+                                        printLine("alternativeIndex ". alternativeIndex).
+                                        if: alternativeIndex < 0 then: {
+                                            printLine("Unused bindable pattern.").
+                                            abort()
+                                        }.
+    
+                                        casesAlternativeIndex add: alternativeIndex.
+                                        casesActions add: caseAssociation value.
+                                        casesBindables add: bindable.
+                                    }.
+                                    _: {
+                                        defaultAction := caseAssociation value
+                                    }
+                                }.
+                            } continueWith: (i := i + 1).
+                        }.
+                        _: {
+                            printLine("Cases must be specified through an immutable dictionary.").
+                            abort()
+                        }
+                    }.
+
+                    printLine("TODO: compile switch pattern.").
+                    abort().
+                    #*
+                        Record: ParseTreeSwitchPatternMatchingNode withFields: #{
+                            sourcePosition: SourcePosition.
+                            value: ParseTreeNode.
+                            valueSumType: ParseTreeNode.
+                            cases: ParseTreeNode
+                        }.
+                    *#
+
+                }.
                 $(ParseTreeWhileLoopNode)whileLoopNode : {
                     midBuilder sourcePosition: whileLoopNode sourcePosition.
                     $loopPreheader := midBuilder makeLoopPreheader.

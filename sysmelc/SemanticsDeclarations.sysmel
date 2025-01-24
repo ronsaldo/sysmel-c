@@ -664,6 +664,17 @@ public: [
         } continueWith:(i := i + 1).
 
         return: 1 negated.
+    }.
+    $findIndexOfSumTypeAlternative($(SysmelSumType)sumType $(SysmelType)expectedType :: Integer) := {
+        $alternativeCount := sumType alternativeCount.
+        $!i := 0. while: (i < alternativeCount) do: {
+            $alternative := sumType alternatives at: i.
+            if: alternative == expectedType then:{
+                return: i
+            }.
+        } continueWith:(i := i + 1).
+
+        return: 1 negated.
     }
 ]
 }
