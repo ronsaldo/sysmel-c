@@ -163,6 +163,19 @@ public: [
         mergeNode: MidControlNode
     }.
 
+    Class: MidSwitchBranch withSuperclass: MidControlNode fields: #{
+        value: MidValue.
+        caseValues: Array.
+        caseDestinations: Array.
+        defaultDestination: MidControlNode.
+        switchMerge: MidControlNode
+    }.
+
+    Class: MidSwitchMerge withSuperclass: MidControlNode fields: #{
+        switchBranch: MidValue.
+        predecessors: Array.
+    }.
+
     Class: MidLoopPreheaderNode withSuperclass: MidControlNode fields: #{
         loopMerge: MidControlNode.
         loopContinue: MidControlNode.
@@ -355,6 +368,62 @@ MidConditionalBranch
             context jumpToPCOf: self falseDestination
         }.
         void.
+    }.
+
+MidSwitchBranch
+    withSelector: #usedValues addMethod: {
+        | $(MidSwitchBranch)self :: Array |
+        [ self value ] -- self caseValues
+    };
+    withSelector: #usedControlNodes addMethod: {
+        | $(MidSwitchBranch)self :: Array |
+        [self previousControl]
+    };
+    withSelector: #connectWithUsed addMethod: {
+        | $(MidSwitchBranch)self :: Void |
+        self value addUser: self.
+        $!i := 0. while: i < self caseValues size do: {
+            (self caseValues at: i) addUser: self
+        } continueWith: (i := i + 1).
+    };
+    withSelector: #evaluateInActivationContext: addMethod: {
+        | $(MidSwitchBranch)self $(MidActivationContext)context :: Void |
+        $currentSwitchValue := self value getCurrentValueForActivationContext: context.
+        $switchIntegerValue := currentSwitchValue value getIntegerValue.
+        ##printLine("currentSwitchValue ". switchIntegerValue).
+
+        $caseValues := self caseValues.
+        $caseCount := caseValues size.
+        $!i := 0. while: i < caseCount do: {
+            $caseValue := (caseValues at: i) getCurrentValueForActivationContext: context.
+            $caseIntegerValue := caseValue value getIntegerValue.
+            ##printLine(i." caseValues ". caseIntegerValue).
+            if: switchIntegerValue = caseIntegerValue then: {
+                context jumpToPCOf: (self caseDestinations at: i).
+                return: void
+            }
+        } continueWith: (i := i + 1).
+
+        context jumpToPCOf: self defaultDestination.
+        return: void
+    }.
+
+MidSwitchMerge
+    withSelector: #usedValues addMethod: {
+        | $(MidSwitchMerge)self :: Array |
+        []
+    };
+    withSelector: #usedControlNodes addMethod: {
+        | $(MidSwitchMerge)self :: Array |
+        self predecessors -- [self switchBranch]
+    };
+    withSelector: #connectWithUsed addMethod: {
+        | $(MidSwitchMerge)self :: Void |
+
+    };
+    withSelector: #evaluateInActivationContext: addMethod: {
+        | $(MidSwitchMerge)self $(MidActivationContext)context :: Void |
+        context advancePC
     }.
 
 MidLoopPreheaderNode  
@@ -979,18 +1048,28 @@ MidValue
             ##printLine(self class .": control ".).
             $!i := 0.
             while: i < usedControlNodes size do: {
-                (usedControlNodes at: i)
-                    usageTopoSort: visitedSet into: sortedResults
+                $usedControl := usedControlNodes at: i.
+                if: usedControl isNull then: {
+                    printLine("Warning: Null control value in node with class ". self class)
+                }
+                else: {
+                    usedControl usageTopoSort: visitedSet into: sortedResults
+                }
             } continueWith: (i := i + 1).
         }.
 
         {
             $usedValues := self usedValues.
-            ##printLine(self class .": value ".).
+            ##printLine(self class .": value ").
             $!i := 0.
             while: i < usedValues size do: {
-                (usedValues at: i)
-                    usageTopoSort: visitedSet into: sortedResults
+                $usedValue := usedValues at: i.
+                if: usedValue isNull then: {
+                    printLine("Warning: Null value in node with class ". self class)
+                }
+                else:{
+                    usedValue usageTopoSort: visitedSet into: sortedResults
+                }
             } continueWith: (i := i + 1).
         }.
 
@@ -1328,6 +1407,19 @@ MidFunctionBuilder
         node
     };
 
+    withSelector: #switchBranch:caseValues: addMethod: {
+        | $(MidFunctionBuilder)self $(MidValue)value $(Array)caseValues :: MidSwitchBranch |
+        $node := MidSwitchBranch#{
+            previousControl: self currentControlNode.
+            sourcePosition: self sourcePosition.
+            value: value.
+            caseValues: caseValues
+        }.
+        node connectWithUsed.
+        self currentControlNode: node.
+        node
+    };
+
     withSelector: #makeArrayWithElements: addMethod: {
         | $(MidFunctionBuilder)self $(Array)elements :: MidMakeArray |
         $node := MidMakeArray#{
@@ -1400,7 +1492,7 @@ MidFunctionBuilder
     };
     
     withSelector: #makeLoop:condition: addMethod: {
-        | $(MidFunctionBuilder)self $(MidLoopPreheaderNode)loopHeader $(MidValue)condition :: MidConditionalBranch |
+        | $(MidFunctionBuilder)self $(MidLoopPreheaderNode)loopHeader $(MidValue)condition :: MidLoopConditionNode |
         MidLoopConditionNode#{
             previousControl: self currentControlNode.
             sourcePosition: self sourcePosition.
@@ -1409,7 +1501,7 @@ MidFunctionBuilder
         }.
     };
     withSelector: #makeLoopBody: addMethod: {
-        | $(MidFunctionBuilder)self $(MidLoopPreheaderNode)loopHeader :: MidConditionalBranch |
+        | $(MidFunctionBuilder)self $(MidLoopPreheaderNode)loopHeader :: MidLoopBodyNode |
         MidLoopBodyNode#{
             previousControl: self currentControlNode.
             sourcePosition: self sourcePosition.
@@ -1417,21 +1509,21 @@ MidFunctionBuilder
         }.
     };
     withSelector: #makeLoopContinue: addMethod: {
-        | $(MidFunctionBuilder)self $(MidLoopPreheaderNode)header :: MidBranchMergeNode |
+        | $(MidFunctionBuilder)self $(MidLoopPreheaderNode)header :: MidLoopContinueNode |
         MidLoopContinueNode#{
             sourcePosition: self sourcePosition.
             loopHeaderNode: header.
         }.
     };
     withSelector: #makeLoopContinueEnd: addMethod: {
-        | $(MidFunctionBuilder)self $(MidLoopPreheaderNode)header :: MidBranchMergeNode |
+        | $(MidFunctionBuilder)self $(MidLoopPreheaderNode)header :: MidLoopContinueEndNode |
         MidLoopContinueEndNode#{
             sourcePosition: self sourcePosition.
             loopHeaderNode: header.
         }.
     };
     withSelector: #makeLoopMerge: addMethod: {
-        | $(MidFunctionBuilder)self $(MidLoopPreheaderNode)header :: MidBranchMergeNode |
+        | $(MidFunctionBuilder)self $(MidLoopPreheaderNode)header :: MidLoopMerge |
         MidLoopMergeNode#{
             sourcePosition: self sourcePosition.
             loopHeaderNode: header.
@@ -1449,6 +1541,14 @@ MidFunctionBuilder
         MidBranchMergeNode#{
             sourcePosition: self sourcePosition.
             branchNode: branch.
+        }.
+    };
+    withSelector: #makeSwitchMerge: addMethod: {
+        | $(MidFunctionBuilder)self $(MidSwitchBranch)switch :: MidSwitchMerge |
+        MidSwitchMerge#{
+            sourcePosition: self sourcePosition.
+            previousControl: switch.
+            switchBranch: switch.
         }.
     };
     withSelector: #makeBranchSequenceEnd:Into: addMethod: {

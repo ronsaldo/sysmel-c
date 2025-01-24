@@ -519,6 +519,116 @@ public: [
 
                     return: phiMerge
                 }.
+                $(ParseTreeSwitchNode)switchNode : {
+                    $switchValue := self analyzeWithEnvironment: environment andCompileClosure: midBuilder withBody: switchNode value.
+
+                    $switchCases := switchNode cases.
+                    $!casesValues := OrderedCollection().
+                    $!casesActions := OrderedCollection().
+                    $!defaultAction := null.
+                    match: switchCases ofType: ParseTreeNode withPatterns: #{
+                        $(ParseTreeImmutableDictionaryNode)caseDictionary : {
+                            $dictionaryElements := caseDictionary elements.
+                            $elementCount := dictionaryElements size.
+                            $!i := 0. while: (i < elementCount) do: {
+                                $caseAssociation := (dictionaryElements at: i) extractAssociationNode.
+                                $caseValue := self analyzeAndEvaluateWithEnvironment: environment script: caseAssociation key.
+                                match: caseValue value ofType: Value withPatterns: #{
+                                    $(IntegerValue)integerValue : {
+                                        $caseIntegerValue := integerValue value.
+                                        casesValues add: MidConstantInteger#{
+                                            value: caseIntegerValue.
+                                            type: getBasicIntrinsicTypes() integer.
+                                        }.
+                                        casesActions add: caseAssociation value.
+                                    }.
+                                    $(SymbolValue)symbolValue : {
+                                        defaultAction := caseAssociation value.
+                                    }.
+                            }.
+                            } continueWith: (i := i + 1).
+                        }.
+                        _: {
+                            printLine("Cases must be specified through an immutable dictionary.").
+                            abort()
+                        }
+                    }.
+
+                    ##printLine(switchValue).
+                    ##printLine("Case value ". casesValues).
+                    ##printLine("Case actions ". casesActions).
+                    ##printLine("Default action ". defaultAction).
+
+                    ## Make the case control flow
+                    $switchBranch := midBuilder switchBranch: switchValue caseValues: casesValues asArray.
+
+                    $caseCount := casesValues size.
+                    $branchDestinations := Array new: caseCount.
+                    ##printLine("Make switch destinations.")
+                    $!i := 0. while: (i < caseCount) do: {
+                        branchDestinations at: i put: (midBuilder makeBranchDestination: switchBranch)
+                    } continueWith: (i := i + 1).
+                    switchBranch caseDestinations: branchDestinations.
+                    
+                    $defaultDestination := midBuilder makeBranchDestination: switchBranch.
+                    switchBranch defaultDestination: defaultDestination
+                    $switchMerge := midBuilder makeSwitchMerge: switchBranch.
+                    
+                    $phiMerge := midBuilder makeMergePhiNode.
+                    phiMerge previousControl: switchMerge.
+
+                    $mergePredecessors := OrderedCollection().
+                    $phiValues := OrderedCollection().
+
+                    ## Compile the case destinations
+                    ##printLine("Compile the case destinations").
+                    $!i := 0. while: (i < caseCount) do: {
+                        midBuilder beginWithControlNode: (branchDestinations at: i).
+                        midBuilder sourcePosition: switchNode sourcePosition.
+
+                        $caseAction := casesActions at: i.
+                        $caseValue := self analyzeWithEnvironment: environment andCompileClosure: midBuilder withBody: caseAction.
+
+                        $branchPhiValue := midBuilder makePhiNodeValue.
+                        branchPhiValue sourceValue: caseValue.
+                        branchPhiValue destinationPhi: phiMerge.
+                        branchPhiValue previousControl: midBuilder currentControlNode.
+                        phiValues add: branchPhiValue
+
+                        $switchBranchPredecessor := midBuilder makeBranchSequenceEnd: branchPhiValue Into: switchMerge.
+                        mergePredecessors add: switchBranchPredecessor.
+                    } continueWith: (i := i + 1).
+
+                    ##printLine("Compile default").
+                    midBuilder beginWithControlNode: defaultDestination.
+                    midBuilder sourcePosition: switchNode sourcePosition.
+
+                    $defaultValue := if: defaultAction isNotNull then: {
+                        self analyzeWithEnvironment: environment andCompileClosure: midBuilder withBody: defaultAction
+                    } else: {
+                        MidConstantVoid{}
+                    }.
+
+                    $defaultPhiValue := midBuilder makePhiNodeValue.
+                    defaultPhiValue sourceValue: defaultValue.
+                    defaultPhiValue destinationPhi: phiMerge.
+                    defaultPhiValue previousControl: midBuilder currentControlNode.
+                    phiValues add: defaultPhiValue.
+
+                    ##printLine("Merge switch.").
+                    midBuilder beginWithControlNode: switchMerge.
+                    midBuilder sourcePosition: switchNode sourcePosition.
+
+                    phiMerge incomingValues: phiValues asArray.
+                    phiMerge previousControl: switchMerge.
+                    
+                    ##printLine("Merge predecessors.". mergePredecessors asArray).
+                    switchMerge predecessors: mergePredecessors asArray.
+                    midBuilder beginWithControlNode: phiMerge.
+
+                    return: phiMerge
+                    
+                }.
                 $(ParseTreeWhileLoopNode)whileLoopNode : {
                     midBuilder sourcePosition: whileLoopNode sourcePosition.
                     $loopPreheader := midBuilder makeLoopPreheader.
