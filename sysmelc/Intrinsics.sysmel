@@ -18,6 +18,7 @@ public: [
         array: SysmelType.
         tuple: SysmelType.
         record: SysmelType.
+        sum: SysmelType.
         byteArray: SysmelType.
         association: SysmelType.
         immutableDictionary: SysmelType.
@@ -78,6 +79,9 @@ $BasicIntrinsicTypesSingleton := BasicIntrinsicTypes#{
     })).
     record: SysmelType(SysmelBasicType(SysmelTypeCommon#{
         name: #Record. isValueType: false. valueAlignment: 8u8. valueSize: 8u8. heapAlignment: 8u8. heapSize: 8u8. methodDict: SymbolHashtable().
+    })).
+    sum: SysmelType(SysmelBasicType(SysmelTypeCommon#{
+        name: #Sum. isValueType: false. valueAlignment: 8u8. valueSize: 8u8. heapAlignment: 8u8. heapSize: 8u8. methodDict: SymbolHashtable().
     })).
     parseTreeNode: SysmelType(SysmelBasicType(SysmelTypeCommon#{
         name: #ParseTreeNode. isValueType: false. valueAlignment: 8u8. valueSize: 8u8. heapAlignment: 8u8. heapSize: 8u8. methodDict: SymbolHashtable().
@@ -264,7 +268,6 @@ $addGlobalMacroIntrinsicMethod($(Symbol)name $(Function)primitive $(SysmelType)f
 $primitive_print($(Array) arguments :: Void) := {
     $!i := 0.
     while: i < arguments size do: {
-        
         print(extractValueForPrinting((arguments at: i) value))
     } continueWith: (i := i + 1).
     void
@@ -733,6 +736,74 @@ $primitive_EnumWithBaseTypeAndValues($(MacroContext)context $(Array)arguments ::
 }.
 
 addGlobalMacroIntrinsicMethod(#Enum:withBaseType:values:. primitive_EnumWithBaseTypeAndValues.
+    SysmelType(SysmelSimpleFunctionType#{
+        common: SysmelTypeCommon#{
+            isValueType: true.
+            valueAlignment: 8u32.
+            valueSize: 8u32.
+            heapAlignment: 8u32.
+            heapSize: 8u32.
+            methodDict: SymbolHashtable().
+        }.
+        isCompileTimePure: false.
+        isVariadic: false.
+        argumentTypes: [MacroContext . BasicIntrinsicTypesSingleton array].
+        resultType: ParseTreeNode.
+    })
+).
+
+$primitive_InductiveWithAlternativesMacro($(MacroContext)context $(Array)arguments :: TypedValue) := {
+    assert: arguments size = 2.
+    $name := match: (arguments at: 0) ofType: ParseTreeNode withPatterns: #{ 
+        $(ParseTreeIdentifierReferenceNode)identifier : identifier value.
+        $(ParseTreeLiteralSymbolNode)literal : literal value.
+        _: {
+            $nameValue := context semanticsState analyzeAndEvaluateWithEnvironment: context environment script: (arguments at: 0).
+            printLine(nameValue).
+            abort()
+        }
+    }.
+
+    $alternativesParseNodes := match: (arguments at: 1) ofType: ParseTreeNode withPatterns: #{ 
+        $(ParseTreeArrayNode)parseArrayNode : parseArrayNode elements.
+        _: {
+            printLine("Unsupported node for constructing an inductive type").
+            abort().
+        }.
+    }.
+
+    $alternativeCount := alternativesParseNodes size
+    $alternatives := Array new: alternativeCount.
+    $inductiveType := SysmelType(SysmelSumType#{
+            common: SysmelTypeCommon#{
+                name: name.
+                isValueType: true.
+                valueAlignment: 16u32.
+                valueSize: 16u32.
+                heapAlignment: 16u32.
+                heapSize: 16u32.
+                methodDict: SymbolHashtable().
+            }.
+            supertype: BasicIntrinsicTypesSingleton sum.
+            alternativeCount: alternatives size.
+            alternatives: alternatives
+        }).
+    
+    $result := TypedValue(Value(SysmelTypeValue(inductiveType)). BasicIntrinsicTypesSingleton universe).
+    if: name isNotNull then: {
+        context environment addLocalSymbol: name withValue: result.
+    }.
+
+    $!i := 0. while: (i < alternativeCount) do: {
+        $alternativeTypedValue := context semanticsState analyzeAndEvaluateWithEnvironment: context environment script: (alternativesParseNodes at: i).
+        $alternativeType := alternativeTypedValue value getTypeValue.
+        alternatives at: i put: alternativeType
+    } continueWith: (i := i + 1).
+
+    return: result
+}.
+
+addGlobalMacroIntrinsicMethod(#Inductive:withAlternatives: . primitive_InductiveWithAlternativesMacro.
     SysmelType(SysmelSimpleFunctionType#{
         common: SysmelTypeCommon#{
             isValueType: true.
@@ -1612,6 +1683,26 @@ public: [
 
                 $result := TypedValue(Value(RecordValue(record)). typeToInstantiate).
                 return: result
+            }.
+            $(SysmelSumType) sumType : {
+                if: (arguments size ~= 1) then:
+                {
+                    printLine("Sum types can only be instantiated with a single argument.")
+                    abort().
+                }.
+
+                $singleArgument := arguments at: 0.
+                $singleArgumentType := singleArgument type.
+                $!i := 0. while: (i < sumType alternativeCount) do: {
+                    $sumTypeAlternative := sumType alternatives at: i.
+                    if: singleArgumentType == sumTypeAlternative then: {
+                        $sumValue := TypedValue(Value(SumValue(i. singleArgument value)) . sumType).
+                        return: sumValue
+                    }
+                } continueWith: (i := i + 1).
+                
+                printLine("Cannot find alternative for sum-type.").
+                abort().
             }.
             _: {
                 printLine("Unsupported instantiation of type: ". typeToInstantiate).

@@ -256,6 +256,10 @@ public: [
         Record: RecordValue withFields: #{
             value: Record
         }.
+        Record: SumValue withFields: #{
+            index: Integer.
+            value: Value.
+        }.
         Record: AssociationValue withFields: #{
             value: Association.
         }.
@@ -305,6 +309,7 @@ public: [
             $(ImmutableDictionaryValue)value : value value.
             $(GradualValue)value : value value.
             $(NamespaceValue)value : value value.
+            $(SumValue)value : value index.
             $(SysmelTypeValue)value : {
                 $name := value value getCommonSection name.
                 if: name isNull then: {
@@ -360,8 +365,14 @@ public: [
                 $(IntegerValue)integerValue : integerValue value.
                 _: abort().
             }.
+        };
+        withSelector: #getTypeValue addMethod: {
+            |$(Value)self :: Integer |
+            match: self ofType: Value withPatterns: #{
+                $(SysmelTypeValue)typeValue : typeValue value.
+                _: abort().
+            }.
         }.
-
     TypedValue
         withSelector: #isInvalidErrorValue addMethod: {
             |$(TypedValue)self :: Boolean |

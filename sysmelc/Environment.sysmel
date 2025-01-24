@@ -5,6 +5,7 @@ public: [
             | $(Environment)self $(Symbol)symbol :: Value |
             match: self ofType: Environment withPatterns: #{
                 $(EmptyEnvironment) empty : {
+                    printLine("Symbol not found: ". symbol).
                     return: Value(InvalidErrorValue("Symbol not found in environment"))
                 }.
                 $(IntrinsicsEnvironment)intrinsics : {
@@ -94,7 +95,7 @@ public: [
             }
         };
         withSelector: #addLocalSymbol:withValue: addMethod: {
-            | $(Environment)self $(Symbol)symbol $(Value)value :: Void |
+            | $(Environment)self $(Symbol)symbol $(TypedValue)value :: Void |
             match: self ofType: Environment withPatterns: #{
                 $(IntrinsicsEnvironment)intrinsics : {
                     intrinsics localSymbols at: symbol put: value.

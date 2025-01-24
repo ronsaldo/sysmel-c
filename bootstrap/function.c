@@ -531,7 +531,34 @@ sysmelb_Value_t sysmelb_interpretBytecodeFunction(sysmelb_function_t *function, 
                         sysmelb_bytecodeActivationContext_push(&context, result);
                         isSynthetic = true;
                     }
-                    
+                    else if (!strcmp("==", currentInstruction->messageSendSelector->string))
+                    {
+                        sysmelb_Value_t operand = context.calloutArguments[1];
+                        bool isIdentityEquals = receiver.kind == operand.kind
+                            && sysmelb_getValuePointer(receiver) == sysmelb_getValuePointer(operand);
+
+                        sysmelb_Value_t result = {
+                            .kind = SysmelValueKindBoolean,
+                            .boolean = isIdentityEquals,
+                            .type = sysmelb_getBasicTypes()->boolean
+                        };
+                        sysmelb_bytecodeActivationContext_push(&context, result);
+                        isSynthetic = true;
+                    }
+                    else if (!strcmp("~~", currentInstruction->messageSendSelector->string))
+                    {
+                        sysmelb_Value_t operand = context.calloutArguments[1];
+                        bool isIdentityEquals = receiver.kind == operand.kind
+                            && sysmelb_getValuePointer(receiver) == sysmelb_getValuePointer(operand);
+
+                        sysmelb_Value_t result = {
+                            .kind = SysmelValueKindBoolean,
+                            .boolean = !isIdentityEquals,
+                            .type = sysmelb_getBasicTypes()->boolean
+                        };
+                        sysmelb_bytecodeActivationContext_push(&context, result);
+                        isSynthetic = true;
+                    }
 
                     if(receiver.kind == SysmelValueKindTupleReference && receiver.type->kind == SysmelTypeKindRecord)
                     {
