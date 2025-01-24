@@ -14,7 +14,7 @@ Class: Minus withSuperclass: Arithmetic fields: #{
     leftOperand: Arithmetic. rightOperand: Arithmetic.
 }.
 
-$sumExpression := Minus(2. Plus(1. LiteralInteger(1. 42). LiteralInteger(1, 5)) . LiteralInteger(7)).
+$sumExpression := Minus(2. Plus(10. LiteralInteger(1. 42). LiteralInteger(1. 5)) . LiteralInteger(1. 7)).
 printLine(sumExpression).
 
 Arithmetic
@@ -26,16 +26,16 @@ Arithmetic
 LiteralInteger
     withSelector: #evaluate addMethod: {
         |$(LiteralInteger)self :: Integer|
-        self value
+        self value * self multiplier
     }.
 Plus
     withSelector: #evaluate addMethod: {
         |$(Plus)self :: Integer|
-        self leftOperand evaluate + self rightOperand evaluate
+        (self leftOperand evaluate + self rightOperand evaluate) * self multiplier
     }.
 Minus
     withSelector: #evaluate addMethod: {
         |$(Plus)self :: Integer|
-        self leftOperand evaluate - self rightOperand evaluate
+        (self leftOperand evaluate - self rightOperand evaluate) * self multiplier
     }.
 printLine(sumExpression evaluate).

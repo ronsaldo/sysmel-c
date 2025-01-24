@@ -212,6 +212,31 @@ public: [
                                     }
                                 }.
                             }.
+                            $(SysmelClassType)class : {
+                                ##printLine("tupleAndRecord ". arguments size).
+                                if: arguments size = 0 then: {
+                                    $fieldIndex := findIndexOfClassFieldWithName(class. selectorSymbolValue).
+                                    if: fieldIndex >= 0 then: {
+                                        ## Implicit getter.
+                                        $fieldType := class getFieldTypeAtIndex: fieldIndex.
+                                        ##printLine("Emit instruction for getting field ". fieldIndex).
+                                        $extractInstruction := midBuilder fromComposite: receiverValue extractAtIndex: fieldIndex withType: fieldType.
+                                        return: extractInstruction
+                                    }
+                                }.
+                                if: arguments size = 1 then: {
+                                    
+                                    $selectorWithoutTrailingColon := selectorSymbolValue withoutTrailingColon.
+                                    $fieldIndex := findIndexOfClassFieldWithName(class. selectorWithoutTrailingColon).
+                                    ##printLine("Setter ". selectorWithoutTrailingColon . " fieldIndex ". fieldIndex).
+                                    if: fieldIndex >= 0 then: {
+                                        ## Implicit setter
+                                        $setterValue := self analyzeWithEnvironment: environment andCompileClosure: midBuilder withBody: (arguments at: 0).
+                                        $insertInstruction := midBuilder inComposite: receiverValue insertValue: setterValue atIndex: fieldIndex.
+                                        return: insertInstruction
+                                    }
+                                }.
+                            }.
                             _: {
                                 ## Nothing required here. 
                             }

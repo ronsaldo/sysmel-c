@@ -64,6 +64,13 @@ public: [
             fields: Array.
             fieldNames: Array
         }.
+        Record: SysmelClassType withFields: #{
+            common: SysmelTypeCommon.
+            supertype: SysmelType.
+            superFieldCount: Integer.
+            fields: Array.
+            fieldNames: Array
+        }.
         Record: SysmelEnumType withFields: #{
             common: SysmelTypeCommon.
             supertype: SysmelType.
@@ -103,6 +110,7 @@ public: [
             match: self ofType: SysmelType withPatterns: #{
                 $(SysmelBasicType)basicType : basicType common.
                 $(SysmelTupleAndRecordType)tupleAndRecord : tupleAndRecord common.
+                $(SysmelClassType)clazzType : clazzType common.
                 $(SysmelEnumType)enumType : enumType common.
                 $(SysmelSimpleFunctionType)simpleFunctionType : simpleFunctionType common.
                 $(SysmelPointerType)pointerType : pointerType common.
@@ -118,6 +126,7 @@ public: [
             match: self ofType: SysmelType withPatterns: #{
                 $(SysmelBasicType)basicType : basicType supertype.
                 $(SysmelTupleAndRecordType)tupleAndRecord : tupleAndRecord supertype.
+                $(SysmelClassType)clazzType : clazzType supertype.
                 $(SysmelEnumType)enumType : enumType supertype.
                 $(SysmelSimpleFunctionType)simpleFunctionType : simpleFunctionType supertype.
                 $(SysmelReferenceType)referenceType : referenceType supertype.
@@ -204,6 +213,11 @@ public: [
         tuple: Tuple.
     }.
 
+    Record: Object withFields: #{
+        class: SysmelClassType.
+        tuple: Tuple.
+    }.
+
     ## A value with its different alternatives.
     Inductive: Value withAlternatives: [
         Record: InvalidErrorValue withFields: #{
@@ -255,6 +269,9 @@ public: [
         }.
         Record: RecordValue withFields: #{
             value: Record
+        }.
+        Record: ObjectValue withFields: #{
+            value: Object
         }.
         Record: SumValue withFields: #{
             index: Integer.
@@ -386,8 +403,21 @@ public: [
                 $(SumValue)sumValue : sumValue value.
                 _: abort().
             }.
+        };
+        withSelector: #isObjectValue addMethod: {
+            |$(Value)self :: Boolean |
+            match: self ofType: Value withPatterns: #{
+                $(ObjectValue)objectValue : true.
+                _: false
+            }.
+        };
+        withSelector: #getObjectValue addMethod: {
+            |$(Value)self :: Object |
+            match: self ofType: Value withPatterns: #{
+                $(ObjectValue)objectValue : objectValue value.
+                _: abort
+            }.
         }.
-
     TypedValue
         withSelector: #isInvalidErrorValue addMethod: {
             |$(TypedValue)self :: Boolean |
@@ -401,6 +431,25 @@ public: [
             |$(TypedValue)self :: Integer |
             self value getIntegerValue
         }.
+
+SysmelClassType
+    withSelector: #getFieldTypeAtIndex: addMethod: {
+        | $(SysmelClassType)self $(Integer)index :: SysmelType |
+        if: index >= self superFieldCount then: {
+            self fields at: index - self superFieldCount
+        }
+        else:
+        {
+            match: self supertype ofType: SysmelType withPatterns: #{
+                $(SysmelClassType)superclass : {
+                    return: (superclass getFieldTypeAtIndex: index)
+                }.
+                _: {}
+            }.
+            
+            printLine("There is no field at index ". index)
+        }
+    }.
 
     SysmelFunction
         withSelector: #getName addMethod: {
@@ -609,7 +658,15 @@ public: [
             }
         }
     }.
-
+    $extractObjectFromValue($(Value)value :: SysmelFunction) := {
+        match: value ofType: Value withPatterns: #{
+            $(ObjectValue)objectValue : objectValue value.
+            _: {
+                printLine("Not a valid object value").
+                abort()
+            }
+        }
+    }.
     $isReferenceType($(SysmelType)type :: Boolean) := {
         match: type ofType: SysmelType withPatterns: #{
             $(SysmelReferenceType)refType : true.
@@ -650,6 +707,26 @@ public: [
             }.
 
         } continueWith:(i := i + 1).
+
+        return: 1 negated.
+    }.
+    $findIndexOfClassFieldWithName($(SysmelClassType)classType $(Symbol)fieldName :: Integer) := {
+        $fieldCount := classType fieldNames size.
+        $!i := 0. while: (i < fieldCount) do: {
+            $classFieldName := classType fieldNames at: i.
+            if: fieldName == classFieldName then:{
+                return: classType superFieldCount + i 
+            }.
+
+        } continueWith:(i := i + 1).
+
+        if: classType superFieldCount > 0 then: {
+            match: classType supertype ofType: SysmelType withPatterns: #{
+                $(SysmelClassType)superclass : {
+                    return: findIndexOfClassFieldWithName(superclass. fieldName).
+                }
+            }
+        }.
 
         return: 1 negated.
     }.

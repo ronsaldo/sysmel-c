@@ -746,10 +746,23 @@ MidExtractCompositeElement
     withSelector: #evaluateInActivationContext: addMethod: {
         | $(MidExtractCompositeElement)self $(MidActivationContext)context :: Void |
         $composite := (self composite getCurrentValueForActivationContext: context) value.
-        $extractedRecord := extractRecordFromValue(composite).
+        match:composite ofType: Value withPatterns: #{
+            $(RecordValue)recordValue : {
+                $extractedRecord := recordValue value.
+                $extractedValue := extractedRecord tuple at: self index.
+                context setValueInCurrentPC: TypedValue(extractedValue. self type).
+            }.
+            $(ObjectValue)objectValue : {
+                $extractedObject := objectValue value.
+                $extractedValue := extractedObject tuple at: self index.
+                context setValueInCurrentPC: extractedValue.
+            }.
+            _: {
+                printLine("Invalid value for extracting composite.").
+                abort()
+            }
+        }.
 
-        $extractedValue := extractedRecord tuple at: self index.
-        context setValueInCurrentPC: TypedValue(extractedValue. self type).
         context advancePC.
         void.
     }.
@@ -1003,9 +1016,9 @@ MidSendMessage
             getBasicIntrinsicTypes() null
         }
         else: {
-            receiverTypedValue type
+            receiverTypedValue type.
         }.
-        
+        ##printLine("receiverType ". receiverType).
         $method := receiverType lookupSelector: selector.
         if: method value isInvalidErrorValue then: {
             if: selector == #isNull then: {

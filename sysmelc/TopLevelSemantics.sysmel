@@ -68,6 +68,29 @@ public: [
                             }
                         }.
                     }.
+                    $(SysmelClassType)classType : {
+                        $objectValue := extractObjectFromValue(receiverTypedValue value).
+
+                        if: arguments size = 0 then: {
+                            $fieldIndex := findIndexOfClassFieldWithName(classType. selector).
+                            if: fieldIndex >= 0 then: {
+                                ## Implicit getter.
+                                $fieldType := classType getFieldTypeAtIndex: fieldIndex.
+                                $fieldValue := objectValue tuple at: fieldIndex.
+                                return: TypedValue(fieldValue. fieldType)
+                            }
+                        }.
+                        if: arguments size = 1 then: {
+                            $selectorWithoutTrailingColon := selector withoutTrailingColon.
+                            $fieldIndex := findIndexOfClassFieldWithName(classType. selectorWithoutTrailingColon).
+                            if: fieldIndex >= 0 then: {
+                                ## Implicit setter
+                                $value := self analyzeAndEvaluateWithEnvironment: environment script: (arguments at: 0).
+                                objectValue tuple at: fieldIndex put: value value.
+                                return: value
+                            }
+                        }.
+                    }.
                     _: {
                         ## Nothing required here. 
                     }

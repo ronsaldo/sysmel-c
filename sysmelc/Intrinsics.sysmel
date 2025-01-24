@@ -18,6 +18,7 @@ public: [
         array: SysmelType.
         tuple: SysmelType.
         record: SysmelType.
+        class: SysmelType.
         sum: SysmelType.
         byteArray: SysmelType.
         association: SysmelType.
@@ -79,6 +80,9 @@ $BasicIntrinsicTypesSingleton := BasicIntrinsicTypes#{
     })).
     record: SysmelType(SysmelBasicType(SysmelTypeCommon#{
         name: #Record. isValueType: false. valueAlignment: 8u8. valueSize: 8u8. heapAlignment: 8u8. heapSize: 8u8. methodDict: SymbolHashtable().
+    })).
+    class: SysmelType(SysmelBasicType(SysmelTypeCommon#{
+        name: #Class. isValueType: false. valueAlignment: 8u8. valueSize: 8u8. heapAlignment: 8u8. heapSize: 8u8. methodDict: SymbolHashtable().
     })).
     sum: SysmelType(SysmelBasicType(SysmelTypeCommon#{
         name: #Sum. isValueType: false. valueAlignment: 8u8. valueSize: 8u8. heapAlignment: 8u8. heapSize: 8u8. methodDict: SymbolHashtable().
@@ -649,6 +653,155 @@ $primitive_RecordWithFields($(MacroContext)context $(Array)arguments :: TypedVal
 }.
 
 addGlobalMacroIntrinsicMethod(#Record:withFields:. primitive_RecordWithFields.
+    SysmelType(SysmelSimpleFunctionType#{
+        common: SysmelTypeCommon#{
+            isValueType: true.
+            valueAlignment: 8u32.
+            valueSize: 8u32.
+            heapAlignment: 8u32.
+            heapSize: 8u32.
+            methodDict: SymbolHashtable().
+        }.
+        isCompileTimePure: false.
+        isVariadic: false.
+        argumentTypes: [MacroContext . BasicIntrinsicTypesSingleton array].
+        resultType: ParseTreeNode.
+    })
+).
+
+$primitive_ClassWithFields($(MacroContext)context $(Array)arguments :: TypedValue) := {
+    assert: arguments size = 2.
+    $name := match: (arguments at: 0) ofType: ParseTreeNode withPatterns: #{ 
+        $(ParseTreeIdentifierReferenceNode)identifier : identifier value.
+        $(ParseTreeLiteralSymbolNode)literal : literal value.
+        _: {
+            $nameValue := context semanticsState analyzeAndEvaluateWithEnvironment: context environment script: (arguments at: 0).
+            printLine(nameValue).
+            abort()
+        }
+    }.
+
+    $fieldsAndTypesDictionary := extractImmutableDictionaryFromValue((context semanticsState analyzeAndEvaluateWithEnvironment: context environment script: (arguments at: 1)) value).
+    $fieldCount := fieldsAndTypesDictionary size.
+
+    $fieldNameArray := Array new: fieldCount.
+    $fieldTypeArray := Array new: fieldCount.
+
+    $!i := 0. while: i < fieldCount do: {
+        $assoc := fieldsAndTypesDictionary associationAt: i.
+        $fieldName := extractSymbolFromValue(assoc key).
+        $fieldType := extractTypeFromValue(assoc value).
+        fieldNameArray at: i put: fieldName.
+        fieldTypeArray at: i put: fieldType.
+    } continueWith: (i := i + 1).
+
+    $classType := SysmelType(SysmelClassType#{
+            common: SysmelTypeCommon#{
+                name: name.
+                isValueType: false.
+                valueAlignment: 8u32.
+                valueSize: 8u32.
+                heapAlignment: 8u32.
+                heapSize: 8u32.
+                methodDict: SymbolHashtable().
+            }.
+            supertype: BasicIntrinsicTypesSingleton class.
+            superFieldCount: 0.
+            fields: fieldTypeArray.
+            fieldNames: fieldNameArray.
+        }).
+
+    $result := TypedValue(Value(SysmelTypeValue(classType)). BasicIntrinsicTypesSingleton universe).
+    if: name isNotNull then: {
+        context environment addLocalSymbol: name withValue: result.
+    }.
+    
+    return: result
+}.
+
+addGlobalMacroIntrinsicMethod(#Class:withFields:. primitive_ClassWithFields.
+    SysmelType(SysmelSimpleFunctionType#{
+        common: SysmelTypeCommon#{
+            isValueType: true.
+            valueAlignment: 8u32.
+            valueSize: 8u32.
+            heapAlignment: 8u32.
+            heapSize: 8u32.
+            methodDict: SymbolHashtable().
+        }.
+        isCompileTimePure: false.
+        isVariadic: false.
+        argumentTypes: [MacroContext . BasicIntrinsicTypesSingleton array].
+        resultType: ParseTreeNode.
+    })
+).
+
+$primitive_ClassWithSuperclassAndFields($(MacroContext)context $(Array)arguments :: TypedValue) := {
+    assert: arguments size = 3.
+    $name := match: (arguments at: 0) ofType: ParseTreeNode withPatterns: #{ 
+        $(ParseTreeIdentifierReferenceNode)identifier : identifier value.
+        $(ParseTreeLiteralSymbolNode)literal : literal value.
+        _: {
+            $nameValue := context semanticsState analyzeAndEvaluateWithEnvironment: context environment script: (arguments at: 0).
+            printLine(nameValue).
+            abort()
+        }
+    }.
+
+    $supertype := context semanticsState analyzeAndEvaluateWithEnvironment: context environment script: (arguments at: 1).
+    $supertypeValue := supertype value getTypeValue.
+    $!superFieldCount := 0.
+    ##printLine(name. " supertype ". supertypeValue).
+    match: supertypeValue ofType: SysmelType withPatterns: #{
+        $(SysmelClassType)clazz : {
+            superFieldCount := clazz superFieldCount + clazz fields size.
+        }.
+        _: {
+            printLine("Supertype of classes must be other class.").
+            abort()
+        }
+    }.
+
+    $fieldsAndTypesDictionary := extractImmutableDictionaryFromValue((context semanticsState analyzeAndEvaluateWithEnvironment: context environment script: (arguments at: 2)) value).
+    $fieldCount := fieldsAndTypesDictionary size.
+
+    $fieldNameArray := Array new: fieldCount.
+    $fieldTypeArray := Array new: fieldCount.
+
+    $!i := 0. while: i < fieldCount do: {
+        $assoc := fieldsAndTypesDictionary associationAt: i.
+        $fieldName := extractSymbolFromValue(assoc key).
+        $fieldType := extractTypeFromValue(assoc value).
+        fieldNameArray at: i put: fieldName.
+        fieldTypeArray at: i put: fieldType.
+    } continueWith: (i := i + 1).
+
+    ##printLine("Class " .name . " supertype " . supertypeValue).
+    $classType := SysmelType(SysmelClassType#{
+            common: SysmelTypeCommon#{
+                name: name.
+                isValueType: false.
+                valueAlignment: 8u32.
+                valueSize: 8u32.
+                heapAlignment: 8u32.
+                heapSize: 8u32.
+                methodDict: SymbolHashtable().
+            }.
+            supertype: supertypeValue.
+            superFieldCount: superFieldCount.
+            fields: fieldTypeArray.
+            fieldNames: fieldNameArray.
+        }).
+
+    $result := TypedValue(Value(SysmelTypeValue(classType)). BasicIntrinsicTypesSingleton universe).
+    if: name isNotNull then: {
+        context environment addLocalSymbol: name withValue: result.
+    }.
+    
+    return: result
+}.
+
+addGlobalMacroIntrinsicMethod(#Class:withSuperclass:fields:. primitive_ClassWithSuperclassAndFields.
     SysmelType(SysmelSimpleFunctionType#{
         common: SysmelTypeCommon#{
             isValueType: true.
@@ -1682,6 +1835,49 @@ public: [
                 } continueWith: (i := i + 1).
 
                 $result := TypedValue(Value(RecordValue(record)). typeToInstantiate).
+                return: result
+            }.
+            $(SysmelClassType) clazzType : {
+                $objectSize := clazzType superFieldCount + clazzType fields size .
+                $tuple := Tuple new: objectSize.
+                $object := Object#{
+                    class: clazzType.
+                    tuple: tuple.
+                }.
+
+                if: (arguments size = 1 && isValueWithImmutableDictionaryFromValue((arguments at: 0) value)) then: {
+                    $dictionary := extractImmutableDictionaryFromValue((arguments at: 0) value).
+                    if: dictionary size > objectSize then: {
+                        printLine("Dictionary has more elements than the object fields.")
+                    }
+
+                    $!i := 0. while: i < dictionary size do: {
+                        $association := dictionary associationAt: i.
+                        $fieldName := extractSymbolFromValue(association key).
+                        $fieldIndex := findIndexOfClassFieldWithName(clazzType. fieldName).
+                        if: fieldIndex < 0 then: {
+                            printLine("Object does not have a field named ". fieldName)
+                        }.
+
+                        tuple at: fieldIndex put: association value
+                    } continueWith:(i := i + 1).
+
+                    $result := TypedValue(Value(ObjectValue(object)). typeToInstantiate).
+                    return: result
+                }.
+
+                if: (arguments size > objectSize) then:
+                {
+                    printLine("Excessive number of paramters to construct object.")
+                    abort().
+                }.
+
+                $!i := 0. while: (i < arguments size) do: {
+
+                    tuple at: i put: (arguments at: i)
+                } continueWith: (i := i + 1).
+
+                $result := TypedValue(Value(ObjectValue(object)). typeToInstantiate).
                 return: result
             }.
             $(SysmelSumType) sumType : {
