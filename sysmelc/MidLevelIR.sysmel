@@ -106,6 +106,14 @@ public: [
         owner: MidClosureFunction
     }.
 
+    Class: MidGetSumIndex withSuperclass: MidData fields: #{
+        sumValue: MidValue
+    }.
+
+    Class: MidGetSumValueProjection withSuperclass: MidData fields: #{
+        sumValue: MidValue
+    }.
+
     Class: MidArgument withSuperclass: MidFunctionLocalValue fields: #{
         index: UInt32.
         name: Symbol.
@@ -669,6 +677,59 @@ MidMakeImmutableDictionary
         } continueWith: (i := i + 1)
     }.
 
+MidGetSumIndex
+    withSelector: #usedValues addMethod: {
+        | $(MidGetSumIndex)self :: Array |
+        [self sumValue]
+    };
+    withSelector: #connectWithUsed addMethod: {
+        | $(MidGetSumIndex)self :: Array |
+        self sumValue addUser: self
+    };
+    withSelector: #evaluateInActivationContext: addMethod: {
+        | $(MidGetSumIndex)self $(MidActivationContext)context :: Void |
+
+        $sumValue := self sumValue getCurrentValueForActivationContext: context.
+        $sumIndex := match: sumValue value ofType: Value withPatterns: #{
+            $(SumValue)sumValue : sumValue index.
+            _: {
+                printLine("Expected a sum value.").
+                abort()
+            }
+        }.
+        
+        ##printLine("sumValue index ". sumIndex).
+        $typedIndex := TypedValue(Value(IntegerValue(sumIndex)). getBasicIntrinsicTypes() integer).
+        ##printLine("typed index ". typedIndex).
+        context setValueInCurrentPC: typedIndex.
+        context advancePC.
+    }.
+
+MidGetSumValueProjection
+    withSelector: #usedValues addMethod: {
+        | $(MidGetSumValueProjection)self :: Array |
+        [self sumValue]
+    };
+    withSelector: #connectWithUsed addMethod: {
+        | $(MidGetSumValueProjection)self :: Array |
+        self sumValue addUser: self
+    };
+    withSelector: #evaluateInActivationContext: addMethod: {
+        | $(MidGetSumValueProjection)self $(MidActivationContext)context :: Void |
+        $sumValue := self sumValue getCurrentValueForActivationContext: context.
+        $sumProjectedValue := match: sumValue value ofType: Value withPatterns: #{
+            $(SumValue)sumValue : sumValue value.
+            _: {
+                printLine("Expected a sum value.").
+                abort()
+            }
+        }.
+        
+        $typedProjectedValue := TypedValue(sumProjectedValue. self type).
+        context setValueInCurrentPC: typedProjectedValue.
+        context advancePC.
+    }.
+
 MidExtractCompositeElement
     withSelector: #usedValues addMethod: {
         | $(MidExtractCompositeElement)self :: Array |
@@ -686,9 +747,9 @@ MidExtractCompositeElement
         | $(MidExtractCompositeElement)self $(MidActivationContext)context :: Void |
         $composite := (self composite getCurrentValueForActivationContext: context) value.
         $extractedRecord := extractRecordFromValue(composite).
-        
+
         $extractedValue := extractedRecord tuple at: self index.
-        context setValueInCurrentPC: extractedValue.
+        context setValueInCurrentPC: TypedValue(extractedValue. self type).
         context advancePC.
         void.
     }.
@@ -708,7 +769,7 @@ MidSetCompositeElement
         self elementValue addUser: self.
     };
     withSelector: #evaluateInActivationContext: addMethod: {
-        | $(MidExtractCompositeElement)self $(MidActivationContext)context :: Void |
+        | $(MidSetCompositeElement)self $(MidActivationContext)context :: Void |
         $composite := (self composite getCurrentValueForActivationContext: context) value.
         $elementValue := self elementValue getCurrentValueForActivationContext: context.
         $extractedRecord := extractRecordFromValue(composite).
@@ -1045,7 +1106,7 @@ MidValue
 
         {
             $usedControlNodes := self usedControlNodes.
-            ##printLine(self class .": control ".).
+            ##printLine(self class .": control ". usedControlNodes).
             $!i := 0.
             while: i < usedControlNodes size do: {
                 $usedControl := usedControlNodes at: i.
@@ -1060,7 +1121,7 @@ MidValue
 
         {
             $usedValues := self usedValues.
-            ##printLine(self class .": value ").
+            ##printLine(self class .": value ". usedValues).
             $!i := 0.
             while: i < usedValues size do: {
                 $usedValue := usedValues at: i.
@@ -1395,6 +1456,26 @@ MidFunctionBuilder
         node
     };
 
+    withSelector: #getSumIndex: addMethod: {
+        | $(MidFunctionBuilder)self $(MidValue)sumValue :: MidGetSumIndex |
+        $node := MidGetSumIndex#{
+            sourcePosition: self sourcePosition.
+            sumValue: sumValue.
+            type: getBasicIntrinsicTypes() integer
+        }.
+        node connectWithUsed.
+        node
+    };
+    withSelector: #getSumValue:projectionWithType: addMethod: {
+        | $(MidFunctionBuilder)self $(MidValue)sumValue $(SysmelType)projectionType :: MidGetSumValueProjection |
+        $node := MidGetSumValueProjection#{
+            sourcePosition: self sourcePosition.
+            sumValue: sumValue.
+            type: projectionType
+        }.
+        node connectWithUsed.
+        node
+    };
     withSelector: #conditionBranch: addMethod: {
         | $(MidFunctionBuilder)self $(MidValue)condition :: MidConditionalBranch |
         $node := MidConditionalBranch#{
