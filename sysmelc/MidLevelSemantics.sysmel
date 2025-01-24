@@ -615,6 +615,9 @@ public: [
                     defaultPhiValue previousControl: midBuilder currentControlNode.
                     phiValues add: defaultPhiValue.
 
+                    $defaultBranchPredecessor := midBuilder makeBranchSequenceEnd: defaultPhiValue Into: switchMerge.
+                    mergePredecessors add: defaultBranchPredecessor.
+
                     ##printLine("Merge switch.").
                     midBuilder beginWithControlNode: switchMerge.
                     midBuilder sourcePosition: switchNode sourcePosition.

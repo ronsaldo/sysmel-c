@@ -18,6 +18,6 @@ $functionWithSwitch($(Integer)n :: Void) := {
     }.
 }.
 
-functionWithSwitch(2).
+functionWithSwitch(1).
 functionWithSwitch(5).
 functionWithSwitch(42).
