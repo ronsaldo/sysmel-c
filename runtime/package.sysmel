@@ -1,3 +1,4 @@
 loadFileOnce: "PrintLineTest.sysmel".
 
 loadFileOnce: "OrderedCollection.sysmel".
+loadFileOnce: "SymbolHashtable.sysmel".

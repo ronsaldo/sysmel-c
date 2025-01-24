@@ -1,0 +1,68 @@
+public: [
+Record: SymbolHashtable withFields: #{
+    size: Integer.
+    capacity: Integer.
+    targetCapacity: Integer.
+    data: Array.
+}.
+].
+
+Record: SymbolHashtableBucket withFields: #{
+    key: Symbol.
+    value: Gradual
+}.
+
+SymbolHashtable
+    withSelector: #ensureInitialize addMethod: {
+        | $(SymbolHashtable)self :: Void |
+        printLine("Initialize ". self capacity isNull).
+        if: self data isNull then: {
+            printLine("Initialize").
+            self size: 0.
+            self capacity: 32.
+            self targetCapacity: self capacity * 80 / 100.
+            self data: (Array new: self capacity).
+            void
+        }.
+    };
+    withSelector: #scanFor: addMethod: {
+        | $(SymbolHashtable)self $(Symbol)key :: Integer |
+        self ensureInitialize.
+
+        $data := self data.
+        $symbolHash := key hash.
+        $capacity := self capacity.
+        ##$naturalIndex := symbolHash % capacity.
+        
+
+        #*$!i := naturalIndex. while: (i < capacity) do: {
+            $bucketOrNull := self data at: i.
+            if: bucketOrNull isNull then: {return: i}.
+            if: bucketOrNull key == key then: {return: i}
+        } continueWith: (i := i + 1).
+
+        i := 0. while: (i < naturalIndex) do: {
+            $bucketOrNull := self data at: i.
+            if: bucketOrNull isNull then: {return: i}.
+            if: bucketOrNull key == key then: {return: i}
+        } continueWith: (i := i + 1).*#
+
+        1 negated
+    };
+    withSelector: #includesKey: addMethod: {
+        | $(SymbolHashtable)self $(Symbol)key :: Boolean |
+        self ensureInitialize.
+        $bucketIndex := self scanFor: key.
+        if: bucketIndex < 0 then: { return: false }.
+
+        $bucket := self data at: bucketIndex.
+        if: bucket isNull then: {return: false}.
+
+        return: bucket key == key.
+        false
+    }.
+$table := SymbolHashtable().
+printLine(table).
+printLine("table scanFor: " . table scanFor: #testKey).
+##printLine(table includesKey: #testKey).
+##printLine(#symbol hash)

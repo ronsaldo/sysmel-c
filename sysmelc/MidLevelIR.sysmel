@@ -28,6 +28,8 @@ public: [
     }.
     Class: MidConstantVoid withSuperclass: MidConstant fields: #{
     }.
+    Class: MidConstantNull withSuperclass: MidConstant fields: #{
+    }.
     Class: MidGlobalValue withSuperclass: MidConstant fields: #{
         name: Symbol
     }.
@@ -604,7 +606,10 @@ MidMakeTuple
     withSelector: #connectWithUsed addMethod: {
         | $(MidMakeTuple)self :: Array |
         $!i := 0. while: i < self elements size do: {
-            (self elements at: i) addUser: self
+            $element := self elements at: i.
+            if: element isNotNull then: {
+                element addUser: self
+            }
         } continueWith: (i := i + 1)
     };
     withSelector: #evaluateInActivationContext: addMethod: {

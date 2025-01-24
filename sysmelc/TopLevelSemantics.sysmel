@@ -126,6 +126,9 @@ public: [
         withSelector: #analyzeAndEvaluateWithEnvironment:script: addMethod: {
         | $(SemanticsState)self $(Environment)environment $(ParseTreeNode)ast :: TypedValue |
         match: ast ofType: ParseTreeNode withPatterns: #{
+            $(ParseTreeNullNode)nullNode : {
+                return: null
+            }.
             $(ParseTreeErrorNode)errorNode : {
                 printLine(errorNode errorMessage).
                 abort()

@@ -1139,11 +1139,25 @@ static sysmelb_Value_t sysmelb_primitive_symbolWithoutTrailingColon(size_t argum
     return result;
 }
 
+static sysmelb_Value_t sysmelb_primitive_symbolHash(size_t argumentCount, sysmelb_Value_t *arguments)
+{
+    assert(argumentCount == 1);
+    assert(arguments[0].kind == SysmelValueKindSymbolReference);
+
+    sysmelb_Value_t result = {
+        .kind = SysmelValueKindUnsignedInteger,
+        .unsignedInteger = arguments[0].symbolReference->hash,
+        .type = sysmelb_getBasicTypes()->integer
+    };
+    return result;
+}
+
 static void sysmelb_createBasicSymbolPrimitives(void)
 {
     sysmelb_type_addPrimitiveMethod(sysmelb_BasicTypesData.symbol, sysmelb_internSymbolC("=="), sysmelb_primitive_symbolIdentityEquals);
     sysmelb_type_addPrimitiveMethod(sysmelb_BasicTypesData.symbol, sysmelb_internSymbolC("~~"), sysmelb_primitive_symbolIdentityNotEquals);
     sysmelb_type_addPrimitiveMethod(sysmelb_BasicTypesData.symbol, sysmelb_internSymbolC("withoutTrailingColon"), sysmelb_primitive_symbolWithoutTrailingColon);
+    sysmelb_type_addPrimitiveMethod(sysmelb_BasicTypesData.symbol, sysmelb_internSymbolC("hash"), sysmelb_primitive_symbolHash);
 }
 
 static sysmelb_Value_t sysmelb_primitive_concatenateArrays(size_t argumentCount, sysmelb_Value_t *arguments)

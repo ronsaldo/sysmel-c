@@ -93,6 +93,13 @@ public: [
         withSelector: #analyzeWithEnvironment:andCompileClosure:withBody: addMethod: {
             | $(SemanticsState)self $(Environment)environment $(MidFunctionBuilder)midBuilder $(ParseTreeNode)ast :: MidValue |
             match: ast ofType: ParseTreeNode withPatterns: #{
+                $(ParseTreeNullNode)nullNode : {
+                    MidConstantNull#{
+                        sourcePosition: nullNode sourcePosition.
+                        type: getBasicIntrinsicTypes() null
+                    }
+                }.
+                
                 ## Errors.
                 $(ParseTreeErrorNode)errorNode : {
                     printLine("Error ". errorNode errorMessage).

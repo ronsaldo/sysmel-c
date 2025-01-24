@@ -1787,6 +1787,23 @@ $addImmutableDictionaryPrimitives() := {
 }.
 addImmutableDictionaryPrimitives().
 
+$symbolPrimitive_hash($(Array)arguments :: TypedValue) := {
+    assert: arguments size = 1.
+    $typedSymbol := extractSymbolFromValue((arguments at: 0) value).
+    $hashValue := typedSymbol hash.
+    return: TypedValue(Value(IntegerValue(hashValue)). BasicIntrinsicTypesSingleton integer)
+}.
+
+$addSymbolPrimitives() := {
+    $symbolType := BasicIntrinsicTypesSingleton symbol.
+    $integerType := BasicIntrinsicTypesSingleton integer.
+    $commonPart := symbolType getCommonSection.
+    $methodDict := commonPart methodDict.
+    
+    addIntrinsicMethod(methodDict. #hash. symbolPrimitive_hash . makeSimplePureFunctionType([symbolType]. integerType)).
+}.
+addSymbolPrimitives().
+
 public: [
     $getBasicIntrinsicTypes(:: BasicIntrinsicTypes) := BasicIntrinsicTypesSingleton.
     $getDefaultIntrinsicsEnvironment(:: Environment) := Environment(DefaultIntrinsicsEnvironment).

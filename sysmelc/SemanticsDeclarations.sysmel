@@ -429,7 +429,13 @@ public: [
         };
         withSelector: #getIntegerValue addMethod: {
             |$(TypedValue)self :: Integer |
-            self value getIntegerValue
+            if: self value isNull then: {
+                return: 0
+            }
+            else: 
+            {
+                self value getIntegerValue
+            }
         }.
 
 SysmelClassType

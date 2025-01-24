@@ -1,0 +1,5 @@
+## Front-end. Parser an parse tree.
+loadFileOnce: "SourceCode.sysmel".
+loadFileOnce: "Scanner.sysmel".
+##loadFileOnce: "ParseTree.sysmel".
+##loadFileOnce: "Parser.sysmel".
