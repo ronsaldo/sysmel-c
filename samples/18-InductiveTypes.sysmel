@@ -9,7 +9,7 @@ $sumExpression := Arithmetic(Plus#{
     rightOperand: Arithmetic(LiteralInteger{5})
 }).
 printLine(sumExpression).
-#*
+
 match: sumExpression ofType: Arithmetic withPatterns: #{
     $(LiteralInteger)literal : printLine("Literal:" literal value).
     $(Plus)plus : printLine("Plus: ". plus leftOperand . "+" . plus rightOperand).
@@ -25,4 +25,3 @@ $evaluateExpression($(Arithmetic)expression :: Integer) := {
 }.
 
 printLine(evaluateExpression(sumExpression)).
-*#

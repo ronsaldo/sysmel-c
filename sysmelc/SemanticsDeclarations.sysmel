@@ -367,12 +367,27 @@ public: [
             }.
         };
         withSelector: #getTypeValue addMethod: {
-            |$(Value)self :: Integer |
+            |$(Value)self :: SysmelType |
             match: self ofType: Value withPatterns: #{
                 $(SysmelTypeValue)typeValue : typeValue value.
                 _: abort().
             }.
+        };
+        withSelector: #getSumIndex addMethod: {
+            |$(Value)self :: SysmelType |
+            match: self ofType: Value withPatterns: #{
+                $(SumValue)sumValue : sumValue index.
+                _: abort().
+            }.
+        };
+        withSelector: #getSumValue addMethod: {
+            |$(Value)self :: SysmelType |
+            match: self ofType: Value withPatterns: #{
+                $(SumValue)sumValue : sumValue value.
+                _: abort().
+            }.
         }.
+
     TypedValue
         withSelector: #isInvalidErrorValue addMethod: {
             |$(TypedValue)self :: Boolean |

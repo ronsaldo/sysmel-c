@@ -471,6 +471,75 @@ public: [
 
                 abort().
             }.
+            $(ParseTreeSwitchPatternMatchingNode)switchPatternNode : {
+                $sumTypeValue := self analyzeAndEvaluateWithEnvironment: environment script: switchPatternNode valueSumType.
+                $sumType := match: sumTypeValue value getTypeValue ofType: SysmelType withPatterns: #{
+                    $(SysmelSumType)sum : sum.
+                    _: {
+                        printLine("Expected a sum type.")
+                    }
+                }.
+                
+                $alternativeCount := sumType alternatives size.
+
+                $sumValue := self analyzeAndEvaluateWithEnvironment: environment script: switchPatternNode value.
+                $sumValueIndex := sumValue value getSumIndex.
+                if: sumValueIndex >= alternativeCount then: {
+                    printLine("Unexpected sum value with index ". sumValueIndex).
+                    abort().
+                }.
+
+                $expectedAlternative := sumType alternatives at: sumValueIndex.
+                ##printLine("Sumtype alternatives ". alternativeCount).
+                ##printLine("expectedAlternative ". expectedAlternative getCommonSection name).
+
+                $casesDictionary := match: switchPatternNode cases ofType: ParseTreeNode withPatterns: #{
+                    $(ParseTreeImmutableDictionaryNode)dictionary : dictionary elements.
+                    _: {
+                        printLine("Expected a dictionary with the different patterns.").
+                        abort()
+                    }
+                }.
+                ##printLine("casesDictionary " . casesDictionary size).
+                $!i := 0. while: (i < casesDictionary size) do: {
+                    $caseAssoc := match: (casesDictionary at: i) ofType: ParseTreeNode withPatterns: #{
+                        $(ParseTreeAssociationNode)parseAssoc : parseAssoc.
+                        _: {
+                            printLine("Expected associations as members of the case dictionay.").
+                        }.
+                    }.
+
+                    $caseBindableName := match: caseAssoc key ofType: ParseTreeNode withPatterns: #{
+                        $(ParseTreeBindableNameNode)bindable : bindable.
+                        _: {
+                            printLine("Expected associations as members of the case dictionay.").
+                        }.
+                    }.
+
+                    $caseTypeExpression := self analyzeAndEvaluateWithEnvironment: environment script: caseBindableName typeExpression.
+                    $caseTypeValue := caseTypeExpression value getTypeValue.
+
+                    if: expectedAlternative == caseTypeValue then: {
+                        $newLexicalEnvironment := Environment(LexicalEnvironment#{
+                            parent: environment.
+                            localSymbols: SymbolHashtable().
+                        }).
+
+                        if: caseBindableName nameExpression isNotNull then: {
+                            $sumValueToBind := sumValue value getSumValue.
+                            $bindableName := extractSymbolFromValue((self analyzeAndEvaluateWithEnvironment: environment script: caseBindableName nameExpression) value).
+
+                            newLexicalEnvironment addLocalSymbol: bindableName withValue: TypedValue(sumValueToBind. caseTypeValue).
+                        }.
+                        
+                        $result := self analyzeAndEvaluateWithEnvironment: newLexicalEnvironment script: caseAssoc value.
+                        return: result
+                    }
+                } continueWith: (i := i + 1).
+
+                printLine("No valid cases were found.").
+                abort()
+            }.
             ## Namespace
             $(ParseTreeNamespaceDefinitionNode)namespaceDefinition : {
                 $newNamespaceEnvironment := Environment(NamespaceEnvironment#{
