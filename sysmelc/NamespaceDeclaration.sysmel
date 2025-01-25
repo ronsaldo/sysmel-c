@@ -1,0 +1,9 @@
+namespace: SysmelC definition: {
+public: [
+    Record: Namespace withFields: #{
+        name: Symbol.
+        exportedObjectTable: SymbolHashtable.
+        exportedObjectList: OrderedCollection.
+    }.
+].
+}.

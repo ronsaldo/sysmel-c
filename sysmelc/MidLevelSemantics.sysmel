@@ -341,8 +341,9 @@ public: [
                         if: isRecordType(typeToConstruct) then: {
                             $recordType := extractRecordType(typeToConstruct).
                             $recordFieldCount := recordType fields size.
-                            if: invocationArguments size ~= recordFieldCount then: {
-                                printLine("Construction of record is missing arguments. Expected ". recordFieldCount. " arguments instead of". invocationArguments size)
+                            if: (invocationArguments size ~= recordFieldCount) && (invocationArguments size ~= 0) then: {
+                                printLine("Warning: Construction of record is missing arguments. Expected ". recordFieldCount. " arguments instead of". invocationArguments size).
+                                printLine("typeToConstruct". typeToConstruct).
                             }.
 
                             midBuilder sourcePosition: functionApplication sourcePosition.

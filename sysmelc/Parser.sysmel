@@ -11,7 +11,7 @@ public: [
         withSelector: #atEnd addMethod: {|$(ParserState)self :: Boolean|
             self position >= self tokenCount
         };
-        withSelector: #peekKind: addMethod: {|$(ParserState)self $(UInt32)offset :: asUInt8 |
+        withSelector: #peekKind: addMethod: {|$(ParserState)self $(UInt32)offset :: UInt8 |
             $peekPosition := self position + offset.
             if: peekPosition < self tokenCount then: {
                 (self tokens at: peekPosition) kind asUInt8
@@ -20,10 +20,10 @@ public: [
                 TokenKind EndOfSource
             }
         };
-        withSelector: #peekKind addMethod: {|$(ParserState)self :: asUInt8 |
+        withSelector: #peekKind addMethod: {|$(ParserState)self :: UInt8 |
             self peekKind: 0u32
         };
-        withSelector: #peek: addMethod: {|$(ParserState)self $(UInt32)offset :: asUInt8 |
+        withSelector: #peek: addMethod: {|$(ParserState)self $(UInt32)offset :: UInt8 |
             $peekPosition := self position + offset.
             if: peekPosition < self tokenCount then: {
                 self tokens at: peekPosition
@@ -32,7 +32,7 @@ public: [
                 TokenKind EndOfSource
             }
         };
-        withSelector: #peek addMethod: {|$(ParserState)self :: asUInt8 |
+        withSelector: #peek addMethod: {|$(ParserState)self :: UInt8 |
             self peek: 0u32
         };
         withSelector: #advance addMethod: {|$(ParserState)self :: Void |
@@ -40,7 +40,7 @@ public: [
             self position: self position + 1u32.
             void
         };
-        withSelector: #next addMethod: {|$(ParserState)self :: ScannerToken |
+        withSelector: #next addMethod: {|$(ParserState)self :: ScannedToken |
             assert: self position < self tokenCount.
             $token := self tokens at: self position.
             self position: self position + 1u32.

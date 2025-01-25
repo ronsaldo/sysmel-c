@@ -1,10 +1,5 @@
 namespace: SysmelC definition: {
 public: [
-    Record: Namespace withFields: #{
-        name: Symbol.
-        exportedObjectTable: SymbolHashtable.
-        exportedObjectList: OrderedCollection.
-    }.
     $MakeNamespaceNamed($(Symbol)name :: Namespace) := Namespace#{
         name: name.
         exportedObjectTable: SymbolHashtable().
@@ -110,6 +105,7 @@ public: [
             match: self ofType: SysmelType withPatterns: #{
                 $(SysmelBasicType)basicType : basicType common.
                 $(SysmelTupleAndRecordType)tupleAndRecord : tupleAndRecord common.
+                $(SysmelSumType)sumType : sumType common.
                 $(SysmelClassType)clazzType : clazzType common.
                 $(SysmelEnumType)enumType : enumType common.
                 $(SysmelSimpleFunctionType)simpleFunctionType : simpleFunctionType common.
@@ -117,6 +113,7 @@ public: [
                 $(SysmelReferenceType)referenceType : referenceType common.
                 _: {
                     printLine("getCommonSection: Unsupported type kind").
+                    printLine(self).
                     abort()
                 }
             }
@@ -127,6 +124,7 @@ public: [
                 $(SysmelBasicType)basicType : basicType supertype.
                 $(SysmelTupleAndRecordType)tupleAndRecord : tupleAndRecord supertype.
                 $(SysmelClassType)clazzType : clazzType supertype.
+                $(SysmelSumType)sumType : sumType supertype.
                 $(SysmelEnumType)enumType : enumType supertype.
                 $(SysmelSimpleFunctionType)simpleFunctionType : simpleFunctionType supertype.
                 $(SysmelReferenceType)referenceType : referenceType supertype.

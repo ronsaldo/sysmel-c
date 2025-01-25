@@ -1,3 +1,6 @@
+## Some declarations
+loadFileOnce: "NamespaceDeclaration.sysmel".
+
 ## Front-end. Parser an parse tree.
 loadFileOnce: "SourceCode.sysmel".
 loadFileOnce: "Scanner.sysmel".

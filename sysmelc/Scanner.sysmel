@@ -263,7 +263,7 @@ $skipWhite($(ScannerState)state :: ScannedToken) := {
         }
 
     } while: (hasSeenComments && state atEnd not).
-    ScannedToken(TokenKind NullToken)
+    ScannedToken#{kind: TokenKind NullToken}
 }.
 
 $scanAdvanceKeyword($(ScannerState)state :: Boolean) := {
@@ -285,7 +285,7 @@ $scanAdvanceKeyword($(ScannerState)state :: Boolean) := {
     }
 }.
 
-$scanSingleToken($(ScannerState)state :: ScannerToken) := {
+$scanSingleToken($(ScannerState)state :: ScannedToken) := {
     $whiteErrorToken := skipWhite(state).
     if: whiteErrorToken kind ~= TokenKind NullToken then: {
         return: whiteErrorToken
@@ -584,7 +584,7 @@ $scanSingleToken($(ScannerState)state :: ScannerToken) := {
     }.
 
     if: state atEnd then: {
-        return: ScannedToken(TokenKind EndOfSource)
+        return: ScannedToken#{kind: TokenKind EndOfSource}
     }
     else: {
         state advance.
@@ -597,7 +597,7 @@ public: [
     $scanSourceCode($(SourceCode)sourceCode :: Array) := {
         $list := OrderedCollection().
         $state := makeScannerStateForSourceCode(sourceCode).
-        $!scannedToken := ScannedToken(TokenKind NullToken).
+        $!scannedToken := ScannedToken#{kind: TokenKind NullToken}.
         do: {
             scannedToken := scanSingleToken(state).
             list add: scannedToken
