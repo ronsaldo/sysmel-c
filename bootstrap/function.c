@@ -28,6 +28,7 @@ typedef struct sysmelb_FunctionInstruction_s {
         uint16_t dictionarySize;
         uint16_t tupleSize;
 
+        sysmelb_SourcePosition_t lastSourcePosition;
         sysmelb_SourcePosition_t assertPosition;
     };
 } sysmelb_FunctionInstruction_t;
@@ -247,6 +248,16 @@ void sysmelb_bytecode_getSumInjectedValue(sysmelb_FunctionBytecode_t *bytecode)
     sysmelb_bytecode_addInstruction(bytecode, inst);
 }
 
+void sysmelb_bytecode_sourcePosition(sysmelb_FunctionBytecode_t *bytecode, sysmelb_SourcePosition_t sourcePosition)
+{
+    sysmelb_FunctionInstruction_t inst ={
+        .opcode = SysmelFunctionOpcodeSourcePosition,
+        .lastSourcePosition = sourcePosition
+    };
+
+    sysmelb_bytecode_addInstruction(bytecode, inst);
+}
+
 void sysmelb_bytecode_assert(sysmelb_FunctionBytecode_t *bytecode, sysmelb_SourcePosition_t sourcePosition)
 {
     sysmelb_FunctionInstruction_t inst ={
@@ -389,6 +400,9 @@ void sysmelb_disassemblyBytecodeFunction(sysmelb_function_t *function)
         case SysmelFunctionOpcodeAssert:
             printf("%04d Assert\n", pc);
             break;
+        case SysmelFunctionOpcodeSourcePosition:
+            printf("%04d SourcePosition\n", pc);
+            break;
         default: abort();
         }
     }
@@ -397,6 +411,7 @@ void sysmelb_disassemblyBytecodeFunction(sysmelb_function_t *function)
 sysmelb_Value_t sysmelb_interpretBytecodeFunction(sysmelb_function_t *function, size_t argumentCount, sysmelb_Value_t *arguments)
 {
     //sysmelb_disassemblyBytecodeFunction(function);
+    sysmelb_SourcePosition_t lastSourcePosition = function->sourcePosition;
 
     sysmelb_Value_t result = {
         .kind = SysmelValueKindNull,
@@ -472,18 +487,18 @@ sysmelb_Value_t sysmelb_interpretBytecodeFunction(sysmelb_function_t *function, 
                 for(uint32_t i = 0; i < popCount; ++i)
                     context.calloutArguments[popCount - 1 - i] = sysmelb_bytecodeActivationContext_pop(&context);
 
-                sysmelb_Value_t function = sysmelb_bytecodeActivationContext_pop(&context);
-                switch(function.kind)
+                sysmelb_Value_t calledFunction = sysmelb_bytecodeActivationContext_pop(&context);
+                switch(calledFunction.kind)
                 {
                 case SysmelValueKindFunctionReference:
                     {
-                        sysmelb_Value_t value = sysmelb_callFunctionWithArguments(function.functionReference, popCount, context.calloutArguments);
+                        sysmelb_Value_t value = sysmelb_callFunctionWithArguments(calledFunction.functionReference, popCount, context.calloutArguments);
                         sysmelb_bytecodeActivationContext_push(&context, value);
                     }
                     break;
                 case SysmelValueKindTypeReference:
                 {
-                    sysmelb_Value_t instance = sysmelb_instantiateTypeWithArguments(function.typeReference, popCount, context.calloutArguments);
+                    sysmelb_Value_t instance = sysmelb_instantiateTypeWithArguments(calledFunction.typeReference, popCount, context.calloutArguments);
                     sysmelb_bytecodeActivationContext_push(&context, instance);
                 }
                 break;
@@ -768,6 +783,10 @@ sysmelb_Value_t sysmelb_interpretBytecodeFunction(sysmelb_function_t *function, 
             };
             sysmelb_bytecodeActivationContext_push(&context, voidValue);
         }
+            ++pc;
+            break;
+        case SysmelFunctionOpcodeSourcePosition:
+            lastSourcePosition = currentInstruction->lastSourcePosition;
             ++pc;
             break;
         default:

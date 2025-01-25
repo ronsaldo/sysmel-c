@@ -143,6 +143,7 @@ public: [
                     $value := environment lookupSymbolRecursively: identifier value.
                     if: value isInvalidErrorValue then: {
                         printLine(value getInvalidErrorValueMessage).
+                        printLine("ParseTreeIdentifierReferenceNode").
                         abort()
                     }.
 
@@ -373,7 +374,7 @@ public: [
                         }.
 
                         printLine("TODO: instantiate objects with numbered fields").
-                        printLine(typeToConstruct getCommonSection name)
+                        printLine(typeToConstruct getCommonSection name).
                         abort()
                     }.
 
@@ -521,7 +522,7 @@ public: [
                                     midBuilder store: newValue in: reference.
                                     return: newValue
                                 }
-                            }
+                            }.
                             
                             printLine("Invalid assignment.").
                             abort()

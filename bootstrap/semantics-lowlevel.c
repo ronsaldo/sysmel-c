@@ -194,6 +194,7 @@ static void sysmelb_analyzeAndCompileClosureBody(sysmelb_Environment_t *environm
             for(size_t i = 0; i < argumentCount; ++i)
                 sysmelb_analyzeAndCompileClosureBody(environment, function, ast->functionApplication.arguments.elements[i]);
             
+            sysmelb_bytecode_sourcePosition(&function->bytecode, ast->sourcePosition);
             sysmelb_bytecode_applyFunction(&function->bytecode, (uint16_t)argumentCount);
             return;
         }
@@ -246,6 +247,7 @@ static void sysmelb_analyzeAndCompileClosureBody(sysmelb_Environment_t *environm
             for(size_t i = 0; i < argumentCount; ++i)
                 sysmelb_analyzeAndCompileClosureBody(environment, function, ast->messageSend.arguments.elements[i]);
 
+            sysmelb_bytecode_sourcePosition(&function->bytecode, ast->sourcePosition);
             sysmelb_bytecode_sendMessage(&function->bytecode, selectorValue.symbolReference, (uint16_t)argumentCount);
             return;
             

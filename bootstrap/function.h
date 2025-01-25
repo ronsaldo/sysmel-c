@@ -44,6 +44,7 @@ typedef enum sysmelb_FunctionOpcode_e
     SysmelFunctionOpcodeGetSumIndex,
     SysmelFunctionOpcodeGetSumInjectedValue,
     SysmelFunctionOpcodeAssert,
+    SysmelFunctionOpcodeSourcePosition,
 } sysmelb_FunctionOpcode_t;
 
 typedef struct sysmelb_FunctionInstruction_s sysmelb_FunctionInstruction_t;
@@ -113,6 +114,8 @@ void sysmelb_bytecode_makeTuple(sysmelb_FunctionBytecode_t *bytecode, uint16_t s
 
 void sysmelb_bytecode_getSumIndex(sysmelb_FunctionBytecode_t *bytecode);
 void sysmelb_bytecode_getSumInjectedValue(sysmelb_FunctionBytecode_t *bytecode);
+
+void sysmelb_bytecode_sourcePosition(sysmelb_FunctionBytecode_t *bytecode, sysmelb_SourcePosition_t sourcePosition);
 
 void sysmelb_bytecode_assert(sysmelb_FunctionBytecode_t *bytecode, sysmelb_SourcePosition_t);
 
