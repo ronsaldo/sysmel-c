@@ -111,6 +111,11 @@ public: [
         owner: MidClosureFunction
     }.
 
+    Class: MidInjectSum withSuperclass: MidData fields: #{
+        injectionIndex: MidValue.
+        injectionValue: MidValue
+    }.
+
     Class: MidGetSumIndex withSuperclass: MidData fields: #{
         sumValue: MidValue
     }.
@@ -683,6 +688,23 @@ MidMakeImmutableDictionary
         $!i := 0. while: (i < self associations size) do: {
             (self associations at: i) addUser: self
         } continueWith: (i := i + 1)
+    }.
+
+MidInjectSum
+    withSelector: #usedValues addMethod: {
+        | $(MidInjectSum)self :: Array |
+        [self injectionIndex . self injectionValue]
+    };
+    withSelector: #connectWithUsed addMethod: {
+        | $(MidInjectSum)self :: Array |
+        self injectionIndex addUser: self.
+        self injectionValue addUser: self.
+    };
+    withSelector: #evaluateInActivationContext: addMethod: {
+        | $(MidInjectSum)self $(MidActivationContext)context :: Void |
+
+        printLine("TODO: MidInjectSum evaluateInActivationContext").
+        abort()
     }.
 
 MidGetSumIndex
@@ -1496,7 +1518,17 @@ MidFunctionBuilder
         self currentControlNode: node.
         node
     };
-
+    withSelector: #inject:withSumType:atIndex: addMethod: {
+        | $(MidFunctionBuilder)self $(MidValue)injectionValue $(SysmelType)sumType $(MidValue)injectionIndex :: MidGetSumIndex |
+        $node := MidInjectSum#{
+            sourcePosition: self sourcePosition.
+            injectionIndex: injectionIndex.
+            injectionValue: injectionValue.
+            type: sumType
+        }.
+        node connectWithUsed.
+        node
+    };
     withSelector: #getSumIndex: addMethod: {
         | $(MidFunctionBuilder)self $(MidValue)sumValue :: MidGetSumIndex |
         $node := MidGetSumIndex#{

@@ -662,6 +662,24 @@ SysmelClassType
             }
         }
     }.
+
+    $isSumType($(SysmelType)type :: Boolean) := {
+        match: type ofType: SysmelType withPatterns: #{
+            $(SysmelSumType)SysmelSumType : true.
+            _: false.
+        }
+    }.
+    
+    $extractSumType($(SysmelType)type :: SysmelSumType) := {
+        match: type ofType: SysmelType withPatterns: #{
+            $(SysmelSumType)sumType : sumType.
+            _: {
+                printLine("Not a valid sum type.").
+                abort()
+            }
+        }
+    }.
+
     $extractObjectFromValue($(Value)value :: SysmelFunction) := {
         match: value ofType: Value withPatterns: #{
             $(ObjectValue)objectValue : objectValue value.

@@ -1033,8 +1033,30 @@ $primitive_Public($(MacroContext)context $(Array)arguments :: TypedValue) := {
         ##printLine("valueToExport ". typedValueToExport value).
         lastElement := match: typedValueToExport value ofType: Value withPatterns: #{
             $(SysmelTypeValue)typeValue : {
-                $typeName := typeValue value getCommonSection name.
+                ##printLine("Public typeValueValue ". typeValueValue).
+                $typeValueValue := typeValue value
+                $typeName := typeValueValue getCommonSection name.
                 ownerNamespace exportTypedValue: typedValueToExport withName: typeName.
+                match: typeValueValue ofType: SysmelType withPatterns: #{
+                    $(SysmelSumType)sumType : {
+                        $sumAlternatives := sumType alternatives.
+                        $sumAlternativeCount := sumAlternatives size.
+                        $!i := 0. while: (i < sumAlternativeCount) do: {
+                            $alternative := sumAlternatives at: i.
+                            $alternativeName := alternative getCommonSection name.
+                            ##printLine("alternative ". alternativeName).
+
+                            $alternativeTypedValue := TypedValue(Value(SysmelTypeValue(alternative)). BasicIntrinsicTypesSingleton universe).
+                            ##printLine("alternative typedValue ". alternativeTypedValue).
+
+                            ownerNamespace exportTypedValue: alternativeTypedValue withName: alternativeName.
+
+                        } continueWith: (i := i + 1).
+                    }.
+                    _: {
+                        ## Nothing special is required here
+                    }
+                }.
                 typedValueToExport
             }.
             $(SysmelFunctionValue)functionValue : {

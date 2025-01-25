@@ -351,7 +351,29 @@ public: [
                             return: recordValue
                         }.
 
+                        if: isSumType(typeToConstruct) then: {
+                            $sumType := extractSumType(typeToConstruct).
+
+                            if: invocationArguments size ~= 1 then: {
+                                printLine("Sum type injection requires a single argument.").
+                                abort().
+                            }.
+
+                            $injectionArgument := invocationArguments at: 0.
+                            $injectionType := injectionArgument type.
+                            $injectionIndex := findIndexOfSumTypeAlternative(sumType. injectionType).
+                            if: injectionIndex < 0 then: {
+                                printLine("Cannot perform sum injection of a non-alternative type.").
+                                abort()
+                            }.
+
+                            $injectedSum := midBuilder inject: injectionArgument withSumType: SysmelType(sumType) atIndex: MidConstantInteger#{value: injectionIndex}.
+                            ##printLine("injectedSum ". injectedSum).
+                            return: injectedSum
+                        }.
+
                         printLine("TODO: instantiate objects with numbered fields").
+                        printLine(typeToConstruct getCommonSection name)
                         abort()
                     }.
 

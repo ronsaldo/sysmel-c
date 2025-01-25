@@ -5,4 +5,4 @@ loadFileOnce: "NamespaceDeclaration.sysmel".
 loadFileOnce: "SourceCode.sysmel".
 loadFileOnce: "Scanner.sysmel".
 loadFileOnce: "ParseTree.sysmel".
-##loadFileOnce: "Parser.sysmel".
+loadFileOnce: "Parser.sysmel".
