@@ -5,6 +5,9 @@ public: [
     Class: MidConstant withSuperclass: MidValue fields: #{
     }.
 
+    Class: MidConstantBoolean withSuperclass: MidConstant fields: #{
+        value: Boolean
+    }.
     Class: MidConstantInteger withSuperclass: MidConstant fields: #{
         value: Integer
     }.
@@ -751,11 +754,18 @@ MidExtractCompositeElement
     withSelector: #evaluateInActivationContext: addMethod: {
         | $(MidExtractCompositeElement)self $(MidActivationContext)context :: Void |
         $composite := (self composite getCurrentValueForActivationContext: context) value.
-        match:composite ofType: Value withPatterns: #{
+        ##printLine("composite ". composite).
+        match: composite ofType: Value withPatterns: #{
             $(RecordValue)recordValue : {
                 $extractedRecord := recordValue value.
                 $extractedValue := extractedRecord tuple at: self index.
-                context setValueInCurrentPC: TypedValue(extractedValue. self type).
+                ##printLine("extractedValue ". extractedValue).
+                if: extractedValue isNull then: {
+                    context setValueInCurrentPC: TypedValue(Value(NullValue()). self type)
+                }
+                else: {
+                    context setValueInCurrentPC: extractedValue.
+                }
             }.
             $(ObjectValue)objectValue : {
                 $extractedObject := objectValue value.
@@ -849,6 +859,11 @@ MidConstant
         printLine("getCurrentValueForActivationContext: subclassResponsibility ". self class).
     }.
 
+MidConstantBoolean
+    withSelector: #getCurrentValueForActivationContext: addMethod: {
+        | $(MidConstantBoolean)self $(MidActivationContext)context :: TypedValue |
+        TypedValue(Value(BooleanValue(self value)). self type)
+    }.
 MidConstantInteger
     withSelector: #getCurrentValueForActivationContext: addMethod: {
         | $(MidConstantInteger)self $(MidActivationContext)context :: TypedValue |
@@ -1316,6 +1331,14 @@ MidFunctionBuilder
         self exitPoints add: instruction.
         self currentControlNode: instruction.
         return: instruction
+    };
+    withSelector: #constantBoolean: addMethod: {
+        | $(MidFunctionBuilder)self $(Boolean)constantValue :: MidConstantBoolean |
+        MidConstantBoolean#{
+            sourcePosition: self sourcePosition.
+            type: getBasicIntrinsicTypes() boolean.
+            value: constantValue
+        }.
     };
     withSelector: #constantInteger: addMethod: {
         | $(MidFunctionBuilder)self $(Integer)constantValue :: MidConstantInteger |

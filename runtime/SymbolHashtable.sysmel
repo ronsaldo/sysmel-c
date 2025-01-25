@@ -7,20 +7,43 @@ Record: SymbolHashtable withFields: #{
 }.
 ].
 
-Record: SymbolHashtableBucket withFields: #{
-    key: Symbol.
-    value: Gradual
-}.
-
 SymbolHashtable
     withSelector: #initialize addMethod: {
         | $(SymbolHashtable)self :: Void |
         $initialCapacity := 32.
         self size: 0.
         self capacity: initialCapacity.
-        self targetCapacity: self capacity * 80 // 100.
-        self data: (Array new: initialCapacity).
+        self targetCapacity: initialCapacity * 80 // 100.
+        self data: (Array new: initialCapacity * 2).
         void
+    };
+    withSelector: #checkTargetCapacity addMethod: {
+        | $(SymbolHashtable)self :: Void |
+        if: self size <= self targetCapacity then: {
+            return: void
+        }.
+
+        $!newCapacity := self capacity * 2.
+        if: newCapacity < 32 then: {
+            newCapacity := 32.
+        }.
+
+        $newData := Array new: newCapacity*2.
+        $oldData := self data.
+        $oldCapacity := self capacity.
+
+        self data: newData.
+        self size: 0.
+        self capacity: newCapacity.
+        self targetCapacity: newCapacity * 80 // 100.
+
+        $!i := 0. while: (i < oldCapacity) do: {
+            $oldKey := oldData at: i*2.
+            $oldValue := oldData at: i*2 + 1.
+            if: oldKey ~~ null then: {
+                self at: oldKey put: oldValue
+            }
+        } continueWith: (i := i + 1)
     };
     withSelector: #scanFor: addMethod: {
         | $(SymbolHashtable)self $(Symbol)key :: Integer |
@@ -30,32 +53,67 @@ SymbolHashtable
         $naturalIndex := symbolHash % capacity.
 
         $!i := naturalIndex. while: (i < capacity) do: {
-            $bucketOrNull := self data at: i.
-            if: bucketOrNull isNull then: {return: i}.
-            if: bucketOrNull key == key then: {return: i}
+            $keyOrNull := data at: i*2.
+            if: keyOrNull isNull || (key == keyOrNull) then: {
+                return: i
+            }.
         } continueWith: (i := i + 1).
 
         i := 0. while: (i < naturalIndex) do: {
-            $bucketOrNull := self data at: i.
-            if: bucketOrNull isNull then: {return: i}.
-            if: bucketOrNull key == key then: {return: i}
+            $keyOrNull := data at: i*2.
+            if: keyOrNull isNull || (key == keyOrNull) then: {
+                return: i
+            }.
         } continueWith: (i := i + 1).
 
         1 negated
     };
     withSelector: #includesKey: addMethod: {
         | $(SymbolHashtable)self $(Symbol)key :: Boolean |
+        $keyIndex := self scanFor: key.
+        if: (keyIndex < 0) then: { return: false }.
+
+        return: key == (self data at: keyIndex*2)
+    };
+    withSelector: #at: addMethod: {
+        | $(SymbolHashtable)self $(Symbol)key :: Gradual |
+        $bucketIndex := self scanFor: key.
+        if: bucketIndex < 0 then: {
+            printLine("Key not found in symbol hashtable.").
+            abort().
+        }.
+
+        if: key ~~ (self data at: bucketIndex*2) then: {
+            printLine("Key not found in symbol hashtable.").
+            abort().
+        }.
+
+        return: (self data at: bucketIndex*2 + 1).
+    };
+    withSelector: #at:put: addMethod: {
+        | $(SymbolHashtable)self $(Symbol)key $(Gradual)value :: Void |
         $bucketIndex := self scanFor: key.
         if: bucketIndex < 0 then: { return: false }.
 
-        $bucket := self data at: bucketIndex.
-        if: bucket isNull then: {return: false}.
+        $storedKey := self data at: bucketIndex*2.
+        if: storedKey isNull then: {
+            self data at: bucketIndex*2     put: key.
+            self data at: bucketIndex*2 + 1 put: value.
+            self checkTargetCapacity.
+        } else: {
+            self data at: bucketIndex*2 + 1 put: value.
+        }.
 
-        return: bucket key == key.
-        false
+        return: void.
     }.
-$table := SymbolHashtable().
-##printLine(table).
-printLine("table scanFor: " . table scanFor: #testKey).
-printLine(table includesKey: #testKey).
-##printLine(#symbol hash)
+
+#*{
+    $table := SymbolHashtable().
+    ##printLine(table).
+    printLine("table scanFor: " . table scanFor: #testKey).
+    printLine(table includesKey: #testKey).
+    ##printLine(#symbol hash)
+    table at: #testKey put: 42.
+    printLine("table scanFor: " . table scanFor: #testKey).
+    printLine(table at: #testKey).
+}*#

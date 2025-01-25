@@ -6,6 +6,13 @@ Record: OrderedCollection withFields: #{
 }.
 ].
 OrderedCollection
+    withSelector: #initialize addMethod: {
+        | $(OrderedCollection)self :: Void |
+        self size: 0.
+        self capacity: 32.
+        self data: (Array new: self capacity).
+        return: void.
+    };
     withSelector: #increaseCapacity addMethod: {
         |$(OrderedCollection)self :: OrderedCollection|
 
@@ -21,18 +28,8 @@ OrderedCollection
         self data: newDataStore.
         return: self
     };
-    withSelector: #ensureCapacity addMethod: {
-        | $(OrderedCollection)self :: OrderedCollection |
-        if: self data isNull then: {
-            self size: 0.
-            self capacity: 32.
-            self data: (Array new: self capacity).
-        }.
-        return: self.
-    };
     withSelector: #add: addMethod: {
         | $(OrderedCollection)self $(Gradual)element :: Gradual |
-        self ensureCapacity.
         if: self size >= self capacity then: {
             self increaseCapacity
         }.
@@ -69,7 +66,7 @@ OrderedCollection
         result
     }.
 
-##$list := OrderedCollection().
-##list ensureCapacity.
-##list add: 1; add: 2; add: 3.
-##printLine(list asArray)
+#*$list := OrderedCollection().
+list add: 1; add: 2; add: 3.
+printLine(list asArray)
+*#

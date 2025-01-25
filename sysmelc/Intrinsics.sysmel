@@ -1787,6 +1787,37 @@ $addImmutableDictionaryPrimitives() := {
 }.
 addImmutableDictionaryPrimitives().
 
+$symbolPrimitive_identityEquals($(Array)arguments :: TypedValue) := {
+    assert: arguments size = 2.
+    if: (arguments at: 1) isNull then: {
+        $comparisonResult := false.
+        return: TypedValue(Value(BooleanValue(comparisonResult)). BasicIntrinsicTypesSingleton boolean)
+    }
+    else:
+    {
+        $firstSymbol := extractSymbolFromValue((arguments at: 0) value).
+        $secondSymbol := extractSymbolFromValue((arguments at: 1) value).
+        $comparisonResult := firstSymbol == secondSymbol.
+        return: TypedValue(Value(BooleanValue(comparisonResult)). BasicIntrinsicTypesSingleton boolean)
+    }
+}.
+
+$symbolPrimitive_identityNotEquals($(Array)arguments :: TypedValue) := {
+    assert: arguments size = 2.
+    if: (arguments at: 1) isNull then: {
+        $comparisonResult := true.
+        return: TypedValue(Value(BooleanValue(comparisonResult)). BasicIntrinsicTypesSingleton boolean)
+    }
+    else:
+    {
+        $firstSymbol := extractSymbolFromValue((arguments at: 0) value).
+        $secondSymbol := extractSymbolFromValue((arguments at: 1) value).
+        $comparisonResult := firstSymbol ~~ secondSymbol.
+        return: TypedValue(Value(BooleanValue(comparisonResult)). BasicIntrinsicTypesSingleton boolean)
+    }
+
+}.
+
 $symbolPrimitive_hash($(Array)arguments :: TypedValue) := {
     assert: arguments size = 1.
     $typedSymbol := extractSymbolFromValue((arguments at: 0) value).
@@ -1796,10 +1827,13 @@ $symbolPrimitive_hash($(Array)arguments :: TypedValue) := {
 
 $addSymbolPrimitives() := {
     $symbolType := BasicIntrinsicTypesSingleton symbol.
+    $booleanType := BasicIntrinsicTypesSingleton boolean.
     $integerType := BasicIntrinsicTypesSingleton integer.
     $commonPart := symbolType getCommonSection.
     $methodDict := commonPart methodDict.
     
+    addIntrinsicMethod(methodDict. #==. symbolPrimitive_identityEquals . makeSimplePureFunctionType([symbolType. symbolType]. booleanType)).
+    addIntrinsicMethod(methodDict. #~~. symbolPrimitive_identityNotEquals . makeSimplePureFunctionType([symbolType. symbolType]. booleanType)).
     addIntrinsicMethod(methodDict. #hash. symbolPrimitive_hash . makeSimplePureFunctionType([symbolType]. integerType)).
 }.
 addSymbolPrimitives().
@@ -1825,6 +1859,7 @@ public: [
                         ##printLine("initializeFunctionValue ". initializeFunctionValue).
                         $typedRecord := TypedValue(Value(RecordValue(record)). typeToInstantiate)
                         $invocationArguments := [typedRecord].
+                        ##printLine(invocationArguments).
                         match: initializeFunctionValue ofType: SysmelFunction withPatterns: #{
                         $(SysmelIntrinsicPrimitive)intrinsic : {
                             intrinsic implementation(invocationArguments).

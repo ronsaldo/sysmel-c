@@ -20,8 +20,8 @@ public: [
                     return: (moduleEnv parent lookupSymbolRecursively: symbol)
                 }.
                 $(NamespaceEnvironment)nspaceEnv : {
-                    if: (nspaceEnv namespace exportedObjectTable includesKey: symbol) then: {
-                        return: (nspaceEnv namespace exportedObjectTable at: symbol)
+                    if: (nspaceEnv namespace containsObjectSymbol: symbol) then: {
+                        return: (nspaceEnv namespace getObjectWithSymbol: symbol)
                     }.
                     return: (nspaceEnv parent lookupSymbolRecursively: symbol)
                 }.

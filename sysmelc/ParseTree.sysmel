@@ -15,6 +15,10 @@ public: [
         }.
         
         ## Literals
+        Record: ParseTreeLiteralBooleanNode withFields: #{
+            sourcePosition: SourcePosition.
+            value: Boolean.
+        }.
         Record: ParseTreeLiteralIntegerNode withFields: #{
             sourcePosition: SourcePosition.
             value: Integer.

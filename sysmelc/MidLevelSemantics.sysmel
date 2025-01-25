@@ -113,6 +113,10 @@ public: [
                 }.
 
                 ## Literals.
+                $(ParseTreeLiteralBooleanNode)literal : {
+                    midBuilder sourcePosition: literal sourcePosition.
+                    midBuilder constantBoolean: literal value.
+                }.
                 $(ParseTreeLiteralIntegerNode)literal : {
                     midBuilder sourcePosition: literal sourcePosition.
                     midBuilder constantInteger: literal value.
@@ -174,11 +178,41 @@ public: [
     
                 ## Messages and applications
                 $(ParseTreeMessageSendNode)messageSend : {
-                    $!receiverValue := self analyzeWithEnvironment: environment andCompileClosure: midBuilder withBody: messageSend receiver.
                     $selectorValue := self analyzeWithEnvironment: environment andCompileClosure: midBuilder withBody: messageSend selector.
-                    $!receiverType := receiverValue type.
                     $selectorSymbolValue := selectorValue value.
                     $arguments := messageSend arguments.
+
+                    ## TODO: Use a macro for this.
+                    if: arguments size == 1 then: {
+                        if: selectorSymbolValue == #&& then: {
+                            $shortCircuit := ParseTreeIfSelectionNode#{
+                                sourcePosition: messageSend sourcePosition.
+                                condition: messageSend receiver.
+                                trueExpression: (arguments at: 0).
+                                falseExpression: (ParseTreeNode(ParseTreeLiteralBooleanNode#{
+                                    sourcePosition: messageSend sourcePosition.
+                                    value: false
+                                })).
+                            }.
+                            return: (self analyzeWithEnvironment: environment andCompileClosure: midBuilder withBody: ParseTreeNode(shortCircuit)).
+                        }.
+
+                        if: selectorSymbolValue == #|| then: {
+                            $shortCircuit := ParseTreeIfSelectionNode#{
+                                sourcePosition: messageSend sourcePosition.
+                                condition: messageSend receiver.
+                                trueExpression: (ParseTreeNode(ParseTreeLiteralBooleanNode#{
+                                    sourcePosition: messageSend sourcePosition.
+                                    value: true
+                                })).
+                                falseExpression: (arguments at: 0).
+                            }.
+                            return: (self analyzeWithEnvironment: environment andCompileClosure: midBuilder withBody: (ParseTreeNode(shortCircuit))).
+                        }.
+                    }.
+
+                    $!receiverValue := self analyzeWithEnvironment: environment andCompileClosure: midBuilder withBody: messageSend receiver.
+                    $!receiverType := receiverValue type.
 
                     $!method := receiverType lookupSelector: selectorSymbolValue.
                     if: (method value isInvalidErrorValue) && (isReferenceType(receiverType)) then: {
@@ -202,6 +236,7 @@ public: [
                                         ## Implicit getter.
                                         $fieldType := tupleAndRecord fields at: fieldIndex.
                                         ##printLine("Emit instruction for getting field ". fieldIndex).
+                                        ##printLine(receiverValue)
                                         $extractInstruction := midBuilder fromComposite: receiverValue extractAtIndex: fieldIndex withType: fieldType.
                                         return: extractInstruction
                                     }

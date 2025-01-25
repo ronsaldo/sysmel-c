@@ -17,5 +17,13 @@ Namespace
             self exportedObjectTable at: childName put: valueToExport.
             self exportedObjectList add: valueToExport.
             return: valueToExport
+    };
+    withSelector: #containsObjectSymbol: addMethod: {
+        |$(Namespace)self $(Symbol)symbol :: Boolean |
+            return: (self exportedObjectTable includesKey: symbol)
+    };
+    withSelector: #getObjectWithSymbol: addMethod: {
+        |$(Namespace)self $(Symbol)symbol :: Gradual |
+            return: (self exportedObjectTable at: symbol)
     }.
 }
