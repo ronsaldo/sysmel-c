@@ -161,6 +161,7 @@ IntrinsicsEnvironment
         |$(IntrinsicsEnvironment)self $(SysmelType)type :: Void |
         match: type ofType: SysmelType withPatterns: #{
             $(SysmelBasicType)basicType : {
+                ##printLine("Add type ". basicType common name).
                 self localSymbols at: basicType common name put: TypedValue(Value(SysmelTypeValue(type)). BasicIntrinsicTypesSingleton universe)
             }.
             _: {
@@ -190,16 +191,21 @@ DefaultIntrinsicsEnvironment
     addType: BasicIntrinsicTypesSingleton integer;
     addType: BasicIntrinsicTypesSingleton character;
     addType: BasicIntrinsicTypesSingleton float;
+    addType: BasicIntrinsicTypesSingleton gradual;
     addType: BasicIntrinsicTypesSingleton string;
     addType: BasicIntrinsicTypesSingleton symbol;
     addType: BasicIntrinsicTypesSingleton array;
     addType: BasicIntrinsicTypesSingleton tuple;
+    addType: BasicIntrinsicTypesSingleton record;
+    addType: BasicIntrinsicTypesSingleton class;
+    addType: BasicIntrinsicTypesSingleton sum;
     addType: BasicIntrinsicTypesSingleton byteArray;
     addType: BasicIntrinsicTypesSingleton association;
     addType: BasicIntrinsicTypesSingleton immutableDictionary;
-    addType: BasicIntrinsicTypesSingleton universe;
-
+    addType: BasicIntrinsicTypesSingleton namespace;
     addType: BasicIntrinsicTypesSingleton gradual;
+    addType: BasicIntrinsicTypesSingleton function;
+    addType: BasicIntrinsicTypesSingleton universe;
         
     addType: BasicIntrinsicTypesSingleton int8;
     addType: BasicIntrinsicTypesSingleton int16;
@@ -1030,43 +1036,45 @@ $primitive_Public($(MacroContext)context $(Array)arguments :: TypedValue) := {
     $i := 0. while: (i < expressionsArray size) do: {
         $valueAST := expressionsArray at: i.
         $typedValueToExport := context semanticsState analyzeAndEvaluateWithEnvironment: context environment script: valueAST.
-        ##printLine("valueToExport ". typedValueToExport value).
-        lastElement := match: typedValueToExport value ofType: Value withPatterns: #{
-            $(SysmelTypeValue)typeValue : {
-                ##printLine("Public typeValueValue ". typeValueValue).
-                $typeValueValue := typeValue value
-                $typeName := typeValueValue getCommonSection name.
-                ownerNamespace exportTypedValue: typedValueToExport withName: typeName.
-                match: typeValueValue ofType: SysmelType withPatterns: #{
-                    $(SysmelSumType)sumType : {
-                        $sumAlternatives := sumType alternatives.
-                        $sumAlternativeCount := sumAlternatives size.
-                        $!i := 0. while: (i < sumAlternativeCount) do: {
-                            $alternative := sumAlternatives at: i.
-                            $alternativeName := alternative getCommonSection name.
-                            ##printLine("alternative ". alternativeName).
+        ##context sourcePosition printFormatted. 
+        if: typedValueToExport ~~ void then: {
+                lastElement := match: typedValueToExport value ofType: Value withPatterns: #{
+                    $(SysmelTypeValue)typeValue : {
+                    ##printLine("Public typeValueValue ". typeValueValue).
+                    $typeValueValue := typeValue value.
+                    $typeName := typeValueValue getCommonSection name.
+                    ownerNamespace exportTypedValue: typedValueToExport withName: typeName.
+                    match: typeValueValue ofType: SysmelType withPatterns: #{
+                        $(SysmelSumType)sumType : {
+                            $sumAlternatives := sumType alternatives.
+                            $sumAlternativeCount := sumAlternatives size.
+                            $!i := 0. while: (i < sumAlternativeCount) do: {
+                                $alternative := sumAlternatives at: i.
+                                $alternativeName := alternative getCommonSection name.
+                                ##printLine("alternative ". alternativeName).
 
-                            $alternativeTypedValue := TypedValue(Value(SysmelTypeValue(alternative)). BasicIntrinsicTypesSingleton universe).
-                            ##printLine("alternative typedValue ". alternativeTypedValue).
+                                $alternativeTypedValue := TypedValue(Value(SysmelTypeValue(alternative)). BasicIntrinsicTypesSingleton universe).
+                                ##printLine("alternative typedValue ". alternativeTypedValue).
 
-                            ownerNamespace exportTypedValue: alternativeTypedValue withName: alternativeName.
+                                ownerNamespace exportTypedValue: alternativeTypedValue withName: alternativeName.
 
-                        } continueWith: (i := i + 1).
+                            } continueWith: (i := i + 1).
+                        }.
+                        _: {
+                            ## Nothing special is required here
+                        }
                     }.
-                    _: {
-                        ## Nothing special is required here
-                    }
+                    typedValueToExport
                 }.
-                typedValueToExport
-            }.
-            $(SysmelFunctionValue)functionValue : {
-                $functionName := functionValue value getName.
-                ownerNamespace exportTypedValue: typedValueToExport withName: functionName.
-                typedValueToExport
-            }.
-            _: {
-                printLine("Unsupported value to export ". typedValueToExport value).
-                abort()
+                $(SysmelFunctionValue)functionValue : {
+                    $functionName := functionValue value getName.
+                    ownerNamespace exportTypedValue: typedValueToExport withName: functionName.
+                    typedValueToExport
+                }.
+                _: {
+                    printLine("Unsupported value to export ". typedValueToExport value).
+                    abort()
+                }
             }
         }.
     } continueWith: (i := i + 1).

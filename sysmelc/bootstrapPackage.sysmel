@@ -6,3 +6,9 @@ loadFileOnce: "SourceCode.sysmel".
 loadFileOnce: "Scanner.sysmel".
 loadFileOnce: "ParseTree.sysmel".
 loadFileOnce: "Parser.sysmel".
+
+## Middle-end. Semantics analysis
+loadFileOnce: "SemanticsDeclarations.sysmel".
+
+loadFileOnce: "Environment.sysmel".
+loadFileOnce: "Intrinsics.sysmel".

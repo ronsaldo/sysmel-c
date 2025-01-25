@@ -372,7 +372,7 @@ static void sysmelb_createBasicTypes(void)
     uint32_t pointerAlignment = sizeof(void *);
 
     sysmelb_BasicTypesData.null = sysmelb_allocateValueType(SysmelTypeKindNull, sysmelb_internSymbolC("NullType"), 0, 0);
-    sysmelb_BasicTypesData.gradual = sysmelb_allocateValueType(SysmelTypeKindGradual, sysmelb_internSymbolC("GradualType"), pointerSize, pointerSize);
+    sysmelb_BasicTypesData.gradual = sysmelb_allocateValueType(SysmelTypeKindGradual, sysmelb_internSymbolC("Gradual"), pointerSize, pointerSize);
     sysmelb_BasicTypesData.unit = sysmelb_allocateValueType(SysmelTypeKindUnit, sysmelb_internSymbolC("Unit"), 0, 0);
     sysmelb_BasicTypesData.voidType = sysmelb_allocateValueType(SysmelTypeKindVoid, sysmelb_internSymbolC("Void"), 0, 0);
     sysmelb_BasicTypesData.boolean = sysmelb_allocateValueType(SysmelTypeKindBoolean, sysmelb_internSymbolC("Boolean"), 1, 1);

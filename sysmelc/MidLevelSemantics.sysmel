@@ -39,7 +39,12 @@ public: [
 
             closureFunction arguments: processedArguments asArray.
             $resultTypeNode := self analyzeAndEvaluateWithEnvironment: Environment(environment) script: functionDependentType resultTypeExpression.
-            $resultType := extractTypeFromValue(resultTypeNode value).
+            $resultType := if: resultTypeNode isNull then: {
+                getBasicIntrinsicTypes() gradual
+            }
+            else: {
+                extractTypeFromValue(resultTypeNode value)
+            }.
 
             $functionType := SysmelType(SysmelSimpleFunctionType#{
                 common: SysmelTypeCommon#{

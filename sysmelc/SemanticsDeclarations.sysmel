@@ -282,7 +282,7 @@ public: [
             value: ImmutableDictionary.
         }.
         Record: GradualValue withFields: #{
-            value: GradualType.
+            value: Gradual.
         }.
         Record: SysmelMidValue withFields: #{
             value: MidValue
@@ -457,7 +457,7 @@ SysmelClassType
 
     SysmelFunction
         withSelector: #getName addMethod: {
-            | $(SysmelFunction) self |
+            | $(SysmelFunction) self :: Symbol |
             match:self ofType: SysmelFunction withPatterns: #{
                 $(SysmelIntrinsicPrimitive)intrinsic : intrinsic name.
                 $(SysmelCompiledFunction)compiled : compiled name.
@@ -517,7 +517,7 @@ SysmelClassType
             }
         }.
     }.
-    $valueContainsParseTreeFromValue($(Value)value :: Bool) := {
+    $valueContainsParseTreeFromValue($(Value)value :: Boolean) := {
         match: value ofType: Value withPatterns: #{
             $(ParseTreeNodeValue)parseTreeValue : true.
             _: false.
@@ -623,7 +623,7 @@ SysmelClassType
             }
         }
     }.
-    $isFunctionValue($(Value)value :: Bool) := {
+    $isFunctionValue($(Value)value :: Boolean) := {
         match: value ofType: Value withPatterns: #{
             $(SysmelFunctionValue)functionValue : true.
             _: false.
