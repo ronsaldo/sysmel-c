@@ -227,6 +227,8 @@ DefaultIntrinsicsEnvironment
 $makeSimplePureFunctionType($(Array)arguments $(SysmelType)resultType :: SysmelType) := {
     SysmelType(SysmelSimpleFunctionType#{
         common: SysmelTypeCommon#{
+            name: null.
+            printingSuffix: null.
             isValueType: true.
             valueAlignment: 8u32.
             valueSize: 8u32.
@@ -234,7 +236,9 @@ $makeSimplePureFunctionType($(Array)arguments $(SysmelType)resultType :: SysmelT
             heapSize: 8u32.
             methodDict: SymbolHashtable().
         }.
+        supertype: BasicIntrinsicTypesSingleton function.
         isCompileTimePure: true.
+        isVariadic: false.
         argumentTypes: arguments.
         resultType: resultType.
     }).
@@ -243,6 +247,8 @@ $makeSimplePureFunctionType($(Array)arguments $(SysmelType)resultType :: SysmelT
 $makeSimpleFunctionType($(Array)arguments $(SysmelType)resultType :: SysmelType) := {
     SysmelType(SysmelSimpleFunctionType#{
         common: SysmelTypeCommon#{
+            name: null.
+            printingSuffix: null.
             isValueType: true.
             valueAlignment: 8u32.
             valueSize: 8u32.
@@ -250,7 +256,9 @@ $makeSimpleFunctionType($(Array)arguments $(SysmelType)resultType :: SysmelType)
             heapSize: 8u32.
             methodDict: SymbolHashtable().
         }.
+        supertype: BasicIntrinsicTypesSingleton function.
         isCompileTimePure: false.
+        isVariadic: false.
         argumentTypes: arguments.
         resultType: resultType.
     }).
@@ -1169,7 +1177,8 @@ $universePrimitiveNewWithCount($(Array)arguments) := {
 $addUniverseIntrinsicMethod($(SymbolHashtable)methodDict $(Symbol)name $(Function)primitive $(SysmelType)functionType :: Void) := {
     $primitiveValue := TypedValue(Value(SysmelFunctionValue(SysmelFunction(SysmelIntrinsicPrimitive#{
         name: name.
-        implementation: primitive
+        implementation: primitive.
+        isMacro: false
     }))). functionType).
     methodDict at: name put: primitiveValue
 }.
@@ -1471,7 +1480,8 @@ $integerPrimitive_asChar32($(Array)arguments :: TypedValue) := {
 $addIntegerIntrinsicMethod($(SymbolHashtable)methodDict $(Symbol)name $(Function)primitive $(SysmelType)functionType :: Void) := {
     $primitiveValue := TypedValue(Value(SysmelFunctionValue(SysmelFunction(SysmelIntrinsicPrimitive#{
         name: name.
-        implementation: primitive
+        implementation: primitive.
+        isMacro: false
     }))). functionType).
     methodDict at: name put: primitiveValue
 }.
@@ -1566,7 +1576,8 @@ addIntegerIntrinsicConversionSuffixes(BasicIntrinsicTypesSingleton character).
 $addIntrinsicMethod($(SymbolHashtable)methodDict $(Symbol)name $(Function)primitive $(SysmelType)functionType :: Void) := {
     $primitiveValue := TypedValue(Value(SysmelFunctionValue(SysmelFunction(SysmelIntrinsicPrimitive#{
         name: name.
-        implementation: primitive
+        implementation: primitive.
+        isMacro: false
     }))). functionType).
     methodDict at: name put: primitiveValue
 }.

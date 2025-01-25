@@ -1214,7 +1214,8 @@ MidValue
             while: i < usedValues size do: {
                 $usedValue := usedValues at: i.
                 if: usedValue isNull then: {
-                    printLine("Warning: Null value in node with class ". self class)
+                    self sourcePosition printFormatted.
+                    printLine(" Warning: Null value in node with class ". self class)
                 }
                 else:{
                     usedValue usageTopoSort: visitedSet into: sortedResults
