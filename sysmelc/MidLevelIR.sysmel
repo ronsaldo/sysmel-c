@@ -331,6 +331,7 @@ MidActivationContext
 MidArgument
     withSelector: #evaluateInActivationContext: addMethod: {
         | $(MidStartNode)self $(MidActivationContext)context :: Void |
+        ##printLine("Get from Arg" . self index. " :: ". (context arguments at: self index)).
         context setValueInCurrentPC: (context arguments at: self index).
         context advancePC.
     }.
@@ -784,17 +785,20 @@ MidExtractCompositeElement
     withSelector: #evaluateInActivationContext: addMethod: {
         | $(MidExtractCompositeElement)self $(MidActivationContext)context :: Void |
         $composite := (self composite getCurrentValueForActivationContext: context) value.
-        ##printLine("composite ". composite).
         match: composite ofType: Value withPatterns: #{
             $(RecordValue)recordValue : {
                 $extractedRecord := recordValue value.
                 $extractedValue := extractedRecord tuple at: self index.
-                ##printLine("extractedValue ". extractedValue).
                 if: extractedValue isNull then: {
                     context setValueInCurrentPC: TypedValue(Value(NullValue()). self type)
                 }
                 else: {
-                    context setValueInCurrentPC: extractedValue.
+                    if: extractedValue isTypedValue then: {
+                        context setValueInCurrentPC: extractedValue.
+                    }
+                    else: {
+                        context setValueInCurrentPC: TypedValue(extractedValue. self type).
+                    }
                 }
             }.
             $(ObjectValue)objectValue : {
@@ -949,7 +953,7 @@ MidAlloca
         true
     };
     withSelector: #evaluateInActivationContext: addMethod: {
-        | $(MidCallFunction)self $(MidActivationContext)context :: Void |
+        | $(MidAlloca)self $(MidActivationContext)context :: Void |
         context setValueInCurrentPC: null.
         context advancePC.
     }.
@@ -969,7 +973,7 @@ MidStoreIn
         self storage addUser: self.
     };
     withSelector: #evaluateInActivationContext: addMethod: {
-        | $(MidCallFunction)self $(MidActivationContext)context :: Void |
+        | $(MidStoreIn)self $(MidActivationContext)context :: Void |
         $newValue := self value getCurrentValueForActivationContext: context.
         context setValue: newValue inPCOf: self storage.
         context setValueInCurrentPC: newValue.
@@ -978,19 +982,19 @@ MidStoreIn
 
 MidLoadFrom
     withSelector: #usedValues addMethod: {
-        | $(MidStoreIn)self :: Array |
+        | $(MidLoadFrom)self :: Array |
         [self storage]  
     };
     withSelector: #usedControlNodes addMethod: {
-        | $(MidStoreIn)self :: Array |
+        | $(MidLoadFrom)self :: Array |
         [self previousControl] 
     };
     withSelector: #connectWithUsed addMethod: {
-        | $(MidStoreIn)self :: Void |
+        | $(MidLoadFrom)self :: Void |
         self storage addUser: self.
     };
     withSelector: #evaluateInActivationContext: addMethod: {
-        | $(MidStoreIn)self $(MidActivationContext)context :: Void |
+        | $(MidLoadFrom)self $(MidActivationContext)context :: Void |
         $value := self storage getCurrentValueForActivationContext: context.
         context setValueInCurrentPC: value.
         context advancePC.
@@ -1081,6 +1085,7 @@ MidSendMessage
                 context advancePC.
                 return: void
             }.
+            self sourcePosition printFormatted.
             printLine(method value getInvalidErrorValueMessage. " " . selector).
             abort()
         }.
@@ -1125,7 +1130,8 @@ MidAssertNode
         | $(MidAssertNode)self $(MidActivationContext)context :: Void |
         $conditionValue := extractBooleanFromValue((self condition getCurrentValueForActivationContext: context) value).
         if: conditionValue not then: {
-            printLine("Assertion failure: ". self description)
+            printLine("Assertion failure: ". self description).
+            abort()
         }.
 
         context advancePC
@@ -1295,7 +1301,20 @@ MidClosureFunction
         | $(MidClosureFunction)self :: Void |
         $schedule := self instructionSchedule.
         $!i := 0. while: i < schedule size do: {
-            printLine(i. "  ". (schedule at: i) class)
+            $instruction := schedule at: i. 
+            print(i. "  ". instruction class).
+            
+            $usedValue := instruction usedValues.
+            $!j := 0. while: (j < usedValue size) do: {
+                $usedValue := usedValue at: j.
+                if: usedValue isConstant then:
+                    print(" c" . usedValue scheduleIndex asInteger)
+                else:
+                    print(" " . usedValue scheduleIndex asInteger)
+
+            } continueWith: (j := j + 1).
+            printLine()
+
         } continueWith: (i := i + 1)
     };
     withSelector: #dumpGraph addMethod: {
@@ -1338,6 +1357,11 @@ MidClosureFunction
         | $(MidClosureFunction)self $(Array)arguments :: TypedValue |
         self ensureInstructionSchedule.
 
+        ##printLine("evaluateWithArguments " . arguments size).
+        ##$!i := 0. while: i < arguments size do: {
+        ##    printLine("Arg".i. " :: ". arguments at: i)
+        ##} continueWith: (i := i +1).
+        
         $activationContext := MidActivationContext#{
             arguments: arguments.
             scheduledInstructions: self instructionSchedule.

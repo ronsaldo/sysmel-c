@@ -324,7 +324,7 @@ public: [
             $(ImmutableDictionaryValue)value : value value.
             $(GradualValue)value : value value.
             $(NamespaceValue)value : value value.
-            $(SumValue)value : value index.
+            $(SumValue)value : (value index, value value).
             $(SysmelTypeValue)value : {
                 $name := value value getCommonSection name.
                 if: name isNull then: {
@@ -415,7 +415,12 @@ public: [
                 $(ObjectValue)objectValue : objectValue value.
                 _: abort
             }.
+        };
+        withSelector: #isTypedValue addMethod: {
+            |$(Value)self :: Boolean |
+            false
         }.
+
     TypedValue
         withSelector: #isInvalidErrorValue addMethod: {
             |$(TypedValue)self :: Boolean |
@@ -434,6 +439,10 @@ public: [
             {
                 self value getIntegerValue
             }
+        };
+        withSelector: #isTypedValue addMethod: {
+            |$(TypedValue)self :: Boolean |
+            true
         }.
 
 SysmelClassType

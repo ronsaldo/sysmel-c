@@ -931,7 +931,7 @@ $primitive_InductiveWithAlternativesMacro($(MacroContext)context $(Array)argumen
         }.
     }.
 
-    $alternativeCount := alternativesParseNodes size
+    $alternativeCount := alternativesParseNodes size.
     $alternatives := Array new: alternativeCount.
     $inductiveType := SysmelType(SysmelSumType#{
             common: SysmelTypeCommon#{
@@ -1033,7 +1033,7 @@ $primitive_Public($(MacroContext)context $(Array)arguments :: TypedValue) := {
     $ownerNamespace := context environment lookupNamespace.
     $!lastElement := TypedValue(Value(VoidValue()). BasicIntrinsicTypesSingleton voidType).
 
-    $i := 0. while: (i < expressionsArray size) do: {
+    $!i := 0. while: (i < expressionsArray size) do: {
         $valueAST := expressionsArray at: i.
         $typedValueToExport := context semanticsState analyzeAndEvaluateWithEnvironment: context environment script: valueAST.
         ##context sourcePosition printFormatted. 
