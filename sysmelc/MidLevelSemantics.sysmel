@@ -296,6 +296,13 @@ public: [
                     midBuilder sourcePosition: messageSend sourcePosition.
                     return: (midBuilder send: selectorValue to: receiverValue withArguments: invocationArguments asArray)
                 }.
+                $(ParseTreeMessageCascadeNode)messageCascade : {
+                    printLine("TODO: Mid message cascade").
+                }.
+                $(ParseTreeCascadedMessageNode)cascadedMessage : {
+                    cascadedMessage sourcePosition printFormatted.
+                    printLine("A cascaded message must be a part of a cascade.").
+                }.
                 $(ParseTreeFunctionApplicationNode)functionApplication : {
                     $functional := self analyzeWithEnvironment: environment andCompileClosure: midBuilder withBody: functionApplication functional.
                                     ## Is this a type constructor invocation?
@@ -442,6 +449,18 @@ public: [
                     } continueWith: (i := i + 1).
                     return: result
                 }.
+                $(ParseTreeTupleNode)tupleNode : {
+                    printLine("TODO: Tuple node").
+                    abort()
+                }.
+                $(ParseTreeArrayNode)arrayNode : {
+                    printLine("TODO: Array node").
+                    abort()
+                }.
+                $(ParseTreeByteArrayNode)byteArrayNode : {
+                    printLine("TODO: Byte array node").
+                    abort()
+                }.
 
                 ## Association, dictionary
                 $(ParseTreeAssociationNode)association : {
@@ -466,7 +485,29 @@ public: [
                     midBuilder sourcePosition: immutableDictionary sourcePosition.
                     midBuilder makeImmutableDictionaryWithAssociations: associationsArray.
                 }.
-                ## Assignment
+                ## Blocks
+                $(ParseTreeBlockClosureNode)blockClosure : {
+                    printLine("TODO: ParseTreeBlockClosureNode").
+                    abort()
+                }.
+                $(ParseTreeLexicalBlockNode)lexicalBlock : {
+                    $blockLexicalScope := Environment(LexicalEnvironment#{
+                        parent: environment.
+                        localSymbols: SymbolHashtable().
+                    }).
+                    $result := (self analyzeWithEnvironment: blockLexicalScope andCompileClosure: midBuilder withBody: lexicalBlock expression).
+                    return: result
+                }.
+
+                ## Binding and pattern matching.
+                $(ParseTreeFunctionalDependentTypeNode)functionalDependentTypeNode : {
+                    printLine("TODO: ParseTreeFunctionalDependentTypeNode").
+                    abort()
+                }.
+                $(ParseTreeBindableNameNode)bindableNode : {
+                    printLine("TODO: ParseTreeBindableNameNode").
+                    abort()
+                }.
                 $(ParseTreeAssignmentNode)assignmentNode : {
                     $store := assignmentNode store.
                     $value := assignmentNode value.
@@ -546,14 +587,10 @@ public: [
 
                 }.
 
-                ## Blocks
-                $(ParseTreeLexicalBlockNode)lexicalBlock : {
-                    $blockLexicalScope := Environment(LexicalEnvironment#{
-                        parent: environment.
-                        localSymbols: SymbolHashtable().
-                    }).
-                    $result := (self analyzeWithEnvironment: blockLexicalScope andCompileClosure: midBuilder withBody: lexicalBlock expression).
-                    return: result
+                ## Closure and functions
+                $(ParseTreeFunctionNode)functionNode : {
+                    printLine("TODO: ParseTreeFunctionNode").
+                    abort()
                 }.
 
                 ## Control flow. Exposed via macros
@@ -954,7 +991,13 @@ public: [
                     midBuilder sourcePosition: returnNode sourcePosition.
                     midBuilder returnValue: returnValue
                 }.
+                $(ParseTreeNamespaceDefinitionNode)namespace : {
+                    namespace sourcePosition printFormatted.
+                    printLine("Namespaces cannot be constructed inside of functions.").
+                    abort()
+                }.
                 _: {
+                    ast sourcePosition printFormatted.
                     printLine("Unsupported node for compilation. "#*. ast*#).
                     abort()
                 }
