@@ -3,7 +3,7 @@ Namespace
     withSelector: #getOrCreateChildNamespaceNamed: addMethod: {
         |$(Namespace)self $(Symbol) childName|
         if: (self exportedObjectTable includesKey: childName) then: {
-            return: (self exportedObjectTable at: childName)
+            return: extractNamespaceFromValue((self exportedObjectTable at: childName) value)
         } else: {
             $newChild := MakeNamespaceNamed(childName).
             $typedValue := TypedValue(Value(NamespaceValue(newChild)). getBasicIntrinsicTypes() namespace).

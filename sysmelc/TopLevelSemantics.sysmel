@@ -577,7 +577,7 @@ public: [
                     parent: newNamespaceEnvironment.
                     localSymbols: SymbolHashtable().
                 }).
-
+                ##printLine("newNamespaceEnvironment ". newNamespaceEnvironment).
                 return: (self analyzeAndEvaluateWithEnvironment: newLexicalEnvironment script: namespaceDefinition definition).
             }.
 

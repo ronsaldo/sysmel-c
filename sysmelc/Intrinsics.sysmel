@@ -986,6 +986,7 @@ $primitive_NamespaceDefinition($(MacroContext)context $(Array)arguments :: Typed
 
     $currentNamespace := context environment lookupNamespace.
     $newNamespace := currentNamespace getOrCreateChildNamespaceNamed: name.
+    ##printLine("newOrOldNamespace: ". newNamespace)
 
     $namespaceNode := ParseTreeNode(ParseTreeNamespaceDefinitionNode#{
         sourcePosition: context sourcePosition.
