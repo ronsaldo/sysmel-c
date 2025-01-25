@@ -102,6 +102,7 @@ public: [
                 
                 ## Errors.
                 $(ParseTreeErrorNode)errorNode : {
+                    errorNode sourcePosition printFormatted.
                     printLine("Error ". errorNode errorMessage).
                     abort()
                 }.
@@ -330,7 +331,8 @@ public: [
                                     ##printLine(j. " keySymbol ". keySymbol).
                                     $fieldIndex := findIndexOfRecordFieldWithName(recordType. keySymbol).
                                     if: (fieldIndex < 0) || (fieldIndex >= constructionArguments size) then: {
-                                        printLine("Invalid field index [". fieldIndex. "] for construction of a ". recordType name).
+                                        functionApplication sourcePosition printFormatted.
+                                        printLine("Invalid field index [". fieldIndex. "] for construction of a ". recordType common name).
                                         abort()
                                     } else: {
                                         constructionArguments at: fieldIndex put: assoc value
@@ -450,12 +452,28 @@ public: [
                     return: result
                 }.
                 $(ParseTreeTupleNode)tupleNode : {
-                    printLine("TODO: Tuple node").
-                    abort()
+                    $elementCount := tupleNode elements size.
+                    $midElements := Array new: elementCount.
+                    $!i := 0. while: (i < elementCount) do: {
+                        $midElement := self analyzeWithEnvironment: environment andCompileClosure: midBuilder withBody: (tupleNode elements at: i).
+                        midElements at: i put: midElement.
+                    } continueWith:(i := i + 1).
+                    
+                    midBuilder sourcePosition: tupleNode sourcePosition.
+                    $midTuple := midBuilder makeTupleWithElements: midElements.
+                    return: midTuple
                 }.
                 $(ParseTreeArrayNode)arrayNode : {
-                    printLine("TODO: Array node").
-                    abort()
+                    $elementCount := arrayNode elements size.
+                    $midElements := Array new: elementCount.
+                    $!i := 0. while: (i < elementCount) do: {
+                        $midElement := self analyzeWithEnvironment: environment andCompileClosure: midBuilder withBody: (arrayNode elements at: i).
+                        midElements at: i put: midElement.
+                    } continueWith:(i := i + 1).
+                    
+                    midBuilder sourcePosition: arrayNode sourcePosition.
+                    $midArray := midBuilder makeArrayWithElements: midElements.
+                    return: midArray
                 }.
                 $(ParseTreeByteArrayNode)byteArrayNode : {
                     printLine("TODO: Byte array node").

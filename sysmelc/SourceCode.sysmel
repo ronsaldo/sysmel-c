@@ -46,8 +46,8 @@ public: [
         withSelector: #printFormatted addMethod: {
         |$(SourcePosition)self :: Void |
             print(self sourceCode directory. self sourceCode name. ":".
-                self startLine. ".". self startColumn . "-".
-                self endLine. ".". self endColumn. ":")
+                self startLine asInteger. ".". self startColumn asInteger. "-".
+                self endLine asInteger. ".". self endColumn asInteger. ":")
         }.
 
 $extractDirname($(String)string :: String) := {

@@ -259,7 +259,7 @@ public: [
                 self state advance.
                 return: ParseTreeNode(ParseTreeTupleNode#{
                     sourcePosition: (self state sourcePositionFrom: startingPosition).
-                    value: []
+                    elements: []
                 })
             }.
         
@@ -429,7 +429,7 @@ public: [
                 self state advance.
             }.
 
-            $!expectsExpression := true
+            $!expectsExpression := true.
             $elements := OrderedCollection().
 
             while: self state atEnd not && (self state peekKind ~= TokenKind RightCurlyBracket) do: {
@@ -501,7 +501,7 @@ public: [
             assert: self state peekKind = TokenKind Dollar.
             self state advance.
             
-            $!isExistential := false
+            $!isExistential := false.
             $!isMutable := false.
             
             if: self state peekKind = TokenKind Bang then: {
@@ -519,7 +519,7 @@ public: [
                 isAnonymousFunction := true.
             }.
 
-            $isImplicit := false.
+            $!isImplicit := false.
             $!typeExpression := null.
             $!hasTypeExpression := false.
             if: isAnonymousFunction not then: {
@@ -923,7 +923,7 @@ public: [
             $receiverOrFirstMessage := self parseKeywordMessageSend.
             if: self state peekKind ~= TokenKind Semicolon then: {
                 return: receiverOrFirstMessage
-            }
+            }.
 
             $!receiver := receiverOrFirstMessage.
             $cascadedMessages := OrderedCollection().
@@ -965,7 +965,7 @@ public: [
             $startingPosition := self state position.
             $assignedStore := self parseLowPrecedenceExpression.
             if: self state peekKind = TokenKind Assignment then: {
-                self state advance
+                self state advance.
                 
                 $assignedValue := self parseAssignmentExpression.
                 return: ParseTreeNode(ParseTreeAssignmentNode#{
