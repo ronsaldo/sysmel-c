@@ -1717,12 +1717,14 @@ MidFunctionBuilder
         | $(MidFunctionBuilder)self :: MidPhiNodeValue |
         MidPhiNodeValue#{
             sourcePosition: self sourcePosition.
+            type: getBasicIntrinsicTypes() voidType
         }.
     };
     withSelector: #makeMergePhiNode addMethod: {
         | $(MidFunctionBuilder)self :: MidMergePhiNode |
         MidMergePhiNode#{
             sourcePosition: self sourcePosition.
+            type: getBasicIntrinsicTypes() gradual
         }.
     };
     withSelector: #beginWithControlNode: addMethod: {

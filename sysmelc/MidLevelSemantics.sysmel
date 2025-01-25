@@ -523,7 +523,8 @@ public: [
                                     return: newValue
                                 }
                             }.
-                            
+                            identifierReference sourcePosition printFormatted.
+                            printLine("binding ". binding type).
                             printLine("Invalid assignment.").
                             abort()
                         }.
@@ -954,7 +955,7 @@ public: [
                     midBuilder returnValue: returnValue
                 }.
                 _: {
-                    printLine("Unsupported node for compilation. ". ast).
+                    printLine("Unsupported node for compilation. "#*. ast*#).
                     abort()
                 }
             }.

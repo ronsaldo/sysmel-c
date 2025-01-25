@@ -31,7 +31,8 @@ public: [
                 endColumn: target endColumn.
             }
         };
-        withSelector: #until: addMethod: {|$(SourcePosition)self $(SourcePosition)target :: SourcePosition |
+        withSelector: #until: addMethod:{
+        |$(SourcePosition)self $(SourcePosition)target :: SourcePosition |
             SourcePosition#{
                 sourceCode: self sourceCode.
                 startIndex: self startIndex.
@@ -41,6 +42,12 @@ public: [
                 startColumn: self startColumn.
                 endColumn: target startColumn.
             }
+        };
+        withSelector: #printFormatted addMethod: {
+        |$(SourcePosition)self :: Void |
+            print(self sourceCode directory. self sourceCode name. ":".
+                self startLine. ".". self startColumn . "-".
+                self endLine. ".". self endColumn. ":")
         }.
 
 $extractDirname($(String)string :: String) := {

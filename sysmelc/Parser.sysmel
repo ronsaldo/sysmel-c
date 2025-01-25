@@ -122,7 +122,7 @@ public: [
         $!radix := 10.
         $!hasSeenRadix := false.
         
-        $i := 0.
+        $!i := 0.
         $stringSize := text size.
         while: i < stringSize do: {
             $c := text at: i.
