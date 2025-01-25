@@ -702,9 +702,17 @@ MidInjectSum
     };
     withSelector: #evaluateInActivationContext: addMethod: {
         | $(MidInjectSum)self $(MidActivationContext)context :: Void |
+        $index := self injectionIndex getCurrentValueForActivationContext: context.
+        $value := self injectionValue getCurrentValueForActivationContext: context.
+        $indexValue := extractIntegerFromValue(index value).
 
-        printLine("TODO: MidInjectSum evaluateInActivationContext").
-        abort()
+        $injectedSum := TypedValue(Value(SumValue(indexValue. value value)) . self type).
+        ##printLine("injectedSum ". injectedSum).
+        ##printLine("TODO: MidInjectSum evaluateInActivationContext").
+        ##abort().
+
+        context setValueInCurrentPC: injectedSum.
+        context advancePC.
     }.
 
 MidGetSumIndex
