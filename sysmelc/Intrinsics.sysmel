@@ -1879,7 +1879,58 @@ $addSymbolPrimitives() := {
     addIntrinsicMethod(methodDict. #hash. symbolPrimitive_hash . makeSimplePureFunctionType([symbolType]. integerType)).
 }.
 addSymbolPrimitives().
+#*
+$gradualPrimitive_identityEquals($(Array)arguments :: TypedValue) := {
+    assert: arguments size = 2.
+    if: (arguments at: 1) isNull then: {
+        $comparisonResult := false.
+        return: TypedValue(Value(BooleanValue(comparisonResult)). BasicIntrinsicTypesSingleton boolean)
+    }
+    else:
+    {
+        $firstValue := extractGradualFromValue((arguments at: 0) value).
+        $secondValue := extractGradualFromValue((arguments at: 1) value).
+        $comparisonResult := firstValue == secondValue.
+        return: TypedValue(Value(BooleanValue(comparisonResult)). BasicIntrinsicTypesSingleton boolean)
+    }
+}.
 
+$gradualPrimitive_identityNotEquals($(Array)arguments :: TypedValue) := {
+    assert: arguments size = 2.
+    assert: arguments size = 2.
+    if: (arguments at: 1) isNull then: {
+        $comparisonResult := false.
+        return: TypedValue(Value(BooleanValue(comparisonResult)). BasicIntrinsicTypesSingleton boolean)
+    }
+    else:
+    {
+        $firstValue := extractGradualFromValue((arguments at: 0) value).
+        $secondValue := extractGradualFromValue((arguments at: 1) value).
+        $comparisonResult := firstValue ~~ secondValue.
+        return: TypedValue(Value(BooleanValue(comparisonResult)). BasicIntrinsicTypesSingleton boolean)
+    }
+}.
+
+$gradualPrimitive_identityHash($(Array)arguments :: TypedValue) := {
+    assert: arguments size = 1.
+    $typedSymbol := extractSymbolFromValue((arguments at: 0) value).
+    $hashValue := typedSymbol hash.
+    return: TypedValue(Value(IntegerValue(hashValue)). BasicIntrinsicTypesSingleton integer)
+}.
+
+$addGradualPrimitives() := {
+    $gradualType := BasicIntrinsicTypesSingleton gradual.
+    $booleanType := BasicIntrinsicTypesSingleton boolean.
+    $integerType := BasicIntrinsicTypesSingleton integer.
+    $commonPart := gradualType getCommonSection.
+    $methodDict := gradualType getMethodDictionary.
+    
+    addIntrinsicMethod(methodDict. #==. gradualPrimitive_identityEquals . makeSimplePureFunctionType([gradualType. gradualType]. booleanType)).
+    addIntrinsicMethod(methodDict. #~~. gradualPrimitive_identityNotEquals . makeSimplePureFunctionType([gradualType. gradualType]. booleanType)).
+    addIntrinsicMethod(methodDict. #identityHash. gradualPrimitive_identityHash . makeSimplePureFunctionType([gradualType]. integerType)).
+}.
+addGradualPrimitives().
+*#
 public: [
     $getBasicIntrinsicTypes(:: BasicIntrinsicTypes) := BasicIntrinsicTypesSingleton.
     $getDefaultIntrinsicsEnvironment(:: Environment) := Environment(DefaultIntrinsicsEnvironment).

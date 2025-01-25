@@ -287,3 +287,11 @@ void *sysmelb_getValuePointer(sysmelb_Value_t value)
         return NULL;
     }
 }
+
+uint64_t sysmelb_getValueIdentityHash(sysmelb_Value_t value)
+{
+    uint64_t basePointer = (uintptr_t)sysmelb_getValuePointer(value);
+    // LCG. See https://en.wikipedia.org/wiki/Linear_congruential_generator
+    // for coefficient choice.
+    return basePointer * 6364136223846793005ull + 1;
+}

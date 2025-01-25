@@ -1,0 +1,94 @@
+public: [
+Record: IdentityHashset withFields: #{
+    size: Integer.
+    capacity: Integer.
+    targetCapacity: Integer.
+    data: Array.
+}.
+].
+
+IdentityHashset
+    withSelector: #initialize addMethod: {
+        | $(SymbolHashtable)self :: Void |
+        $initialCapacity := 32.
+        self size: 0.
+        self capacity: initialCapacity.
+        self targetCapacity: initialCapacity * 80 // 100.
+        self data: (Array new: initialCapacity).
+        void
+    };
+    withSelector: #checkTargetCapacity addMethod: {
+        | $(SymbolHashtable)self :: Void |
+        if: self size <= self targetCapacity then: {
+            return: void
+        }.
+        printLine("Hashset increase capacity").
+
+        $!newCapacity := self capacity * 2.
+        if: newCapacity < 32 then: {
+            newCapacity := 32.
+        }.
+
+        $newData := Array new: newCapacity.
+        $oldData := self data.
+        $oldCapacity := self capacity.
+
+        self data: newData.
+        self size: 0.
+        self capacity: newCapacity.
+        self targetCapacity: newCapacity * 80 // 100.
+
+        $!i := 0. while: (i < oldCapacity) do: {
+            $oldElement := oldData at: i.
+            if: oldElement ~~ null then: {
+                self add: oldElement
+            }
+        } continueWith: (i := i + 1)
+    };
+    withSelector: #scanFor: addMethod: {
+        | $(SymbolHashtable)self $(Gradual)key :: Integer |
+        $data := self data.
+        $symbolHash := key identityHash.
+        $capacity := self capacity.
+        $naturalIndex := symbolHash % capacity.
+
+        $!i := naturalIndex. while: (i < capacity) do: {
+            $keyOrNull := data at: i.
+            if: keyOrNull isNull || (key == keyOrNull) then: {
+                return: i
+            }.
+        } continueWith: (i := i + 1).
+
+        i := 0. while: (i < naturalIndex) do: {
+            $keyOrNull := data at: i.
+            if: keyOrNull isNull || (key == keyOrNull) then: {
+                return: i
+            }.
+        } continueWith: (i := i + 1).
+
+        1 negated
+    };
+    withSelector: #includes: addMethod: {
+        | $(SymbolHashtable)self $(Gradual)value :: Boolean |
+        $keyIndex := self scanFor: value.
+        if: (keyIndex < 0) then: { return: false }.
+
+        return: value == (self data at: keyIndex)
+    };
+
+    withSelector: #add: addMethod: {
+        | $(SymbolHashtable)self $(Gradual)value :: Void |
+        $bucketIndex := self scanFor: value.
+        if: bucketIndex < 0 then: { return: false }.
+
+        $storedKey := self data at: bucketIndex.
+        if: storedKey isNull then: {
+            self data at: bucketIndex put: value.
+            self size: self size + 1.
+            self checkTargetCapacity.
+        } else: {
+            self data at: bucketIndex put: value.
+        }.
+
+        return: void.
+    }.

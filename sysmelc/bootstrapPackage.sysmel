@@ -14,4 +14,4 @@ loadFileOnce: "Environment.sysmel".
 loadFileOnce: "Intrinsics.sysmel".
 loadFileOnce: "Module.sysmel".
 loadFileOnce: "Namespace.sysmel".
-loadFileOnce: "MidLevelIR.sysmel".
+##loadFileOnce: "MidLevelIR.sysmel".

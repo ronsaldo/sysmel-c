@@ -22,6 +22,7 @@ SymbolHashtable
         if: self size <= self targetCapacity then: {
             return: void
         }.
+        ##printLine("Hashtable increase capacity.").
 
         $!newCapacity := self capacity * 2.
         if: newCapacity < 32 then: {
@@ -40,7 +41,7 @@ SymbolHashtable
         $!i := 0. while: (i < oldCapacity) do: {
             $oldKey := oldData at: i*2.
             $oldValue := oldData at: i*2 + 1.
-            if: oldKey ~~ null then: {
+            if: oldKey isNotNull then: {
                 self at: oldKey put: oldValue
             }
         } continueWith: (i := i + 1)
@@ -99,6 +100,7 @@ SymbolHashtable
         if: storedKey isNull then: {
             self data at: bucketIndex*2     put: key.
             self data at: bucketIndex*2 + 1 put: value.
+            self size: self size + 1.
             self checkTargetCapacity.
         } else: {
             self data at: bucketIndex*2 + 1 put: value.

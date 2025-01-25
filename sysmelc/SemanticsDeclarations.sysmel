@@ -599,6 +599,15 @@ SysmelClassType
             }
         }.
     }.
+    $extractGradualFromValue($(Value)value :: Gradual) := {
+        match: value ofType: Value withPatterns: #{
+            $(GradualValue)gradualValue : gradualValue value.
+            _: {
+                printLine("Not a valid gradual value.").
+                abort()
+            }
+        }.
+    }.
     $extractTypeFromValue($(Value)value :: SysmelType) := {
         match: value ofType: Value withPatterns: #{
             $(SysmelTypeValue)typeValue : typeValue value.

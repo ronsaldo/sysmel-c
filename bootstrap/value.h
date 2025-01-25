@@ -161,5 +161,6 @@ bool sysmelb_value_equals(sysmelb_Value_t a, sysmelb_Value_t b);
 void sysmelb_printValue(sysmelb_Value_t value);
 void sysmelb_printValueWithMaxDepth(sysmelb_Value_t value, int depth);
 void *sysmelb_getValuePointer(sysmelb_Value_t value);
+uint64_t sysmelb_getValueIdentityHash(sysmelb_Value_t value);
 
 #endif // SYSMELB_VALUE_H
