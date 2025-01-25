@@ -9,6 +9,7 @@ public: [
     Record: Module withFields: #{
         name: Symbol.
         globalNamespace: Namespace.
+        mainEntryPoint: Function.
     }.
 
     ## The different kinds of Environment
@@ -484,6 +485,10 @@ SysmelClassType
             
             printLine("There is no field at index ". index)
         }
+    };
+    withSelector: #totalFieldCount addMethod: {
+        | $(SysmelClassType)self :: Integer |
+        self superFieldCount + self fields size  
     }.
 
     SysmelFunction
@@ -698,6 +703,23 @@ SysmelClassType
             $(RecordValue)recordValue : recordValue value.
             _: {
                 printLine("Not a valid record value").
+                abort()
+            }
+        }
+    }.
+
+    $isClassType($(SysmelType)type :: Boolean) := {
+        match: type ofType: SysmelType withPatterns: #{
+            $(SysmelClassType)classType : true.
+            _: false.
+        }
+    }.
+
+    $extractClassType($(SysmelType)type :: SysmelClassType) := {
+        match: type ofType: SysmelType withPatterns: #{
+            $(SysmelClassType)classType : classType.
+            _: {
+                printLine("Not a valid class type.").
                 abort()
             }
         }

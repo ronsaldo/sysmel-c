@@ -1107,6 +1107,33 @@ addGlobalMacroIntrinsicMethod(#public:. primitive_Public.
     })
 ).
 
+$primitive_SetMainEntryPoint($(MacroContext)context $(Array)arguments :: TypedValue) := {
+    assert: arguments size = 1.
+    $mainEntryPoint := context semanticsState analyzeAndEvaluateWithEnvironment: context environment script: (arguments at: 0).
+
+    $currentModule := context environment lookupModule.
+    currentModule mainEntryPoint: mainEntryPoint.
+
+    return: TypedValue(Value(VoidValue()). BasicIntrinsicTypesSingleton voidType).
+}.
+
+addGlobalMacroIntrinsicMethod(#setMainEntryPoint:. primitive_SetMainEntryPoint.
+    SysmelType(SysmelSimpleFunctionType#{
+        common: SysmelTypeCommon#{
+            isValueType: true.
+            valueAlignment: 8u32.
+            valueSize: 8u32.
+            heapAlignment: 8u32.
+            heapSize: 8u32.
+            methodDict: SymbolHashtable().
+        }.
+        isCompileTimePure: false.
+        isVariadic: false.
+        argumentTypes: [MacroContext . BasicIntrinsicTypesSingleton array].
+        resultType: ParseTreeNode.
+    })
+).
+
 $primitive_Assert($(MacroContext)context $(Array)arguments :: TypedValue) := {
     assert: arguments size = 1.
     $parseNode := ParseTreeNode(ParseTreeAssertNode#{
@@ -1879,7 +1906,7 @@ $addSymbolPrimitives() := {
     addIntrinsicMethod(methodDict. #hash. symbolPrimitive_hash . makeSimplePureFunctionType([symbolType]. integerType)).
 }.
 addSymbolPrimitives().
-#*
+
 $gradualPrimitive_identityEquals($(Array)arguments :: TypedValue) := {
     assert: arguments size = 2.
     if: (arguments at: 1) isNull then: {
@@ -1930,7 +1957,7 @@ $addGradualPrimitives() := {
     addIntrinsicMethod(methodDict. #identityHash. gradualPrimitive_identityHash . makeSimplePureFunctionType([gradualType]. integerType)).
 }.
 addGradualPrimitives().
-*#
+
 public: [
     $getBasicIntrinsicTypes(:: BasicIntrinsicTypes) := BasicIntrinsicTypesSingleton.
     $getDefaultIntrinsicsEnvironment(:: Environment) := Environment(DefaultIntrinsicsEnvironment).

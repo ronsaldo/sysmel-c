@@ -1,3 +1,4 @@
 loadFileOnce: "OrderedCollection.sysmel".
 loadFileOnce: "SymbolHashtable.sysmel".
 loadFileOnce: "IdentityHashset.sysmel".
+loadFileOnce: "IOPrimitives.sysmel".

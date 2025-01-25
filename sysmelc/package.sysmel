@@ -16,7 +16,6 @@ loadFileOnce: "Module.sysmel".
 loadFileOnce: "Namespace.sysmel".
 loadFileOnce: "MidLevelIR.sysmel".
 
-loadFileOnce: "Semantics.sysmel".
 loadFileOnce: "TopLevelSemantics.sysmel".
 loadFileOnce: "MidLevelSemantics.sysmel".
 

@@ -6,7 +6,7 @@ public: [
             $functionDependentType := functionDependentTypeNode extractFunctionalDependentTypeNode.
             $argumentNodes := functionDependentType arguments.
             $processedArguments := OrderedCollection().
-            $argumentTypes := OrderedCollection()
+            $argumentTypes := OrderedCollection().
 
             $!i := 0. while: (i < argumentNodes size) do: {
                 $argumentBindable := (argumentNodes at: i) extractBindableNameNode.
@@ -20,7 +20,9 @@ public: [
                 $argumentType := extractTypeFromValue(argumentTypeNode value).
                 argumentTypes add: argumentType.
 
-                $midType := MidConstantType(argumentType).
+                $midType := MidConstantType#{
+                    value: argumentType
+                }.
                 $midArgument := MidArgument#{
                     owner: closureFunction.
                     index: i asUInt32.
@@ -224,7 +226,7 @@ public: [
                     $!method := receiverType lookupSelector: selectorSymbolValue.
                     if: (method value isInvalidErrorValue) && (isReferenceType(receiverType)) then: {
                         midBuilder sourcePosition: messageSend sourcePosition.
-                        $newReceiverType := receiverType getBaseType
+                        $newReceiverType := receiverType getBaseType.
                         $loaded := midBuilder load: newReceiverType from: receiverValue.
                         
                         receiverValue := loaded.
@@ -293,7 +295,7 @@ public: [
                     }.
 
                     $invocationArguments := OrderedCollection().
-                    $i := 0. while:(i < messageSend arguments size) do: {
+                    $!i := 0. while:(i < messageSend arguments size) do: {
                         $argument := messageSend arguments at: i.
                         $analyzedArgument := self analyzeWithEnvironment: environment andCompileClosure: midBuilder withBody: argument.
                         invocationArguments add: analyzedArgument.
@@ -334,7 +336,7 @@ public: [
                                 $recordType := extractRecordType(typeToConstruct).
                                 $constructionArguments := Array new: recordType fields size.
 
-                                $associations := dictionaryArgument associations
+                                $associations := dictionaryArgument associations.
                                 $!j := 0. while: (j < associations size) do: {
                                     $assoc := associations at: j.
                                     $keySymbol := assoc key asSymbol.
@@ -355,7 +357,35 @@ public: [
                                 midBuilder sourcePosition: functionApplication sourcePosition.
                                 $recordValue := midBuilder makeRecord: typeToConstruct withElements: constructionArguments.
                                 return: recordValue
-                            }
+                            }.
+
+                            if: isClassType(typeToConstruct) then: {
+                                $dictionaryArgument := invocationArguments at: 0.
+                                $classType := extractClassType(typeToConstruct).
+                                $constructionArguments := Array new: classType totalFieldCount.
+
+                                $associations := dictionaryArgument associations.
+                                $!j := 0. while: (j < associations size) do: {
+                                    $assoc := associations at: j.
+                                    $keySymbol := assoc key asSymbol.
+                                    ##printLine(j. " keySymbol ". keySymbol).
+                                    $fieldIndex := findIndexOfClassFieldWithName(classType. keySymbol).
+                                    if: (fieldIndex < 0) || (fieldIndex >= constructionArguments size) then: {
+                                        functionApplication sourcePosition printFormatted.
+                                        printLine("Invalid field index [". fieldIndex. "] for construction of a ". classType common name).
+                                        abort()
+                                    } else: {
+                                        constructionArguments at: fieldIndex put: assoc value
+                                    }
+                                } continueWith: (j := j + 1).
+                                ##printLine("dictionaryArgument" . dictionaryArgument).
+                                ##printLine("constructionArguments" . constructionArguments).
+
+                                ##printLine("Record type: ". recordType).
+                                midBuilder sourcePosition: functionApplication sourcePosition.
+                                $recordValue := midBuilder makeObject: typeToConstruct withElements: constructionArguments.
+                                return: recordValue
+                            }.
                         }.
 
                         if: isRecordType(typeToConstruct) then: {
@@ -392,6 +422,7 @@ public: [
                             return: injectedSum
                         }.
 
+                        functionApplication sourcePosition printFormatted.
                         printLine("TODO: instantiate objects with numbered fields").
                         printLine(typeToConstruct getCommonSection name).
                         abort()
@@ -418,7 +449,7 @@ public: [
                     }.
 
                     $invocationArguments := OrderedCollection().
-                    $i := 0. while:(i < functionApplication arguments size) do: {
+                    $!i := 0. while:(i < functionApplication arguments size) do: {
                         $argument := functionApplication arguments at: i.
                         $analyzedArgument := self analyzeWithEnvironment: environment andCompileClosure: midBuilder withBody: argument.
                         invocationArguments add: analyzedArgument.
@@ -433,7 +464,7 @@ public: [
                     }.
 
                     $!receiver := binopSequence elements at: 0.
-                    $i := 1.
+                    $!i := 1.
                     while: i < binopSequence elements size do: {
                         $selector := binopSequence elements at: i.
                         $operand := binopSequence elements at: i + 1.
@@ -504,7 +535,7 @@ public: [
                 $(ParseTreeImmutableDictionaryNode)immutableDictionary : {
                     $dictionarySize := immutableDictionary elements size.
                     $associationsArray := Array new: dictionarySize.
-                    $i := 0. while: i < dictionarySize do: {
+                    $!i := 0. while: i < dictionarySize do: {
                         $element := immutableDictionary elements at: i.
                         $associationValue := self analyzeWithEnvironment: environment andCompileClosure: midBuilder withBody: element.
                         associationsArray at: i put: associationValue
@@ -728,7 +759,7 @@ public: [
                     switchBranch caseDestinations: branchDestinations.
                     
                     $defaultDestination := midBuilder makeBranchDestination: switchBranch.
-                    switchBranch defaultDestination: defaultDestination
+                    switchBranch defaultDestination: defaultDestination.
                     $switchMerge := midBuilder makeSwitchMerge: switchBranch.
                     
                     $phiMerge := midBuilder makeMergePhiNode.
@@ -750,7 +781,7 @@ public: [
                         branchPhiValue sourceValue: caseValue.
                         branchPhiValue destinationPhi: phiMerge.
                         branchPhiValue previousControl: midBuilder currentControlNode.
-                        phiValues add: branchPhiValue
+                        phiValues add: branchPhiValue.
 
                         $switchBranchPredecessor := midBuilder makeBranchSequenceEnd: branchPhiValue Into: switchMerge.
                         mergePredecessors add: switchBranchPredecessor.
@@ -763,7 +794,7 @@ public: [
                     $defaultValue := if: defaultAction isNotNull then: {
                         self analyzeWithEnvironment: environment andCompileClosure: midBuilder withBody: defaultAction
                     } else: {
-                        MidConstantVoid{}
+                        MidConstantVoid#{}
                     }.
 
                     $defaultPhiValue := midBuilder makePhiNodeValue.
@@ -860,7 +891,7 @@ public: [
                     switchBranch caseDestinations: branchDestinations.
                     
                     $defaultDestination := midBuilder makeBranchDestination: switchBranch.
-                    switchBranch defaultDestination: defaultDestination
+                    switchBranch defaultDestination: defaultDestination.
                     $switchMerge := midBuilder makeSwitchMerge: switchBranch.
                     
                     $phiMerge := midBuilder makeMergePhiNode.
@@ -899,7 +930,7 @@ public: [
                         branchPhiValue sourceValue: caseValue.
                         branchPhiValue destinationPhi: phiMerge.
                         branchPhiValue previousControl: midBuilder currentControlNode.
-                        phiValues add: branchPhiValue
+                        phiValues add: branchPhiValue.
 
                         $switchBranchPredecessor := midBuilder makeBranchSequenceEnd: branchPhiValue Into: switchMerge.
                         mergePredecessors add: switchBranchPredecessor.
@@ -912,7 +943,7 @@ public: [
                     $defaultValue := if: defaultAction isNotNull then: {
                         self analyzeWithEnvironment: environment andCompileClosure: midBuilder withBody: defaultAction
                     } else: {
-                        MidConstantVoid{}
+                        MidConstantVoid#{}
                     }.
 
                     $defaultPhiValue := midBuilder makePhiNodeValue.
@@ -942,7 +973,7 @@ public: [
                     midBuilder sourcePosition: whileLoopNode sourcePosition.
                     $loopPreheader := midBuilder makeLoopPreheader.
                     $loopHeader := midBuilder makeLoopHeader.
-                    $loopMerge := midBuilder makeLoopMerge: loopHeader
+                    $loopMerge := midBuilder makeLoopMerge: loopHeader.
                     $loopContinue := midBuilder makeLoopContinue: loopHeader.
                     $loopBody := midBuilder makeLoopBody: loopHeader.
 
@@ -982,7 +1013,7 @@ public: [
                     midBuilder sourcePosition: doWhileLoop sourcePosition.
                     $loopPreheader := midBuilder makeLoopPreheader.
                     $loopHeader := midBuilder makeLoopHeader.
-                    $loopMerge := midBuilder makeLoopMerge: loopHeader
+                    $loopMerge := midBuilder makeLoopMerge: loopHeader.
                     $loopContinue := midBuilder makeLoopContinue: loopHeader.
                     $loopBody := midBuilder makeLoopBody: loopHeader.
 

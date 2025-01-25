@@ -38,10 +38,10 @@ public: [
                 }
             }
             else: {
-                $fileContents := readWholeFileAsText: argumentValue.
+                $fileContents := readWholeFileAsText(argumentValue).
                 evaluateFileContents(module. argumentValue. fileContents).
             }
-        } continueWith: (argumentIndex := argumentIndex + 1)
+        } continueWith: (argumentIndex := argumentIndex + 1).
         0i32
     }.
 ].
@@ -60,7 +60,7 @@ $primitive_loadFileOnce($(MacroContext)context $(Array)arguments :: TypedValue) 
     $localSourceDirectory := context sourcePosition sourceCode directory.
     ## TODO: Support absolute names.
     $filenameToLoad := localSourceDirectory -- filenameString.
-    $fileContents := readWholeFileAsText: filenameToLoad.
+    $fileContents := readWholeFileAsText(filenameToLoad).
     $module := context environment lookupModule.
     ##printLine("module". module).
     ##printLine("fileContents: ". fileContents).

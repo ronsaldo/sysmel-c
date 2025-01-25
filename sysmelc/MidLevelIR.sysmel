@@ -98,6 +98,10 @@ public: [
         elements: Array
     }.
 
+    Class: MidMakeObject withSuperclass: MidMakeTuple fields: #{
+        fields: Array
+    }.
+
     Class: MidMakeAssociation withSuperclass: MidData fields: #{
         key: MidValue.
         value: MidValue.
@@ -575,7 +579,7 @@ MidBranchDestinationNode
     }.
 MidBranchMergeNode
     withSelector: #usedControlNodes addMethod: {
-        | $(MidStartNode)self :: Array |
+        | $(MidBranchMergeNode)self :: Array |
         [self branchNode ] -- self incomingEdges
     };
     withSelector: #connectWithUsed addMethod: {
@@ -583,7 +587,7 @@ MidBranchMergeNode
         
     };
     withSelector: #evaluateInActivationContext: addMethod: {
-        | $(MidStartNode)self $(MidActivationContext)context :: Void |
+        | $(MidBranchMergeNode)self $(MidActivationContext)context :: Void |
         context advancePC.
         void.
     }.
@@ -605,7 +609,7 @@ MidMakeArray
         self elements
     };
     withSelector: #connectWithUsed addMethod: {
-        | $(MidMakeArray)self :: Array |
+        | $(MidMakeArray)self :: Void |
         $!i := 0. while: i < self elements size do: {
             (self elements at: i) addUser: self
         } continueWith: (i := i + 1)
@@ -629,7 +633,7 @@ MidMakeTuple
         self elements
     };
     withSelector: #connectWithUsed addMethod: {
-        | $(MidMakeTuple)self :: Array |
+        | $(MidMakeTuple)self :: Void |
         $!i := 0. while: i < self elements size do: {
             $element := self elements at: i.
             if: element isNotNull then: {
@@ -651,6 +655,19 @@ MidMakeTuple
     }.
 
 MidMakeRecord
+    withSelector: #usedValues addMethod: {
+        | $(MidMakeRecord)self :: Array |
+        self elements
+    };
+    withSelector: #connectWithUsed addMethod: {
+        | $(MidMakeRecord)self :: Void |
+        $!i := 0. while: i < self elements size do: {
+            $element := self elements at: i.
+            if: element isNotNull then: {
+                element addUser: self
+            }
+        } continueWith: (i := i + 1)
+    };
     withSelector: #evaluateInActivationContext: addMethod: {
         | $(MidMakeRecord)self $(MidActivationContext)context :: Void |
         $elementCount := self elements size.
@@ -668,6 +685,40 @@ MidMakeRecord
         }.
         $typedRecord := TypedValue(Value(RecordValue(record)). self type).
         context setValueInCurrentPC: typedRecord.
+        context advancePC.
+    }.
+
+MidMakeObject
+    withSelector: #usedValues addMethod: {
+        | $(MidMakeObject)self :: Array |
+        self fields
+    };
+    withSelector: #connectWithUsed addMethod: {
+        | $(MidMakeObject)self :: Void |
+        $!i := 0. while: i < self fields size do: {
+            $field := self fields at: i.
+            if: field isNotNull then: {
+                field addUser: self
+            }
+        } continueWith: (i := i + 1)
+    };
+    withSelector: #evaluateInActivationContext: addMethod: {
+        | $(MidMakeObject)self $(MidActivationContext)context :: Void |
+        $elementCount := self elements size.
+        $tuple := Tuple new: elementCount.
+        $!i := 0. while: i < elementCount do: {
+            $field := self fields at: i.
+            if: field isNotNull then: {
+                $fieldValue := field getCurrentValueForActivationContext: context.
+                tuple at: i put: fieldValue
+            }
+        } continueWith: (i := i + 1).
+        $object := Object#{
+            tuple: tuple.
+            class: extractClassType(self type)
+        }.
+        $objectValue := TypedValue(Value(ObjectValue(object)). self type).
+        context setValueInCurrentPC: objectValue.
         context advancePC.
     }.
 
@@ -1393,7 +1444,7 @@ MidClosureFunction
 
 MidFunctionBuilder
     withSelector: #returnValue: addMethod: {
-        | $(MidFunctionBuilder)self $(MidValue)resultValue :: MidReturnInstruction |
+        | $(MidFunctionBuilder)self $(MidValue)resultValue :: MidReturn |
         $instruction := MidReturn#{
             sourcePosition: self sourcePosition.
             users: OrderedCollection().
@@ -1659,6 +1710,17 @@ MidFunctionBuilder
         node
     };
 
+    withSelector: #makeObject:withElements: addMethod: {
+        | $(MidFunctionBuilder)self $(SysmelType)classType $(Array)elements :: MidMakeArray |
+        $node := MidMakeObject#{
+            sourcePosition: self sourcePosition.
+            fields: elements.
+            type: classType
+        }.
+        node connectWithUsed.
+        node
+    };
+
     withSelector: #makeAssociationWithKey:value: addMethod: {
         | $(MidFunctionBuilder)self $(MidValue)key $(MidValue)value :: MidMakeAssociation |
         $node := MidMakeAssociation#{
@@ -1729,7 +1791,7 @@ MidFunctionBuilder
         }.
     };
     withSelector: #makeLoopMerge: addMethod: {
-        | $(MidFunctionBuilder)self $(MidLoopPreheaderNode)header :: MidLoopMerge |
+        | $(MidFunctionBuilder)self $(MidLoopPreheaderNode)header :: MidLoopMergeNode |
         MidLoopMergeNode#{
             sourcePosition: self sourcePosition.
             loopHeaderNode: header.

@@ -906,7 +906,7 @@ sysmelb_Environment_t *sysmelb_getOrCreateIntrinsicsEnvironment()
     {
         sysmelb_function_t *function = sysmelb_allocate(sizeof(sysmelb_function_t));
         function->kind = SysmelFunctionKindPrimitive;
-        function->name = sysmelb_internSymbolC("readWholeFileAsText:");
+        function->name = sysmelb_internSymbolC("readWholeFileAsText");
         function->primitiveFunction = sysmelb_readWholeFileAsText;
 
         sysmelb_Environment_setLocalSymbolBinding(&sysmelb_IntrinsicsEnvironment, function->name, sysmelb_createSymbolFunctionBinding(function));

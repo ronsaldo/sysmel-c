@@ -104,7 +104,7 @@ public: [
 
             $invocationArguments := OrderedCollection().
             invocationArguments add: decayedReceiverTypedValue.
-            $i := 0. while:(i < arguments size) do: {
+            $!i := 0. while:(i < arguments size) do: {
                 $argument := arguments at: i.
                 $analyzedArgument := self analyzeAndEvaluateWithEnvironment: environment script: argument.
                 invocationArguments add: analyzedArgument.
@@ -265,7 +265,7 @@ public: [
                 }.
 
                 $!receiver := binopSequence elements at: 0.
-                $i := 1.
+                $!i := 1.
                 while: i < binopSequence elements size do: {
                     $selector := binopSequence elements at: i.
                     $operand := binopSequence elements at: i + 1.
@@ -290,7 +290,7 @@ public: [
                 return: result
             }.
             $(ParseTreeArrayNode)arrayNode : {
-                $array := Array new: arrayNode elements size
+                $array := Array new: arrayNode elements size.
                 $!i := 0.
                 while: i < arrayNode elements size do: {
                     $element := arrayNode elements at: i.
@@ -300,7 +300,7 @@ public: [
                 return: TypedValue(Value(ArrayValue(array)). getBasicIntrinsicTypes() array)
             }.
             $(ParseTreeTupleNode)tupleNode : {
-                $array := Array new: tupleNode elements size
+                $array := Array new: tupleNode elements size.
                 $!i := 0.
                 while: i < tupleNode elements size do: {
                     $element := tupleNode elements at: i.
@@ -364,8 +364,8 @@ public: [
 
                         $initialValue := self analyzeAndEvaluateWithEnvironment: environment script: value.
                         if: bindable isMutable then: {
-                            value := TypedValue(Value(SysmelValueBox(initialValue)). getBasicIntrinsicTypes() gradual).
-                            environment addLocalSymbol: name withValue: value.
+                            $typedValue := TypedValue(Value(SysmelValueBox(initialValue)). getBasicIntrinsicTypes() gradual).
+                            environment addLocalSymbol: name withValue: typedValue.
                         }
                         else: {
                             environment addLocalSymbol: name withValue: initialValue
