@@ -311,8 +311,13 @@ public: [
                 }.
                 $(ParseTreeFunctionApplicationNode)functionApplication : {
                     $functional := self analyzeWithEnvironment: environment andCompileClosure: midBuilder withBody: functionApplication functional.
-                                    ## Is this a type constructor invocation?
-                    if: functional isFunctionalValue not && isTypeValue(functional value) then: {
+                    ## Is this a type constructor invocation?
+                    ##printLine().
+                    ##functionApplication sourcePosition printFormatted.
+                    ##printLine("functional ". functional).
+                    ##printLine().
+
+                    if: functional isFunctionalValue not && functional isConstant && isTypeValue(functional value) then: {
                         $typeToConstruct := extractTypeFromValue(functional value).
                         ##printLine("typeToConstruct: ". typeToConstruct).
 
@@ -392,7 +397,7 @@ public: [
                         abort()
                     }.
 
-                    if: functional isMacro then: {
+                    if: functional isFunctionalValue && functional isMacro then: {
                         $macroContext := MacroContext#{
                             sourcePosition: functionApplication sourcePosition.
                             environment: environment.

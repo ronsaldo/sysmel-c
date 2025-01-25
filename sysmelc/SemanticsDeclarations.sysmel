@@ -118,6 +118,24 @@ public: [
                 }
             }
         };
+        withSelector: #getMethodDictionary addMethod: {
+            |$(SysmelType)self :: SymbolHashtable|
+            match: self ofType: SysmelType withPatterns: #{
+                $(SysmelBasicType)basicType : basicType common methodDict.
+                $(SysmelTupleAndRecordType)tupleAndRecord : tupleAndRecord common methodDict.
+                $(SysmelSumType)sumType : sumType common methodDict.
+                $(SysmelClassType)clazzType : clazzType common methodDict.
+                $(SysmelEnumType)enumType : enumType common methodDict.
+                $(SysmelSimpleFunctionType)simpleFunctionType : simpleFunctionType common methodDict.
+                $(SysmelPointerType)pointerType : pointerType common methodDict.
+                $(SysmelReferenceType)referenceType : referenceType common methodDict.
+                _: {
+                    printLine("getCommonSection: Unsupported type kind").
+                    printLine(self).
+                    abort()
+                }
+            }
+        };
         withSelector: #getSupertype addMethod: {
             |$(SysmelType)self :: SysmelType|
             match: self ofType: SysmelType withPatterns: #{
@@ -443,6 +461,10 @@ public: [
         withSelector: #isTypedValue addMethod: {
             |$(TypedValue)self :: Boolean |
             true
+        };
+        withSelector: #isMidValue addMethod: {
+            |$(TypedValue)self :: Boolean |
+            false
         }.
 
 SysmelClassType

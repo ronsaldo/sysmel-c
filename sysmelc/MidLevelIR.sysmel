@@ -260,6 +260,10 @@ MidValue
         self users add: user.
         void
     };
+    withSelector: #isMidValue addMethod: {
+        | $(MidValue)self :: Boolean |
+        false
+    };
     withSelector: #isConstant addMethod: {
         | $(MidValue)self :: Boolean |
         false
@@ -605,6 +609,18 @@ MidMakeArray
         $!i := 0. while: i < self elements size do: {
             (self elements at: i) addUser: self
         } continueWith: (i := i + 1)
+    };
+    withSelector: #evaluateInActivationContext: addMethod: {
+        | $(MidMakeArray)self $(MidActivationContext)context :: Void |
+        $elementCount := self elements size.
+        $array := Array new: elementCount.
+        $!i := 0. while: i < elementCount do: {
+            $elementValue := (self elements at: i) getCurrentValueForActivationContext: context.
+            array at: i put: elementValue
+        } continueWith: (i := i + 1).
+        $arrayTypedValue := TypedValue(Value(ArrayValue(array)). getBasicIntrinsicTypes() array).
+        context setValueInCurrentPC: arrayTypedValue.
+        context advancePC.
     }.
 
 MidMakeTuple
@@ -640,8 +656,11 @@ MidMakeRecord
         $elementCount := self elements size.
         $tuple := Tuple new: elementCount.
         $!i := 0. while: i < elementCount do: {
-            $elementValue := (self elements at: i) getCurrentValueForActivationContext: context.
-            tuple at: i put: elementValue
+            $element := self elements at: i.
+            if: element isNotNull then: {
+                $elementValue := element getCurrentValueForActivationContext: context.
+                tuple at: i put: elementValue
+            }
         } continueWith: (i := i + 1).
         $record := Record#{
             tuple: tuple.
@@ -1027,7 +1046,7 @@ MidCallFunction
         $functionToCall := (self functional getCurrentValueForActivationContext: context) value getMidValue.
 
         $invocationArguments := Array new: self arguments size.
-        $i := 0. while:(i < self arguments size) do: {
+        $!i := 0. while:(i < self arguments size) do: {
             $argument := (self arguments at: i) getCurrentValueForActivationContext: context.
             invocationArguments at: i put: argument
         } continueWith:(i := i + 1).
@@ -1093,7 +1112,7 @@ MidSendMessage
 
         $invocationArguments := OrderedCollection().
         invocationArguments add: receiverTypedValue.
-        $i := 0. while:(i < self arguments size) do: {
+        $!i := 0. while:(i < self arguments size) do: {
             $argument := (self arguments at: i) getCurrentValueForActivationContext: context.
             invocationArguments add: argument.
         } continueWith:(i := i + 1).

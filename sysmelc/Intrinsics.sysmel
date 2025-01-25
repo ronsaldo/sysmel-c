@@ -1176,7 +1176,7 @@ $addUniverseIntrinsicMethod($(SymbolHashtable)methodDict $(Symbol)name $(Functio
 
 $addTypeUniverseIntrinsicMethods($(SysmelType)typeUniverse :: Void) := {
     $commonPart := typeUniverse getCommonSection.
-    $methodDict := commonPart methodDict.
+    $methodDict := typeUniverse getMethodDictionary.
 
     addUniverseIntrinsicMethod(methodDict. #withSelector:addMethod:. universePrimitiveWithSelectorAddMethod. makeSimplePureFunctionType([typeUniverse. BasicIntrinsicTypesSingleton gradual] . BasicIntrinsicTypesSingleton voidType)).
     addUniverseIntrinsicMethod(methodDict. #new:. universePrimitiveNewWithCount. makeSimplePureFunctionType([typeUniverse. BasicIntrinsicTypesSingleton integer] . BasicIntrinsicTypesSingleton gradual)).
@@ -1477,7 +1477,7 @@ $addIntegerIntrinsicMethod($(SymbolHashtable)methodDict $(Symbol)name $(Function
 }.
 $addIntegerIntrinsicMethods($(SysmelType)intrinsicType :: Void) := {
     $commonPart := intrinsicType getCommonSection.
-    $methodDict := commonPart methodDict.
+    $methodDict := intrinsicType getMethodDictionary.
 
     $unaryFunctionType := makeSimplePureFunctionType([intrinsicType] . intrinsicType).
     $binaryFunctionType := makeSimplePureFunctionType([intrinsicType . intrinsicType] . intrinsicType).
@@ -1543,7 +1543,7 @@ addIntegerIntrinsicMethods(BasicIntrinsicTypesSingleton char32).
 
 $addIntegerIntrinsicConversionSuffixes($(SysmelType)intrinsicType :: Void) := {
     $commonPart := intrinsicType getCommonSection.
-    $methodDict := commonPart methodDict.
+    $methodDict := intrinsicType getMethodDictionary.
 
     addIntegerIntrinsicMethod(methodDict. #i8.  integerPrimitive_asInt8.  makeSimplePureFunctionType([intrinsicType] . BasicIntrinsicTypesSingleton int8)).
     addIntegerIntrinsicMethod(methodDict. #i16. integerPrimitive_asInt16. makeSimplePureFunctionType([intrinsicType] . BasicIntrinsicTypesSingleton int16)).
@@ -1596,7 +1596,7 @@ $stringPrimitive_at($(Array)arguments :: TypedValue) := {
     $index := arguments at: 1.
     $indexValue := extractIntegerFromValue(index value).
     if: indexValue >= stringValue size then: {
-        printLine("Index ". indexValue . " is out bounds.")
+        printLine("Index ". indexValue . " is out bounds.").
         abort().
     }.
     $character := stringValue at: indexValue.
@@ -1608,7 +1608,7 @@ $addStringPrimitives() := {
     $integerType := BasicIntrinsicTypesSingleton integer.
     $characterType := BasicIntrinsicTypesSingleton character.
     $commonPart := stringType getCommonSection.
-    $methodDict := commonPart methodDict.
+    $methodDict := stringType getMethodDictionary.
     
     addIntrinsicMethod(methodDict. #--. stringPrimitive_concatenate . makeSimplePureFunctionType([stringType . stringType]. stringType)).
     addIntrinsicMethod(methodDict. #size. stringPrimitive_size . makeSimplePureFunctionType([stringType]. integerType)).
@@ -1643,7 +1643,7 @@ $arrayPrimitive_at($(Array)arguments :: TypedValue) := {
     $index := arguments at: 1.
     $indexValue := extractIntegerFromValue(index value).
     if: indexValue >= arrayValue size then: {
-        printLine("Index ". indexValue . " is out bounds.")
+        printLine("Index ". indexValue . " is out bounds.").
         abort().
     }.
     $element := arrayValue at: indexValue.
@@ -1657,7 +1657,7 @@ $arrayPrimitive_atPut($(Array)arguments :: TypedValue) := {
     $index := arguments at: 1.
     $indexValue := extractIntegerFromValue(index value).
     if: indexValue >= arrayValue size then: {
-        printLine("Index ". indexValue . " is out bounds.")
+        printLine("Index ". indexValue . " is out bounds.").
         abort().
     }.
     $element := arguments at: 2.
@@ -1670,7 +1670,7 @@ $addArrayPrimitives() := {
     $integerType := BasicIntrinsicTypesSingleton integer.
     $gradualType := BasicIntrinsicTypesSingleton gradual.
     $commonPart := arrayType getCommonSection.
-    $methodDict := commonPart methodDict.
+    $methodDict := arrayType getMethodDictionary.
     
     addIntrinsicMethod(methodDict. #--. arrayPrimitive_concatenate . makeSimplePureFunctionType([arrayType . arrayType]. arrayType)).
     addIntrinsicMethod(methodDict. #size. arrayPrimitive_size . makeSimplePureFunctionType([arrayType]. integerType)).
@@ -1694,7 +1694,7 @@ $tuplePrimitive_at($(Array)arguments :: TypedValue) := {
     $index := arguments at: 1.
     $indexValue := extractIntegerFromValue(index value).
     if: indexValue >= tupleValue size then: {
-        printLine("Index ". indexValue . " is out bounds.")
+        printLine("Index ". indexValue . " is out bounds.").
         abort().
     }.
     $element := tupleValue at: indexValue.
@@ -1706,7 +1706,7 @@ $addTuplePrimitives() := {
     $integerType := BasicIntrinsicTypesSingleton integer.
     $gradualType := BasicIntrinsicTypesSingleton gradual.
     $commonPart := tupleType getCommonSection.
-    $methodDict := commonPart methodDict.
+    $methodDict := tupleType getMethodDictionary.
     
     addIntrinsicMethod(methodDict. #size. tuplePrimitive_size . makeSimplePureFunctionType([tupleType]. integerType)).
     addIntrinsicMethod(methodDict. #at:. tuplePrimitive_at . makeSimplePureFunctionType([tupleType . integerType]. gradualType)).
@@ -1734,7 +1734,7 @@ $addAssociationPrimitives() := {
     $integerType := BasicIntrinsicTypesSingleton integer.
     $gradualType := BasicIntrinsicTypesSingleton gradual.
     $commonPart := associationType getCommonSection.
-    $methodDict := commonPart methodDict.
+    $methodDict := associationType getMethodDictionary.
     
     addIntrinsicMethod(methodDict. #key. associationPrimitive_key . makeSimplePureFunctionType([associationType]. gradualType)).
     addIntrinsicMethod(methodDict. #value. associationPrimitive_value . makeSimplePureFunctionType([associationType]. gradualType)).
@@ -1756,7 +1756,7 @@ $immutableDictPrimitive_associationAt($(Array)arguments :: TypedValue) := {
     $index := arguments at: 1.
     $indexValue := extractIntegerFromValue(index value).
     if: indexValue >= dict size then: {
-        printLine("Index ". indexValue . " is out bounds.")
+        printLine("Index ". indexValue . " is out bounds.").
         abort().
     }.
     $association := dict associationAt: indexValue.
@@ -1772,7 +1772,7 @@ $immutableDictPrimitive_includesKey($(Array)arguments :: TypedValue) := {
     $associationCount := dict size.
 
     $!i := 0. while: (i < associationCount) do: {
-        $assoc := dict associationAt: i
+        $assoc := dict associationAt: i.
         $assocKey := extractValueForAnalysis(assoc key).
         if: assocKey == key then: {
             return: TypedValue(Value(BooleanValue(true)) . BasicIntrinsicTypesSingleton boolean )
@@ -1790,7 +1790,7 @@ $immutableDictPrimitive_at($(Array)arguments :: TypedValue) := {
     $associationCount := dict size.
     ##printLine("associationCount ". associationCount).
     $!i := 0. while: (i < associationCount) do: {
-        $assoc := dict associationAt: i
+        $assoc := dict associationAt: i.
         $assocKey := extractValueForAnalysis(assoc key).
         if: assocKey == key then: {
             ##printLine("Found value " . assoc value).
@@ -1809,7 +1809,7 @@ $addImmutableDictionaryPrimitives() := {
     $gradualType := BasicIntrinsicTypesSingleton gradual.
     $booleanType := BasicIntrinsicTypesSingleton boolean.
     $commonPart := dictType getCommonSection.
-    $methodDict := commonPart methodDict.
+    $methodDict := dictType getMethodDictionary.
     
     addIntrinsicMethod(methodDict. #size. immutableDictPrimitive_size . makeSimplePureFunctionType([dictType]. integerType)).
     addIntrinsicMethod(methodDict. #associationAt:. immutableDictPrimitive_associationAt . makeSimplePureFunctionType([dictType . integerType]. associationType)).
@@ -1861,7 +1861,7 @@ $addSymbolPrimitives() := {
     $booleanType := BasicIntrinsicTypesSingleton boolean.
     $integerType := BasicIntrinsicTypesSingleton integer.
     $commonPart := symbolType getCommonSection.
-    $methodDict := commonPart methodDict.
+    $methodDict := symbolType getMethodDictionary.
     
     addIntrinsicMethod(methodDict. #==. symbolPrimitive_identityEquals . makeSimplePureFunctionType([symbolType. symbolType]. booleanType)).
     addIntrinsicMethod(methodDict. #~~. symbolPrimitive_identityNotEquals . makeSimplePureFunctionType([symbolType. symbolType]. booleanType)).
@@ -1884,11 +1884,15 @@ public: [
                     tuple: tuple.
                 }.
                 if: arguments size = 0 then: {
-                    if: (tupleAndRecord common methodDict includesKey: #initialize) then: {
-                        $initializeMethod := tupleAndRecord common methodDict at: #initialize.
+                    $methodDict := typeToInstantiate getMethodDictionary.
+                    if: (methodDict includesKey: #initialize) then: {
+                        $initializeMethod := methodDict at: #initialize.
+                        ##printLine().
+                        ##printLine("initializeMethod ". initializeMethod).
+                        ##printLine().
                         $initializeFunctionValue := extractFunctionFromValue(initializeMethod value).
                         ##printLine("initializeFunctionValue ". initializeFunctionValue).
-                        $typedRecord := TypedValue(Value(RecordValue(record)). typeToInstantiate)
+                        $typedRecord := TypedValue(Value(RecordValue(record)). typeToInstantiate).
                         $invocationArguments := [typedRecord].
                         ##printLine(invocationArguments).
                         match: initializeFunctionValue ofType: SysmelFunction withPatterns: #{
@@ -1914,7 +1918,7 @@ public: [
                     $dictionary := extractImmutableDictionaryFromValue((arguments at: 0) value).
                     if: dictionary size > tupleSize then: {
                         printLine("Dictionary has more elements than the record.")
-                    }
+                    }.
 
                     $!i := 0. while: i < dictionary size do: {
                         $association := dictionary associationAt: i.
@@ -1957,7 +1961,7 @@ public: [
                     $dictionary := extractImmutableDictionaryFromValue((arguments at: 0) value).
                     if: dictionary size > objectSize then: {
                         printLine("Dictionary has more elements than the object fields.")
-                    }
+                    }.
 
                     $!i := 0. while: i < dictionary size do: {
                         $association := dictionary associationAt: i.
