@@ -97,6 +97,95 @@ public: [
 
             $functionValue := TypedValue(Value(SysmelFunctionValue(SysmelFunction(interpretedFunction))). functionType).
         };
+        withSelector: #analyzeMessageSendWithReceiver:selector:arguments:environment:inCompileClosure:sourcePosition: addMethod: {
+            |$(SemanticsState)self $(MidValue)receiverMidValue $(ParseTreeNode)selector $(Array)arguments $(Environment)environment $(MidFunctionBuilder)midBuilder $(SourcePosition)sourcePosition :: MidValue |
+                $selectorValue := self analyzeWithEnvironment: environment andCompileClosure: midBuilder withBody: selector.
+                $selectorSymbolValue := selectorValue value.
+
+                $!receiverValue := receiverMidValue.
+                $!receiverType := receiverValue type.
+
+                $!method := receiverType lookupSelector: selectorSymbolValue.
+                if: (method value isInvalidErrorValue) && (isReferenceType(receiverType)) then: {
+                    midBuilder sourcePosition: sourcePosition.
+                    $newReceiverType := receiverType getBaseType.
+                    $loaded := midBuilder load: newReceiverType from: receiverValue.
+                    
+                    receiverValue := loaded.
+                    receiverType := newReceiverType.
+                    method := receiverType lookupSelector: selectorSymbolValue.
+                }.
+                
+                if: method value isInvalidErrorValue then: {
+
+                    match: receiverType ofType: SysmelType withPatterns: #{
+                        $(SysmelTupleAndRecordType)tupleAndRecord : {
+                            ##printLine("tupleAndRecord ". arguments size).
+                            if: arguments size = 0 then: {
+                                $fieldIndex := findIndexOfRecordFieldWithName(tupleAndRecord. selectorSymbolValue).
+                                if: fieldIndex >= 0 then: {
+                                    ## Implicit getter.
+                                    $fieldType := tupleAndRecord fields at: fieldIndex.
+                                    ##printLine("Emit instruction for getting field ". fieldIndex).
+                                    ##printLine(receiverValue)
+                                    $extractInstruction := midBuilder fromComposite: receiverValue extractAtIndex: fieldIndex withType: fieldType.
+                                    return: extractInstruction
+                                }
+                            }.
+                            if: arguments size = 1 then: {
+                                
+                                $selectorWithoutTrailingColon := selectorSymbolValue withoutTrailingColon.
+                                $fieldIndex := findIndexOfRecordFieldWithName(tupleAndRecord. selectorWithoutTrailingColon).
+                                ##printLine("Setter ". selectorWithoutTrailingColon . " fieldIndex ". fieldIndex).
+                                if: fieldIndex >= 0 then: {
+                                    ## Implicit setter
+                                    $setterValue := self analyzeWithEnvironment: environment andCompileClosure: midBuilder withBody: (arguments at: 0).
+                                    $insertInstruction := midBuilder inComposite: receiverValue insertValue: setterValue atIndex: fieldIndex.
+                                    return: insertInstruction
+                                }
+                            }.
+                        }.
+                        $(SysmelClassType)class : {
+                            ##printLine("tupleAndRecord ". arguments size).
+                            if: arguments size = 0 then: {
+                                $fieldIndex := findIndexOfClassFieldWithName(class. selectorSymbolValue).
+                                if: fieldIndex >= 0 then: {
+                                    ## Implicit getter.
+                                    $fieldType := class getFieldTypeAtIndex: fieldIndex.
+                                    ##printLine("Emit instruction for getting field ". fieldIndex).
+                                    $extractInstruction := midBuilder fromComposite: receiverValue extractAtIndex: fieldIndex withType: fieldType.
+                                    return: extractInstruction
+                                }
+                            }.
+                            if: arguments size = 1 then: {
+                                
+                                $selectorWithoutTrailingColon := selectorSymbolValue withoutTrailingColon.
+                                $fieldIndex := findIndexOfClassFieldWithName(class. selectorWithoutTrailingColon).
+                                ##printLine("Setter ". selectorWithoutTrailingColon . " fieldIndex ". fieldIndex).
+                                if: fieldIndex >= 0 then: {
+                                    ## Implicit setter
+                                    $setterValue := self analyzeWithEnvironment: environment andCompileClosure: midBuilder withBody: (arguments at: 0).
+                                    $insertInstruction := midBuilder inComposite: receiverValue insertValue: setterValue atIndex: fieldIndex.
+                                    return: insertInstruction
+                                }
+                            }.
+                        }.
+                        _: {
+                            ## Nothing required here. 
+                        }
+                    }.
+                }.
+
+                $invocationArguments := OrderedCollection().
+                $!i := 0. while:(i < arguments size) do: {
+                    $argument := arguments at: i.
+                    $analyzedArgument := self analyzeWithEnvironment: environment andCompileClosure: midBuilder withBody: argument.
+                    invocationArguments add: analyzedArgument.
+                } continueWith:(i := i + 1).
+
+                midBuilder sourcePosition: sourcePosition.
+                return: (midBuilder send: selectorValue to: receiverValue withArguments: invocationArguments asArray)
+        };
         withSelector: #analyzeWithEnvironment:andCompileClosure:withBody: addMethod: {
             | $(SemanticsState)self $(Environment)environment $(MidFunctionBuilder)midBuilder $(ParseTreeNode)ast :: MidValue |
             match: ast ofType: ParseTreeNode withPatterns: #{
@@ -187,17 +276,17 @@ public: [
     
                 ## Messages and applications
                 $(ParseTreeMessageSendNode)messageSend : {
+                    $receiver := self analyzeWithEnvironment: environment andCompileClosure: midBuilder withBody: messageSend receiver.
                     $selectorValue := self analyzeWithEnvironment: environment andCompileClosure: midBuilder withBody: messageSend selector.
                     $selectorSymbolValue := selectorValue value.
-                    $arguments := messageSend arguments.
 
                     ## TODO: Use a macro for this.
-                    if: arguments size == 1 then: {
+                    if: messageSend arguments size == 1 then: {
                         if: selectorSymbolValue == #&& then: {
                             $shortCircuit := ParseTreeIfSelectionNode#{
                                 sourcePosition: messageSend sourcePosition.
                                 condition: messageSend receiver.
-                                trueExpression: (arguments at: 0).
+                                trueExpression: (messageSend arguments at: 0).
                                 falseExpression: (ParseTreeNode(ParseTreeLiteralBooleanNode#{
                                     sourcePosition: messageSend sourcePosition.
                                     value: false
@@ -214,98 +303,22 @@ public: [
                                     sourcePosition: messageSend sourcePosition.
                                     value: true
                                 })).
-                                falseExpression: (arguments at: 0).
+                                falseExpression: (messageSend arguments at: 0).
                             }.
                             return: (self analyzeWithEnvironment: environment andCompileClosure: midBuilder withBody: (ParseTreeNode(shortCircuit))).
                         }.
                     }.
 
-                    $!receiverValue := self analyzeWithEnvironment: environment andCompileClosure: midBuilder withBody: messageSend receiver.
-                    $!receiverType := receiverValue type.
-
-                    $!method := receiverType lookupSelector: selectorSymbolValue.
-                    if: (method value isInvalidErrorValue) && (isReferenceType(receiverType)) then: {
-                        midBuilder sourcePosition: messageSend sourcePosition.
-                        $newReceiverType := receiverType getBaseType.
-                        $loaded := midBuilder load: newReceiverType from: receiverValue.
-                        
-                        receiverValue := loaded.
-                        receiverType := newReceiverType.
-                        method := receiverType lookupSelector: selectorSymbolValue.
-                    }.
-                    
-                    if: method value isInvalidErrorValue then: {
-
-                        match: receiverType ofType: SysmelType withPatterns: #{
-                            $(SysmelTupleAndRecordType)tupleAndRecord : {
-                                ##printLine("tupleAndRecord ". arguments size).
-                                if: arguments size = 0 then: {
-                                    $fieldIndex := findIndexOfRecordFieldWithName(tupleAndRecord. selectorSymbolValue).
-                                    if: fieldIndex >= 0 then: {
-                                        ## Implicit getter.
-                                        $fieldType := tupleAndRecord fields at: fieldIndex.
-                                        ##printLine("Emit instruction for getting field ". fieldIndex).
-                                        ##printLine(receiverValue)
-                                        $extractInstruction := midBuilder fromComposite: receiverValue extractAtIndex: fieldIndex withType: fieldType.
-                                        return: extractInstruction
-                                    }
-                                }.
-                                if: arguments size = 1 then: {
-                                    
-                                    $selectorWithoutTrailingColon := selectorSymbolValue withoutTrailingColon.
-                                    $fieldIndex := findIndexOfRecordFieldWithName(tupleAndRecord. selectorWithoutTrailingColon).
-                                    ##printLine("Setter ". selectorWithoutTrailingColon . " fieldIndex ". fieldIndex).
-                                    if: fieldIndex >= 0 then: {
-                                        ## Implicit setter
-                                        $setterValue := self analyzeWithEnvironment: environment andCompileClosure: midBuilder withBody: (arguments at: 0).
-                                        $insertInstruction := midBuilder inComposite: receiverValue insertValue: setterValue atIndex: fieldIndex.
-                                        return: insertInstruction
-                                    }
-                                }.
-                            }.
-                            $(SysmelClassType)class : {
-                                ##printLine("tupleAndRecord ". arguments size).
-                                if: arguments size = 0 then: {
-                                    $fieldIndex := findIndexOfClassFieldWithName(class. selectorSymbolValue).
-                                    if: fieldIndex >= 0 then: {
-                                        ## Implicit getter.
-                                        $fieldType := class getFieldTypeAtIndex: fieldIndex.
-                                        ##printLine("Emit instruction for getting field ". fieldIndex).
-                                        $extractInstruction := midBuilder fromComposite: receiverValue extractAtIndex: fieldIndex withType: fieldType.
-                                        return: extractInstruction
-                                    }
-                                }.
-                                if: arguments size = 1 then: {
-                                    
-                                    $selectorWithoutTrailingColon := selectorSymbolValue withoutTrailingColon.
-                                    $fieldIndex := findIndexOfClassFieldWithName(class. selectorWithoutTrailingColon).
-                                    ##printLine("Setter ". selectorWithoutTrailingColon . " fieldIndex ". fieldIndex).
-                                    if: fieldIndex >= 0 then: {
-                                        ## Implicit setter
-                                        $setterValue := self analyzeWithEnvironment: environment andCompileClosure: midBuilder withBody: (arguments at: 0).
-                                        $insertInstruction := midBuilder inComposite: receiverValue insertValue: setterValue atIndex: fieldIndex.
-                                        return: insertInstruction
-                                    }
-                                }.
-                            }.
-                            _: {
-                                ## Nothing required here. 
-                            }
-                        }.
-                    }.
-
-                    $invocationArguments := OrderedCollection().
-                    $!i := 0. while:(i < messageSend arguments size) do: {
-                        $argument := messageSend arguments at: i.
-                        $analyzedArgument := self analyzeWithEnvironment: environment andCompileClosure: midBuilder withBody: argument.
-                        invocationArguments add: analyzedArgument.
-                    } continueWith:(i := i + 1).
-
-                    midBuilder sourcePosition: messageSend sourcePosition.
-                    return: (midBuilder send: selectorValue to: receiverValue withArguments: invocationArguments asArray)
+                    return: (self analyzeMessageSendWithReceiver: receiver selector: messageSend selector arguments: messageSend arguments environment: environment inCompileClosure: midBuilder sourcePosition: messageSend sourcePosition)
                 }.
                 $(ParseTreeMessageCascadeNode)messageCascade : {
-                    printLine("TODO: Mid message cascade").
+                    $receiver := self analyzeWithEnvironment: environment andCompileClosure: midBuilder withBody: messageCascade receiver.
+                    $!result := receiver.
+                    $!i := 0. while: (i < messageCascade cascadedMessages size) do: {
+                        $(ParseTreeCascadedMessageNode)cascaded := messageCascade cascadedMessages at: i.
+                        result := (self analyzeMessageSendWithReceiver: receiver selector: cascaded selector arguments: cascaded arguments environment: environment inCompileClosure: midBuilder sourcePosition: cascaded sourcePosition)
+                    } continueWith: (i := i + 1).
+                    return: result
                 }.
                 $(ParseTreeCascadedMessageNode)cascadedMessage : {
                     cascadedMessage sourcePosition printFormatted.
