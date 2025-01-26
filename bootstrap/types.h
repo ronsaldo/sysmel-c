@@ -59,8 +59,6 @@ struct sysmelb_Type_s {
     sysmelb_Type_t *supertype;
     uint32_t valueSize;
     uint32_t valueAlignment;
-    uint32_t heapSize;
-    uint32_t heapAlignment;
     sysmelb_SymbolHashtable_t methodDict;
     union
     {
