@@ -22,7 +22,6 @@ IdentityHashset
         if: self size <= self targetCapacity then: {
             return: void
         }.
-        printLine("Hashset increase capacity").
 
         $!newCapacity := self capacity * 2.
         if: newCapacity < 32 then: {

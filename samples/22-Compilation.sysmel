@@ -1,0 +1,17 @@
+
+
+$code := "public:[
+    $plusOne($(Int32)n :: Int32) := n + 1.
+]".
+$sourceCode := SysmelC makeSourceCodeForString(code).
+##printLine(sourceCode)
+
+$module := SysmelC MakeModuleWithName(#TestModule).
+$evalResult := SysmelC evaluateSourceCode(module. sourceCode).
+##print(evalResult).
+
+module findExportedObjectSet.
+##printLine(module exportedCompiledFunctionList).
+$functionMidIR := (module exportedCompiledFunctionList at: 0) midIR.
+functionMidIR dumpSchedule.
+functionMidIR dumpGraph.

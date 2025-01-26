@@ -25,5 +25,13 @@ Namespace
     withSelector: #getObjectWithSymbol: addMethod: {
         |$(Namespace)self $(Symbol)symbol :: Gradual |
             return: (self exportedObjectTable at: symbol)
+    };
+    withSelector: #findExportedObjectSetInModule: addMethod: {
+        |$(Namespace)self $(Module)module :: Void |
+        $!i := 0. while: (i < self exportedObjectList size) do: {
+            $namespaceExportedObject := self exportedObjectList at: i.
+            module addExportedObject: namespaceExportedObject.
+        } continueWith: (i := i + 1).
+        void
     }.
 }

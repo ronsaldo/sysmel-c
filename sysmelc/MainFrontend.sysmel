@@ -7,17 +7,22 @@ public: [
         printLine("sysmelc v0.1")
     }.
 
+    $evaluateSourceCode($(Module)module $(SourceCode)sourceCode :: Void) := {
+        $tokens := scanSourceCode(sourceCode).
+        $ast := parseTokenList(sourceCode . tokens).
+        $environment := module createTopLevelScriptEnvironment.
+        SemanticsState()
+            analyzeAndEvaluateWithEnvironment: environment script: ast.
+        void
+    }.
+
     $evaluateFileContents($(Module)module $(String)fileName $(String)fileContents :: Void) := {
         $sourceCode := SourceCode#{
             directory: extractDirname(fileName).
             name: extractBasename(fileName).
             text: fileContents.
         }.
-        $tokens := scanSourceCode(sourceCode).
-        $ast := parseTokenList(sourceCode . tokens).
-        $environment := module createTopLevelScriptEnvironment.
-        SemanticsState()
-            analyzeAndEvaluateWithEnvironment: environment script: ast.
+        evaluateSourceCode(module. sourceCode).
         void
     }.
 

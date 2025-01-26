@@ -10,6 +10,11 @@ public: [
         name: Symbol.
         globalNamespace: Namespace.
         mainEntryPoint: Function.
+        exportedObjectSet: IdentityHashset.
+        exportedObjectList: OrderedCollection.
+        exportedTypeList: OrderedCollection.
+        exportedNamespaceList: OrderedCollection.
+        exportedCompiledFunctionList: OrderedCollection.
     }.
 
     ## The different kinds of Environment

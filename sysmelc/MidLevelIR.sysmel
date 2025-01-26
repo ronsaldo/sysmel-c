@@ -1370,6 +1370,7 @@ MidClosureFunction
     };
     withSelector: #dumpSchedule addMethod: {
         | $(MidClosureFunction)self :: Void |
+        self ensureInstructionSchedule.
         $schedule := self instructionSchedule.
         $!i := 0. while: i < schedule size do: {
             $instruction := schedule at: i. 

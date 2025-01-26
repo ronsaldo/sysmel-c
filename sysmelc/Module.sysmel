@@ -4,6 +4,11 @@ public: [
         Module#{
             name: name.
             globalNamespace: MakeNamespaceNamed(#__global).
+            mainEntryPoint: null.
+            exportedObjectSet: IdentityHashset().
+            exportedObjectList: OrderedCollection().
+            exportedNamespaceList: OrderedCollection().
+            exportedCompiledFunctionList: OrderedCollection().
         }
     }.
     Module
@@ -22,6 +27,42 @@ public: [
             }).
 
             scriptLexicalScope
+        };
+        withSelector: #addExportedObject: addMethod: {
+            | $(Module)self $(Gradual)exportedObject :: Void|
+            if: (self exportedObjectSet includes: exportedObject) not then: {
+                self exportedObjectSet add: exportedObject.
+                self exportedObjectList add: exportedObject.
+
+                match: exportedObject value ofType: Value withPatterns: #{
+                    $(SysmelFunctionValue)functionValue : {
+                        match: functionValue value ofType: SysmelFunction withPatterns: #{
+                            $(SysmelCompiledFunction)compiledFunction : {
+                                self exportedCompiledFunctionList add: compiledFunction.
+                            }.
+                            _: {}
+                        }.
+                    }.
+                    $(SysmelTypeValue)typeValue : {
+                        self exportedTypeList add: typeValue value.
+                    }.
+                    $(NamespaceValue)namespaceValue : {
+                        self exportedNamespaceList add: namespaceValue value.
+                        namespaceValue value findExportedObjectSetInModule: self
+                    }.
+                    _: {}
+                }.
+            }
+        };
+        withSelector: #findExportedObjectSet addMethod: {
+            | $(Module)self :: OrderedCollection|
+            if: self mainEntryPoint isNotNull then: {
+                self addExportedObject: self mainEntryPoint.
+            }.
+
+            self globalNamespace findExportedObjectSetInModule: self.
+
+            return: self exportedObjectList
         }
 ] 
 }.
