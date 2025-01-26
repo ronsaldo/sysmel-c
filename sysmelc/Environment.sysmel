@@ -1,99 +1,102 @@
 namespace: SysmelC definition: {
+    $environmentLookupSymbolRecursively($(Environment)self $(Symbol)symbol :: TypedValue) := {
+    match: self ofType: Environment withPatterns: #{
+        $(EmptyEnvironment) empty : {
+            printLine("Symbol not found: ". symbol).
+            return: Value(InvalidErrorValue("Symbol not found in environment"))
+        }.
+        $(IntrinsicsEnvironment)intrinsics : {
+            if: (intrinsics localSymbols includesKey: symbol) then: {
+                intrinsics localSymbols at: symbol
+            }
+            else: {
+                return: environmentLookupSymbolRecursively(intrinsics parent . symbol)
+            }
+        }.
+        $(ModuleEnvironment)moduleEnv : {
+            return: environmentLookupSymbolRecursively(moduleEnv parent. symbol)
+        }.
+        $(NamespaceEnvironment)nspaceEnv : {
+            if: (nspaceEnv namespace containsObjectSymbol: symbol) then: {
+                return: (nspaceEnv namespace getObjectWithSymbol: symbol)
+            }.
+            return: environmentLookupSymbolRecursively(nspaceEnv parent. symbol)
+        }.
+        $(LexicalEnvironment)lexical : {
+            if: (lexical localSymbols includesKey: symbol) then: {
+                lexical localSymbols at: symbol
+            }
+            else: {
+                return: environmentLookupSymbolRecursively(lexical parent. symbol)
+            }
+        }.
+        $(FunctionAnalysisEnvironment)functionalEnv : {
+            if: (functionalEnv localSymbols includesKey: symbol) then: {
+                functionalEnv localSymbols at: symbol
+            }
+            else: {
+                return: environmentLookupSymbolRecursively(functionalEnv parent. symbol)
+            }
+        }.
+        _: Value(InvalidErrorValue("Symbol not found"))
+    }
+    }.
+
+$environmentLookupNamespace($(Environment)self :: Namespace) := {
+    match: self ofType: Environment withPatterns: #{
+        $(EmptyEnvironment) empty : {
+            printLine("Failed to find environment with a namespace").
+            abort()
+        }.
+        $(IntrinsicsEnvironment)intrinsics : {
+            environmentLookupNamespace(intrinsics parent)
+        }.
+        $(ModuleEnvironment)moduleEnv : {
+            return: environmentLookupNamespace(moduleEnv parent)
+        }.
+        $(NamespaceEnvironment)nspaceEnv : {
+            return: nspaceEnv namespace
+        }.
+        $(LexicalEnvironment)lexical : {
+            environmentLookupNamespace(lexical parent)
+        }.
+        $(FunctionAnalysisEnvironment)functionalEnv : {
+            environmentLookupNamespace(functionalEnv parent)
+        }.
+        _: Value(InvalidErrorValue("Symbol not found"))
+    }
+}.
+
+$environmentLookupModule($(Environment)self :: Module) := {
+    match: self ofType: Environment withPatterns: #{
+        $(EmptyEnvironment) empty : {
+            printLine("Failed to find environment with the module").
+            abort()
+        }.
+        $(IntrinsicsEnvironment)intrinsics : {
+            environmentLookupModule(intrinsics parent)
+        }.
+        $(ModuleEnvironment)moduleEnv : {
+            return: (moduleEnv module)
+        }.
+        $(NamespaceEnvironment)nspaceEnv : {
+            return: environmentLookupModule(nspaceEnv parent)
+        }.
+        $(LexicalEnvironment)lexical : {
+            environmentLookupModule(lexical parent)
+        }.
+        $(FunctionAnalysisEnvironment)functionalEnv : {
+            environmentLookupModule(functionalEnv parent)
+        }.
+        _: Value(InvalidErrorValue("Symbol not found"))
+    }
+}.
+
 public: [
     Environment
-        withSelector: #lookupSymbolRecursively: addMethod: {
-            | $(Environment)self $(Symbol)symbol :: Value |
-            match: self ofType: Environment withPatterns: #{
-                $(EmptyEnvironment) empty : {
-                    printLine("Symbol not found: ". symbol).
-                    return: Value(InvalidErrorValue("Symbol not found in environment"))
-                }.
-                $(IntrinsicsEnvironment)intrinsics : {
-                    if: (intrinsics localSymbols includesKey: symbol) then: {
-                        intrinsics localSymbols at: symbol
-                    }
-                    else: {
-                        return: (intrinsics parent lookupSymbolRecursively: symbol)
-                    }
-                }.
-                $(ModuleEnvironment)moduleEnv : {
-                    return: (moduleEnv parent lookupSymbolRecursively: symbol)
-                }.
-                $(NamespaceEnvironment)nspaceEnv : {
-                    if: (nspaceEnv namespace containsObjectSymbol: symbol) then: {
-                        return: (nspaceEnv namespace getObjectWithSymbol: symbol)
-                    }.
-                    return: (nspaceEnv parent lookupSymbolRecursively: symbol)
-                }.
-                $(LexicalEnvironment)lexical : {
-                    if: (lexical localSymbols includesKey: symbol) then: {
-                        lexical localSymbols at: symbol
-                    }
-                    else: {
-                        return: (lexical parent lookupSymbolRecursively: symbol)
-                    }
-                }.
-                $(FunctionAnalysisEnvironment)functionalEnv : {
-                    if: (functionalEnv localSymbols includesKey: symbol) then: {
-                        functionalEnv localSymbols at: symbol
-                    }
-                    else: {
-                        return: (functionalEnv parent lookupSymbolRecursively: symbol)
-                    }
-                }.
-                _: Value(InvalidErrorValue("Symbol not found"))
-            }
-        };
-        withSelector: #lookupNamespace addMethod: {
-            | $(Environment)self :: Namespace |
-            match: self ofType: Environment withPatterns: #{
-                $(EmptyEnvironment) empty : {
-                    printLine("Failed to find environment with a namespace").
-                    abort()
-                }.
-                $(IntrinsicsEnvironment)intrinsics : {
-                    (intrinsics parent lookupNamespace)
-                }.
-                $(ModuleEnvironment)moduleEnv : {
-                    return: (moduleEnv parent lookupNamespace)
-                }.
-                $(NamespaceEnvironment)nspaceEnv : {
-                    return: nspaceEnv namespace
-                }.
-                $(LexicalEnvironment)lexical : {
-                    lexical parent lookupNamespace
-                }.
-                $(FunctionAnalysisEnvironment)functionalEnv : {
-                    functionalEnv parent lookupNamespace
-                }.
-                _: Value(InvalidErrorValue("Symbol not found"))
-            }
-        };
-        withSelector: #lookupModule addMethod: {
-            | $(Environment)self :: Module |
-            match: self ofType: Environment withPatterns: #{
-                $(EmptyEnvironment) empty : {
-                    printLine("Failed to find environment with the module").
-                    abort()
-                }.
-                $(IntrinsicsEnvironment)intrinsics : {
-                    (intrinsics parent lookupModule)
-                }.
-                $(ModuleEnvironment)moduleEnv : {
-                    return: (moduleEnv module)
-                }.
-                $(NamespaceEnvironment)nspaceEnv : {
-                    return: nspaceEnv parent lookupModule
-                }.
-                $(LexicalEnvironment)lexical : {
-                    lexical parent lookupModule
-                }.
-                $(FunctionAnalysisEnvironment)functionalEnv : {
-                    functionalEnv parent lookupModule
-                }.
-                _: Value(InvalidErrorValue("Symbol not found"))
-            }
-        };
+        withSelector: #lookupSymbolRecursively: addMethod: environmentLookupSymbolRecursively;
+        withSelector: #lookupNamespace addMethod: environmentLookupNamespace;
+        withSelector: #lookupModule addMethod: environmentLookupModule;
         withSelector: #addLocalSymbol:withValue: addMethod: {
             | $(Environment)self $(Symbol)symbol $(TypedValue)value :: Void |
             match: self ofType: Environment withPatterns: #{
