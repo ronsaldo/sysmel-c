@@ -38,6 +38,7 @@ typedef enum sysmelb_FunctionOpcode_e
     SysmelFunctionOpcodeJumpIfFalse,
     SysmelFunctionOpcodeJumpIfTrue,
     SysmelFunctionOpcodeMakeArray,
+    SysmelFunctionOpcodeMakeByteArray,
     SysmelFunctionOpcodeMakeAssociation,
     SysmelFunctionOpcodeMakeImmutableDictionary,
     SysmelFunctionOpcodeMakeTuple,
@@ -109,6 +110,7 @@ void sysmelb_bytecode_sendMessage(sysmelb_FunctionBytecode_t *bytecode, sysmelb_
 
 void sysmelb_bytecode_makeAssociation(sysmelb_FunctionBytecode_t *bytecode);
 void sysmelb_bytecode_makeArray(sysmelb_FunctionBytecode_t *bytecode, uint16_t size);
+void sysmelb_bytecode_makeByteArray(sysmelb_FunctionBytecode_t *bytecode, uint16_t size);
 void sysmelb_bytecode_makeImmutableDictionary(sysmelb_FunctionBytecode_t *bytecode, uint16_t size);
 void sysmelb_bytecode_makeTuple(sysmelb_FunctionBytecode_t *bytecode, uint16_t size);
 

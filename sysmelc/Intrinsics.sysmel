@@ -1217,6 +1217,45 @@ $universePrimitiveNewWithCount($(Array)arguments) := {
     abort().
 }.
 
+$universePrimitiveFixedArray($(Array)arguments) := {
+    assert: arguments size = 2.
+    $type := arguments at: 0.
+    $count := arguments at: 1.
+
+    $countValue := extractIntegerFromValue(count value).
+    $typeValue := extractTypeFromValue(type value).
+    $fixedArrayType := typeValue array: count.
+
+    $typedResult := TypedValue(Value(SysmelTypeValue(fixedArrayType)) . BasicIntrinsicTypesSingleton universe).
+    return: typedResult
+}.
+
+$universePrimitivePointer($(Array)arguments) := {
+    assert: arguments size = 2.
+    $type := arguments at: 0.
+    $count := arguments at: 1.
+
+    $countValue := extractIntegerFromValue(count value).
+    $typeValue := extractTypeFromValue(type value).
+    $pointerType := typeValue pointer.
+
+    $typedResult := TypedValue(Value(SysmelTypeValue(pointerType)) . BasicIntrinsicTypesSingleton universe).
+    return: typedResult
+}.
+
+$universePrimitiveRef($(Array)arguments) := {
+    assert: arguments size = 2.
+    $type := arguments at: 0.
+    $count := arguments at: 1.
+
+    $countValue := extractIntegerFromValue(count value).
+    $typeValue := extractTypeFromValue(type value).
+    $retType := typeValue ref.
+
+    $typedResult := TypedValue(Value(SysmelTypeValue(retType)) . BasicIntrinsicTypesSingleton universe).
+    return: typedResult
+}.
+
 $addUniverseIntrinsicMethod($(SymbolHashtable)methodDict $(Symbol)name $(Function)primitive $(SysmelType)functionType :: Void) := {
     $primitiveValue := TypedValue(Value(SysmelFunctionValue(SysmelFunction(SysmelIntrinsicPrimitive#{
         name: name.
@@ -1233,6 +1272,9 @@ $addTypeUniverseIntrinsicMethods($(SysmelType)typeUniverse :: Void) := {
 
     addUniverseIntrinsicMethod(methodDict. #withSelector:addMethod:. universePrimitiveWithSelectorAddMethod. makeSimplePureFunctionType([typeUniverse. BasicIntrinsicTypesSingleton gradual] . BasicIntrinsicTypesSingleton voidType)).
     addUniverseIntrinsicMethod(methodDict. #new:. universePrimitiveNewWithCount. makeSimplePureFunctionType([typeUniverse. BasicIntrinsicTypesSingleton integer] . BasicIntrinsicTypesSingleton gradual)).
+    addUniverseIntrinsicMethod(methodDict. #array:. universePrimitiveFixedArray. makeSimplePureFunctionType([typeUniverse. BasicIntrinsicTypesSingleton integer] . BasicIntrinsicTypesSingleton gradual)).
+    addUniverseIntrinsicMethod(methodDict. #pointer. universePrimitivePointer. makeSimplePureFunctionType([typeUniverse. BasicIntrinsicTypesSingleton integer] . BasicIntrinsicTypesSingleton gradual)).
+    addUniverseIntrinsicMethod(methodDict. #ref. universePrimitiveRef. makeSimplePureFunctionType([typeUniverse. BasicIntrinsicTypesSingleton integer] . BasicIntrinsicTypesSingleton gradual)).
     void
 }.
 addTypeUniverseIntrinsicMethods(BasicIntrinsicTypesSingleton universe).
@@ -1752,6 +1794,67 @@ $addArrayPrimitives() := {
     addIntrinsicMethod(methodDict. #at:put:. arrayPrimitive_atPut . makeSimpleFunctionType([arrayType . integerType. gradualType]. gradualType)).
 }.
 addArrayPrimitives().
+
+$byteArrayPrimitive_concatenate($(Array)arguments :: TypedValue) := {
+    assert: arguments size = 2.
+    $left := arguments at: 0.
+    $right := arguments at: 1.
+
+    $leftArray := extractByteArrayFromValue(left value).
+    $rightArray := extractByteArrayFromValue(right value).
+    $result := leftArray -- rightArray.
+    TypedValue(Value(ByteArrayValue(result)). BasicIntrinsicTypesSingleton byteArray).
+}.
+
+$byteArrayPrimitive_size($(Array)arguments :: TypedValue) := {
+    assert: arguments size = 1.
+    $typedArray := arguments at: 0.
+
+    $array := extractByteArrayFromValue(typedArray value).
+    TypedValue(Value(IntegerValue(array size)). BasicIntrinsicTypesSingleton integer).
+}.
+
+$byteArrayPrimitive_at($(Array)arguments :: TypedValue) := {
+    assert: arguments size = 2.
+    $array := arguments at: 0.
+    $arrayValue := extractByteArrayFromValue(array value).
+    $index := arguments at: 1.
+    $indexValue := extractIntegerFromValue(index value).
+    if: indexValue >= arrayValue size then: {
+        printLine("Index ". indexValue . " is out bounds.").
+        abort().
+    }.
+    $element := arrayValue at: indexValue.
+    element
+}.
+
+$byteArrayPrimitive_atPut($(Array)arguments :: TypedValue) := {
+    assert: arguments size = 3.
+    $array := arguments at: 0.
+    $arrayValue := extractByteArrayFromValue(array value).
+    $index := arguments at: 1.
+    $indexValue := extractIntegerFromValue(index value).
+    if: indexValue >= arrayValue size then: {
+        printLine("Index ". indexValue . " is out bounds.").
+        abort().
+    }.
+    $element := extractIntegerFromValue(arguments at: 2).
+    arrayValue at: indexValue put: element.
+    element
+}.
+
+$addByteArrayPrimitives() := {
+    $byteArrayType := BasicIntrinsicTypesSingleton byteArray.
+    $integerType := BasicIntrinsicTypesSingleton integer.
+    $commonPart := byteArrayType getCommonSection.
+    $methodDict := byteArrayType getMethodDictionary.
+    
+    addIntrinsicMethod(methodDict. #--.      byteArrayPrimitive_concatenate . makeSimplePureFunctionType([byteArrayType . byteArrayType]. byteArrayType)).
+    addIntrinsicMethod(methodDict. #size.    byteArrayPrimitive_size . makeSimplePureFunctionType([byteArrayType]. integerType)).
+    addIntrinsicMethod(methodDict. #at:.     byteArrayPrimitive_at . makeSimplePureFunctionType([byteArrayType . integerType]. integerType)).
+    addIntrinsicMethod(methodDict. #at:put:. byteArrayPrimitive_atPut . makeSimpleFunctionType([byteArrayType . integerType. integerType]. integerType)).
+}.
+addByteArrayPrimitives().
 
 $tuplePrimitive_size($(Array)arguments :: TypedValue) := {
     assert: arguments size = 1.

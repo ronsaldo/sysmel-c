@@ -1,0 +1,79 @@
+public: [
+Record: ByteOrderedCollection withFields: #{
+    size: Integer.
+    capacity: Integer.
+    data: ByteArray.
+}.
+].
+ByteOrderedCollection
+    withSelector: #initialize addMethod: {
+        | $(ByteOrderedCollection)self :: Void |
+        self size: 0.
+        self capacity: 32.
+        self data: (ByteArray new: self capacity).
+        return: void.
+    };
+    withSelector: #increaseCapacity addMethod: {
+        |$(ByteOrderedCollection)self :: ByteOrderedCollection|
+
+        $newCapacity := self capacity * 2.
+        $newDataStore := ByteArray new: newCapacity.
+        $oldData := self data.
+        $oldDataSize := self size.
+        $!i := 0. while: (i < oldDataSize) do: {
+            newDataStore at: i put: (oldData at: i)
+        } continueWith: (i := i + 1).
+
+        self capacity: newCapacity.
+        self data: newDataStore.
+        return: self
+    };
+    withSelector: #add: addMethod: {
+        | $(ByteOrderedCollection)self $(Integer)element :: Integer |
+        if: self size >= self capacity then: {
+            self increaseCapacity
+        }.
+        self data at: self size put: element.
+        self size: self size + 1.
+        return: element
+    };
+    withSelector: #addAll: addMethod: {
+        | $(ByteOrderedCollection)self $(ByteArray)elements :: Void |
+        $!i := 0. while: (i < elements size) do: {
+            self add: (elements at: i)
+        } continueWith: (i := i + 1).
+        return: void
+    };
+    withSelector: #at: addMethod: {
+        | $(ByteOrderedCollection)self $(Integer)index :: Integer |
+        if: index >= self size then: {
+            printLine("Index out of bounds").
+            abort()
+        }.
+
+        self data at: index. 
+    };
+    withSelector: #at:put: addMethod: {
+        | $(ByteOrderedCollection)self $(Integer)index $(Integer)value :: Integer |
+        if: index >= self size then: {
+            printLine("Index out of bounds").
+            abort()
+        }.
+
+        self data at: index put: value.
+        value
+    };
+    withSelector: #asByteArray addMethod: {
+        | $(ByteOrderedCollection)self :: ByteArray |
+        $size := self size.
+        $result := ByteArray new: size.
+        $!i := 0. while: (i < size) do: {
+            result at: i put: (self data at: i) 
+        } continueWith: (i := i + 1).
+        result
+    }.
+
+#*$list := ByteOrderedCollection().
+list add: 1; add: 2; add: 3.
+printLine(list asArray)
+*#

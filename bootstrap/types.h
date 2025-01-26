@@ -13,6 +13,7 @@
 typedef struct sysmelb_Type_s sysmelb_Type_t;
 typedef struct sysmelb_ImmutableDictionary_s sysmelb_ImmutableDictionary_t;
 typedef struct sysmelb_OrderedCollection_s sysmelb_OrderedCollection_t;
+typedef struct sysmelb_ByteOrderedCollection_s sysmelb_ByteOrderedCollection_t;
 
 typedef enum sysmelb_TypeKind_e {
     SysmelTypeKindNull,
@@ -39,10 +40,12 @@ typedef enum sysmelb_TypeKind_e {
     SysmelTypeKindSimpleFunction,
     SysmelTypeKindNamespace,
     SysmelTypeKindOrderedCollection,
+    SysmelTypeKindByteOrderedCollection,
     SysmelTypeKindIdentityHashset,
     SysmelTypeKindIdentityDictionary,
     SysmelTypeKindParseTreeNode,
     SysmelTypeKindValueReference,
+    SysmelTypeKindFixedArray,
     SysmelTypeKindPrimitiveCharacter,
     SysmelTypeKindPrimitiveSignedInteger,
     SysmelTypeKindPrimitiveUnsignedInteger,
@@ -61,6 +64,11 @@ struct sysmelb_Type_s {
     sysmelb_SymbolHashtable_t methodDict;
     union
     {
+        struct {
+            sysmelb_Type_t *baseType;
+            uint32_t size;
+        } fixedArray;
+
         struct {
             uint32_t fieldCount;
             sysmelb_Type_t **fields;
@@ -103,6 +111,7 @@ typedef struct sysmelb_BasicTypes_s {
 
     sysmelb_Type_t *array;
     sysmelb_Type_t *byteArray;
+    sysmelb_Type_t *fixedArray;
     sysmelb_Type_t *tuple;
     sysmelb_Type_t *record;
     sysmelb_Type_t *clazz;
@@ -116,6 +125,7 @@ typedef struct sysmelb_BasicTypes_s {
     sysmelb_Type_t *function;
     sysmelb_Type_t *namespace;
     sysmelb_Type_t *orderedCollection;
+    sysmelb_Type_t *byteOrderedCollection;
     sysmelb_Type_t *identityHashset;
     sysmelb_Type_t *identityDictionary;
 
@@ -142,6 +152,7 @@ void sysmelb_type_addPrimitiveMacroMethod(sysmelb_Type_t *type, sysmelb_symbol_t
 sysmelb_function_t *sysmelb_type_lookupSelector(sysmelb_Type_t *type, sysmelb_symbol_t *selector);
 
 sysmelb_Type_t *sysmelb_allocateValueType(sysmelb_TypeKind_t kind, sysmelb_symbol_t *name, uint32_t size, uint32_t alignment);
+sysmelb_Type_t *sysmelb_allocateFixedArrayType(sysmelb_Type_t *baseType, uint32_t size);
 sysmelb_Type_t *sysmelb_allocateRecordType(sysmelb_symbol_t *name, sysmelb_ImmutableDictionary_t *fieldsAndTypes);
 sysmelb_Type_t *sysmelb_allocateClassType(sysmelb_symbol_t *name, sysmelb_Type_t *superclass, sysmelb_ImmutableDictionary_t *fieldsAndTypes);
 sysmelb_Type_t *sysmelb_allocateSumType(sysmelb_symbol_t *name, size_t alternativeCount);

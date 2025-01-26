@@ -337,6 +337,37 @@ static sysmelb_Value_t sysmelb_readWholeFileAsText(size_t argumentCount, sysmelb
     return result;
 }
 
+static sysmelb_Value_t sysmelb_writeWholeFileWithBinaryData(size_t argumentCount, sysmelb_Value_t *arguments)
+{
+    assert(argumentCount == 2);
+    assert(arguments[0].kind == SysmelValueKindStringReference);
+    assert(arguments[1].kind == SysmelValueKindByteArrayReference);
+
+    char* nameCString = calloc(arguments[0].stringSize + 1, 1);
+    memcpy(nameCString, arguments[0].string, arguments[0].stringSize);
+
+    FILE *file = fopen(nameCString, "wb");
+    if(!file)
+    {
+        fprintf(stderr, "Failed to open file %s.", nameCString);
+        abort();
+    }
+
+    if(fwrite(arguments[1].byteArrayReference->elements, arguments[1].byteArrayReference->size, 1, file) != 1)
+    {
+        fprintf(stderr, "Failed to write file %s.", nameCString);
+        abort();
+
+    }
+    free(nameCString);
+    fclose(file);
+
+    sysmelb_Value_t result = {
+        .kind = SysmelValueKindVoid,
+        .type = sysmelb_getBasicTypes()->voidType
+    };
+    return result;
+}
 
 static sysmelb_Value_t sysmelb_abort(size_t argumentCount, sysmelb_Value_t *arguments)
 {
@@ -912,6 +943,16 @@ sysmelb_Environment_t *sysmelb_getOrCreateIntrinsicsEnvironment()
         sysmelb_Environment_setLocalSymbolBinding(&sysmelb_IntrinsicsEnvironment, function->name, sysmelb_createSymbolFunctionBinding(function));
     }
 
+    // File writing
+    {
+        sysmelb_function_t *function = sysmelb_allocate(sizeof(sysmelb_function_t));
+        function->kind = SysmelFunctionKindPrimitive;
+        function->name = sysmelb_internSymbolC("writeWholeFileWithBinaryData");
+        function->primitiveFunction = sysmelb_writeWholeFileWithBinaryData;
+
+        sysmelb_Environment_setLocalSymbolBinding(&sysmelb_IntrinsicsEnvironment, function->name, sysmelb_createSymbolFunctionBinding(function));
+    }
+    
     // Abort
     {
         sysmelb_function_t *function = sysmelb_allocate(sizeof(sysmelb_function_t));

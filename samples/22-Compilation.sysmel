@@ -19,3 +19,10 @@ $functionMidIR := (module exportedCompiledFunctionList at: 0) midIR.
 $lirModule := SysmelC LirModule().
 lirModule initialize.
 lirModule compileMidFunction: functionMidIR.
+
+$asm := SysmelC LirAssembler().
+asm initialize.
+asm beginTextSection;
+    x64_ret
+
+asm writeBinaryToFileNamed: "test.bin"

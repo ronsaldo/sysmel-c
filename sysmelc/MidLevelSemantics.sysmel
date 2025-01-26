@@ -649,8 +649,16 @@ public: [
                     return: midArray
                 }.
                 $(ParseTreeByteArrayNode)byteArrayNode : {
-                    printLine("TODO: Byte array node").
-                    abort()
+                    $elementCount := byteArrayNode elements size.
+                    $midElements := Array new: elementCount.
+                    $!i := 0. while: (i < elementCount) do: {
+                        $midElement := self analyzeWithEnvironment: environment andCompileClosure: midBuilder withBody: (byteArrayNode elements at: i).
+                        midElements at: i put: midElement.
+                    } continueWith:(i := i + 1).
+                    
+                    midBuilder sourcePosition: byteArrayNode sourcePosition.
+                    $midArray := midBuilder makeByteArrayWithElements: midElements.
+                    return: midArray
                 }.
 
                 ## Association, dictionary

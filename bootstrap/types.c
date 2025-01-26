@@ -51,6 +51,18 @@ sysmelb_Type_t *sysmelb_allocateValueType(sysmelb_TypeKind_t kind, sysmelb_symbo
     return type;
 }
 
+sysmelb_Type_t *sysmelb_allocateFixedArrayType(sysmelb_Type_t *baseType, uint32_t size)
+{
+    sysmelb_Type_t *type = sysmelb_allocate(sizeof(sysmelb_Type_t));
+    type->kind = SysmelTypeKindRecord;
+    type->valueAlignment = baseType->valueAlignment;
+    type->valueSize = baseType->valueSize * size;
+    type->supertype = sysmelb_getBasicTypes()->fixedArray;
+    type->fixedArray.baseType = baseType;
+    type->fixedArray.size = size;
+    return type;
+}
+
 sysmelb_Type_t *sysmelb_allocateRecordType(sysmelb_symbol_t *name, sysmelb_ImmutableDictionary_t *fieldsAndTypes)
 {
     sysmelb_Type_t *type = sysmelb_allocate(sizeof(sysmelb_Type_t));
@@ -318,6 +330,15 @@ sysmelb_Value_t sysmelb_instantiateTypeWithArguments(sysmelb_Type_t *type, size_
             .orderedCollectionReference = collection};
         return result;
     }
+    if (type->kind == SysmelTypeKindByteOrderedCollection)
+    {
+        sysmelb_ByteOrderedCollection_t *collection = sysmelb_allocate(sizeof(sysmelb_ByteOrderedCollection_t));
+        sysmelb_Value_t result = {
+            .kind = SysmelValueKindByteOrderedCollectionReference,
+            .type = sysmelb_getBasicTypes()->byteOrderedCollection,
+            .byteOrderedCollectionReference = collection};
+        return result;
+    }
     if (type->kind == SysmelTypeKindSymbolHashtable)
     {
         sysmelb_SymbolHashtable_t *table = sysmelb_allocate(sizeof(sysmelb_SymbolHashtable_t));
@@ -394,6 +415,7 @@ static void sysmelb_createBasicTypes(void)
 
     sysmelb_BasicTypesData.array = sysmelb_allocateValueType(SysmelTypeKindArray, sysmelb_internSymbolC("Array"), pointerSize, pointerAlignment);
     sysmelb_BasicTypesData.byteArray = sysmelb_allocateValueType(SysmelTypeKindByteArray, sysmelb_internSymbolC("ByteArray"), pointerSize, pointerAlignment);
+    sysmelb_BasicTypesData.fixedArray = sysmelb_allocateValueType(SysmelTypeKindByteArray, sysmelb_internSymbolC("FixedSizeArray"), pointerSize, pointerAlignment);
     sysmelb_BasicTypesData.tuple = sysmelb_allocateValueType(SysmelTypeKindTuple, sysmelb_internSymbolC("Tuple"), pointerSize, pointerAlignment);
     sysmelb_BasicTypesData.record = sysmelb_allocateValueType(SysmelTypeKindRecord, sysmelb_internSymbolC("Record"), pointerSize, pointerAlignment);
     sysmelb_BasicTypesData.record->supertype = sysmelb_BasicTypesData.tuple;
@@ -409,12 +431,13 @@ static void sysmelb_createBasicTypes(void)
     sysmelb_BasicTypesData.namespace = sysmelb_allocateValueType(SysmelTypeKindNamespace, sysmelb_internSymbolC("Namespace"), pointerSize, pointerAlignment);
 
     sysmelb_BasicTypesData.orderedCollection = sysmelb_allocateValueType(SysmelTypeKindOrderedCollection, sysmelb_internSymbolC("OrderedCollection"), pointerSize, pointerAlignment);
+    sysmelb_BasicTypesData.byteOrderedCollection = sysmelb_allocateValueType(SysmelTypeKindByteOrderedCollection, sysmelb_internSymbolC("ByteOrderedCollection"), pointerSize, pointerAlignment);
     sysmelb_BasicTypesData.identityHashset = sysmelb_allocateValueType(SysmelTypeKindIdentityHashset, sysmelb_internSymbolC("IdentityHashset"), pointerSize, pointerAlignment);
     sysmelb_BasicTypesData.identityDictionary = sysmelb_allocateValueType(SysmelTypeKindIdentityDictionary, sysmelb_internSymbolC("IdentityDictionary"), pointerSize, pointerAlignment);
 
-    sysmelb_BasicTypesData.char8 = sysmelb_allocateValueType(SysmelTypeKindPrimitiveCharacter, sysmelb_internSymbolC("Int8"), 1, 1);
-    sysmelb_BasicTypesData.char16 = sysmelb_allocateValueType(SysmelTypeKindPrimitiveCharacter, sysmelb_internSymbolC("Int16"), 2, 2);
-    sysmelb_BasicTypesData.char32 = sysmelb_allocateValueType(SysmelTypeKindPrimitiveCharacter, sysmelb_internSymbolC("Int32"), 4, 4);
+    sysmelb_BasicTypesData.char8 = sysmelb_allocateValueType(SysmelTypeKindPrimitiveCharacter, sysmelb_internSymbolC("Char8"), 1, 1);
+    sysmelb_BasicTypesData.char16 = sysmelb_allocateValueType(SysmelTypeKindPrimitiveCharacter, sysmelb_internSymbolC("Char16"), 2, 2);
+    sysmelb_BasicTypesData.char32 = sysmelb_allocateValueType(SysmelTypeKindPrimitiveCharacter, sysmelb_internSymbolC("Char32"), 4, 4);
 
     sysmelb_BasicTypesData.int8 = sysmelb_allocateValueType(SysmelTypeKindPrimitiveSignedInteger, sysmelb_internSymbolC("Int8"), 1, 1);
     sysmelb_BasicTypesData.int16 = sysmelb_allocateValueType(SysmelTypeKindPrimitiveSignedInteger, sysmelb_internSymbolC("Int16"), 2, 2);
@@ -1522,10 +1545,27 @@ static sysmelb_Value_t sysmelb_primitive_newWithSize(size_t argumentCount, sysme
     abort();
 }
 
+static sysmelb_Value_t sysmelb_primitive_fixedArrayType(size_t argumentCount, sysmelb_Value_t *arguments)
+{
+    assert(argumentCount == 2);
+    assert(arguments[0].kind == SysmelValueKindTypeReference);
+    assert(arguments[1].kind == SysmelValueKindInteger || arguments[1].kind == SysmelValueKindUnsignedInteger);
+
+    sysmelb_Type_t *fixedArrayType = sysmelb_allocateFixedArrayType(arguments[0].typeReference, arguments[1].integer);
+
+    sysmelb_Value_t result = {
+        .kind = SysmelValueKindTypeReference,
+        .type = sysmelb_getBasicTypes()->universe,
+        .typeReference = fixedArrayType
+    };
+    return result;
+}
+
 static void sysmelb_createBasicTypeUniversePrimitives(void)
 {
     sysmelb_type_addPrimitiveMethod(sysmelb_BasicTypesData.universe, sysmelb_internSymbolC("withSelector:addMethod:"), sysmelb_primitive_withSelectorAddMethod);
     sysmelb_type_addPrimitiveMethod(sysmelb_BasicTypesData.universe, sysmelb_internSymbolC("new:"), sysmelb_primitive_newWithSize);
+    sysmelb_type_addPrimitiveMethod(sysmelb_BasicTypesData.universe, sysmelb_internSymbolC("array:"), sysmelb_primitive_fixedArrayType);
 }
 
 static sysmelb_Value_t sysmelb_primitive_OrderedCollection_add(size_t argumentCount, sysmelb_Value_t *arguments)
@@ -1609,6 +1649,112 @@ static void sysmelb_createBasicOrderedCollectionPrimitives(void)
     sysmelb_type_addPrimitiveMethod(sysmelb_BasicTypesData.orderedCollection, sysmelb_internSymbolC("at:"), sysmelb_primitive_OrderedCollection_at);
     sysmelb_type_addPrimitiveMethod(sysmelb_BasicTypesData.orderedCollection, sysmelb_internSymbolC("at:put:"), sysmelb_primitive_OrderedCollection_atPut);
     sysmelb_type_addPrimitiveMethod(sysmelb_BasicTypesData.orderedCollection, sysmelb_internSymbolC("asArray"), sysmelb_primitive_OrderedCollection_asArray);
+}
+
+static sysmelb_Value_t sysmelb_primitive_ByteOrderedCollection_add(size_t argumentCount, sysmelb_Value_t *arguments)
+{
+    assert(argumentCount == 2);
+    assert(arguments[0].kind == SysmelValueKindByteOrderedCollectionReference);
+    sysmelb_ByteOrderedCollection_add(arguments[0].byteOrderedCollectionReference, arguments[1].integer);
+    return arguments[1];
+}
+
+static sysmelb_Value_t sysmelb_primitive_ByteOrderedCollection_addAll(size_t argumentCount, sysmelb_Value_t *arguments)
+{
+    assert(argumentCount == 2);
+    assert(arguments[0].kind == SysmelValueKindByteOrderedCollectionReference);
+    assert(arguments[1].kind == SysmelValueKindByteArrayReference);
+    for(size_t i = 0; i < arguments[1].byteArrayReference->size; ++i)
+        sysmelb_ByteOrderedCollection_add(arguments[0].byteOrderedCollectionReference, arguments[1].byteArrayReference->elements[i]);
+    return arguments[1];
+}
+
+static sysmelb_Value_t sysmelb_primitive_ByteOrderedCollection_size(size_t argumentCount, sysmelb_Value_t *arguments)
+{
+    assert(argumentCount == 1);
+    assert(arguments[0].kind == SysmelValueKindByteOrderedCollectionReference);
+    sysmelb_Value_t result = {
+        .kind = SysmelValueKindUnsignedInteger,
+        .type = sysmelb_getBasicTypes()->integer,
+        .unsignedInteger = arguments[0].byteOrderedCollectionReference->size,
+    };
+    return result;
+}
+
+static sysmelb_Value_t sysmelb_primitive_ByteOrderedCollection_at(size_t argumentCount, sysmelb_Value_t *arguments)
+{
+    assert(argumentCount == 2);
+    assert(arguments[0].kind == SysmelValueKindByteOrderedCollectionReference);
+    assert(arguments[1].kind == SysmelValueKindInteger ||
+           arguments[1].kind == SysmelValueKindUnsignedInteger);
+    size_t size = arguments[0].byteOrderedCollectionReference->size;
+    size_t index = arguments[1].unsignedInteger;
+    if (index >= size)
+    {
+        sysmelb_SourcePosition_t pos = {};
+        sysmelb_errorPrintf(pos, "Index %d is out of bounds (size %d).\n", (int)index, (int)size);
+        abort();
+    }
+
+    uint8_t byte = arguments[0].byteOrderedCollectionReference->elements[index];
+    sysmelb_Value_t result = {
+        .kind = SysmelValueKindInteger,
+        .type = sysmelb_getBasicTypes()->integer,
+        .integer = byte,
+    };
+    return result;
+}
+
+static sysmelb_Value_t sysmelb_primitive_ByteOrderedCollection_atPut(size_t argumentCount, sysmelb_Value_t *arguments)
+{
+    assert(argumentCount == 3);
+    assert(arguments[0].kind == SysmelValueKindByteOrderedCollectionReference);
+    assert(arguments[1].kind == SysmelValueKindInteger ||
+           arguments[1].kind == SysmelValueKindUnsignedInteger);
+    size_t size = arguments[0].byteOrderedCollectionReference->size;
+    size_t index = arguments[1].unsignedInteger;
+    if (index >= size)
+    {
+        sysmelb_SourcePosition_t pos = {};
+        sysmelb_errorPrintf(pos, "Index %d is out of bounds (size %d).\n", (int)index, (int)size);
+        abort();
+    }
+
+    arguments[0].byteOrderedCollectionReference->elements[index] = arguments[2].integer;
+
+    sysmelb_Value_t result = {
+        .kind = SysmelValueKindVoid,
+        .type = sysmelb_getBasicTypes()->voidType,
+    };
+    return result;
+}
+
+static sysmelb_Value_t sysmelb_primitive_ByteOrderedCollection_asByteArray(size_t argumentCount, sysmelb_Value_t *arguments)
+{
+    assert(argumentCount == 1);
+    assert(arguments[0].kind == SysmelValueKindByteOrderedCollectionReference);
+
+    size_t dataSize = arguments[0].byteOrderedCollectionReference->size;
+    sysmelb_ByteArrayHeader_t *byteArray = sysmelb_allocate(sizeof(sysmelb_ByteArrayHeader_t) + dataSize);
+    byteArray->size = dataSize;
+    memcpy(byteArray->elements, arguments[0].byteOrderedCollectionReference->elements, dataSize);
+
+    sysmelb_Value_t result = {
+        .kind = SysmelValueKindByteArrayReference,
+        .type = sysmelb_getBasicTypes()->byteArray,
+        .byteArrayReference = byteArray
+    };
+    return result;
+}
+
+static void sysmelb_createBasicByteOrderedCollectionPrimitives(void)
+{
+    sysmelb_type_addPrimitiveMethod(sysmelb_BasicTypesData.byteOrderedCollection, sysmelb_internSymbolC("add:"),        sysmelb_primitive_ByteOrderedCollection_add);
+    sysmelb_type_addPrimitiveMethod(sysmelb_BasicTypesData.byteOrderedCollection, sysmelb_internSymbolC("addAll:"),     sysmelb_primitive_ByteOrderedCollection_addAll);
+    sysmelb_type_addPrimitiveMethod(sysmelb_BasicTypesData.byteOrderedCollection, sysmelb_internSymbolC("size"),        sysmelb_primitive_ByteOrderedCollection_size);
+    sysmelb_type_addPrimitiveMethod(sysmelb_BasicTypesData.byteOrderedCollection, sysmelb_internSymbolC("at:"),         sysmelb_primitive_ByteOrderedCollection_at);
+    sysmelb_type_addPrimitiveMethod(sysmelb_BasicTypesData.byteOrderedCollection, sysmelb_internSymbolC("at:put:"),     sysmelb_primitive_ByteOrderedCollection_atPut);
+    sysmelb_type_addPrimitiveMethod(sysmelb_BasicTypesData.byteOrderedCollection, sysmelb_internSymbolC("asByteArray"), sysmelb_primitive_ByteOrderedCollection_asByteArray);
 }
 
 static sysmelb_Value_t sysmelb_primitive_SymbolHashtable_size(size_t argumentCount, sysmelb_Value_t *arguments)
@@ -1931,6 +2077,7 @@ static void sysmelb_createBasicTypesPrimitives(void)
     sysmelb_createBasicAssociationPrimitives();
     sysmelb_createBasicImmutableDictionaryPrimitives();
     sysmelb_createBasicOrderedCollectionPrimitives();
+    sysmelb_createBasicByteOrderedCollectionPrimitives();
     sysmelb_createBasicSymbolHashtablePrimitives();
     sysmelb_createBasicIdentityHashsetPrimitives();
     sysmelb_createBasicIdentityDictionaryPrimitives();

@@ -1,4 +1,5 @@
 loadFileOnce: "OrderedCollection.sysmel".
+loadFileOnce: "ByteOrderedCollection.sysmel".
 loadFileOnce: "SymbolHashtable.sysmel".
 loadFileOnce: "IdentityHashset.sysmel".
 loadFileOnce: "IdentityDictionary.sysmel".

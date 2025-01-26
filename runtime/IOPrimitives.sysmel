@@ -2,5 +2,9 @@ public: [
     $readWholeFileAsText($(String)filename :: String) := {
         printLine("TODO: readWholeFileAsText". filename).
         abort()
+    }.
+
+    $writeWholeFileWithBinaryData($(String)filename $(ByteArray)binaryData :: Void) := {
+        void
     }
 ]

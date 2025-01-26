@@ -1,0 +1,82 @@
+namespace: SysmelC definition: {
+public: [
+Enum: LirRelocationType withBaseType: UInt8 values: #{
+    None: 0.
+    Absolute8:.
+    Absolute16:.
+    Absolute32:.
+    Absolute64:.
+    Relative8:.
+    Relative16:.
+    Relative32:.
+    Relative64:.
+}.
+
+Record: LirAssemblerSymbol withFields: #{
+    name: Symbol.
+}.
+
+Record: LirRelocationEntry withFields: #{
+    type: LirRelocationType.
+    addend: Integer.
+    offset: Integer.
+    symbol: LirAssemblerSymbol.
+}.
+
+Class: LirAssemblerSection withFields: #{
+    name: Symbol.
+    contents: ByteOrderedCollection.
+    relocations: OrderedCollection.
+}.
+
+Class: LirAssembler withFields: #{
+    textSection: LirAssemblerSection.
+    rodataSection: LirAssemblerSection.
+    dataSection: LirAssemblerSection.
+    activeSection: LirAssemblerSection.
+}.
+
+].
+LirAssemblerSection
+    withSelector: #initializeWithName: addMethod: {
+        | $(LirAssemblerSection)self $(Symbol)name :: LirAssemblerSection |
+        self name: name.
+        self contents: ByteOrderedCollection().
+        self relocations: OrderedCollection().
+        self
+    }.
+
+LirAssembler
+    withSelector: #initialize addMethod: {
+        | $(LirAssembler)self :: Void |
+        self textSection: (LirAssemblerSection() initializeWithName: #".text").
+        self rodataSection: (LirAssemblerSection() initializeWithName: #".rodata").
+        self dataSection: (LirAssemblerSection() initializeWithName: #".data").
+        self activeSection: self textSection.
+    };
+    withSelector: #beginTextSection addMethod: {
+        | $(LirAssembler)self :: Void |
+        self activeSection: self textSection
+    };
+    withSelector: #beginRodataSection addMethod: {
+        | $(LirAssembler)self :: Void |
+        self activeSection: self rodataSection
+    };
+    withSelector: #beginDataSection addMethod: {
+        | $(LirAssembler)self :: Void |
+        self activeSection: self rodataSection
+    };
+    withSelector: #writeBinaryToFileNamed: addMethod: {
+        | $(LirAssembler)self $(String)fileName :: Void |
+        $binaryData := ByteOrderedCollection().
+        binaryData addAll: self textSection contents asByteArray.
+        binaryData addAll: self rodataSection contents asByteArray.
+        binaryData addAll: self dataSection contents asByteArray.
+
+        writeWholeFileWithBinaryData(fileName . binaryData asByteArray).
+    };
+    withSelector: #nextPutAll: addMethod: {
+        | $(LirAssembler)self $(ByteArray)bytes :: Void |
+        self activeSection contents addAll: bytes
+    }.
+}.

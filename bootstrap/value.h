@@ -30,6 +30,7 @@ typedef enum sysmelb_ValueKind_e
     SysmelValueKindValueBoxReference,
     SysmelValueKindNamespaceReference,
     SysmelValueKindOrderedCollectionReference,
+    SysmelValueKindByteOrderedCollectionReference,
     SysmelValueKindSumValueReference,
     SysmelValueKindIdentityHashsetReference,
     SysmelValueKindIdentityDictionaryReference,
@@ -86,6 +87,7 @@ struct sysmelb_Value_s
         sysmelb_Namespace_t *namespaceReference;
 
         sysmelb_OrderedCollection_t *orderedCollectionReference;
+        sysmelb_ByteOrderedCollection_t *byteOrderedCollectionReference;
         sysmelb_SymbolHashtable_t *symbolHashtableReference;
         sysmelb_IdentityHashset_t *identityHashsetReference;
         
@@ -148,6 +150,13 @@ struct sysmelb_OrderedCollection_s
     sysmelb_Value_t *elements;
 };
 
+struct sysmelb_ByteOrderedCollection_s
+{
+    size_t capacity;
+    size_t size;
+    uint8_t *elements;
+};
+
 struct sysmelb_SumTypeValue_s
 {
     uint32_t alternativeIndex;
@@ -155,6 +164,7 @@ struct sysmelb_SumTypeValue_s
 };
 
 void sysmelb_OrderedCollection_add(sysmelb_OrderedCollection_t *collection, sysmelb_Value_t value);
+void sysmelb_ByteOrderedCollection_add(sysmelb_ByteOrderedCollection_t *collection, uint8_t byte);
 
 sysmelb_Value_t *sysmelb_allocateValue(void);
 sysmelb_Value_t sysmelb_decayValue(sysmelb_Value_t value);

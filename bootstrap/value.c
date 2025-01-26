@@ -265,6 +265,29 @@ void sysmelb_OrderedCollection_add(sysmelb_OrderedCollection_t *collection, sysm
     collection->elements[collection->size++] = value;
 }
 
+void sysmelb_ByteOrderedCollection_increaseCapacity(sysmelb_ByteOrderedCollection_t *collection)
+{
+    size_t newCapacity = collection->capacity*2;
+    if(newCapacity < 32) newCapacity = 32;
+
+    uint8_t *newStorage = sysmelb_allocate(newCapacity);
+    if(collection->size != 0)
+    {
+        memcpy(newStorage, collection->elements, collection->size);
+        sysmelb_freeAllocation(collection->elements);
+    }
+
+    collection->capacity = newCapacity;
+    collection->elements = newStorage;
+}
+
+void sysmelb_ByteOrderedCollection_add(sysmelb_ByteOrderedCollection_t *collection, uint8_t value)
+{
+    if(collection->size >= collection->capacity)
+        sysmelb_ByteOrderedCollection_increaseCapacity(collection);
+    collection->elements[collection->size++] = value;
+}
+
 void *sysmelb_getValuePointer(sysmelb_Value_t value)
 {
     switch(value.kind)
@@ -284,8 +307,10 @@ void *sysmelb_getValuePointer(sysmelb_Value_t value)
     case SysmelValueKindValueBoxReference:
     case SysmelValueKindNamespaceReference:
     case SysmelValueKindOrderedCollectionReference:
+    case SysmelValueKindByteOrderedCollectionReference:
     case SysmelValueKindSumValueReference:
     case SysmelValueKindIdentityHashsetReference:
+    case SysmelValueKindIdentityDictionaryReference:
         return value.objectReference;
     default:
         return NULL;

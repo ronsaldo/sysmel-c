@@ -91,6 +91,10 @@ public: [
         elements: Array
     }.
 
+    Class: MidMakeByteArray withSuperclass: MidData fields: #{
+        elements: Array
+    }.
+
     Class: MidMakeTuple withSuperclass: MidData fields: #{
         elements: Array
     }.
@@ -670,6 +674,32 @@ MidMakeArray
             array at: i put: elementValue
         } continueWith: (i := i + 1).
         $arrayTypedValue := TypedValue(Value(ArrayValue(array)). getBasicIntrinsicTypes() array).
+        context setValueInCurrentPC: arrayTypedValue.
+        context advancePC.
+    }.
+
+MidMakeByteArray
+    withSelector: #usedValues addMethod: {
+        | $(MidMakeByteArray)self :: Array |
+        self elements
+    };
+    withSelector: #connectWithUsed addMethod: {
+        | $(MidMakeByteArray)self :: Void |
+        $!i := 0. while: i < self elements size do: {
+            (self elements at: i) addUser: self
+        } continueWith: (i := i + 1)
+    };
+    withSelector: #evaluateInActivationContext: addMethod: {
+        | $(MidMakeByteArray)self $(MidActivationContext)context :: Void |
+        $elementCount := self elements size.
+        $byteArray := ByteArray new: elementCount.
+        $!i := 0. while: i < elementCount do: {
+            $elementValue := (self elements at: i) getCurrentValueForActivationContext: context.
+            $integerValue := extractIntegerFromValue(elementValue).
+            
+            byteArray at: i put: integerValue
+        } continueWith: (i := i + 1).
+        $arrayTypedValue := TypedValue(Value(ByteArrayValue(byteArray)). getBasicIntrinsicTypes() byteArray).
         context setValueInCurrentPC: arrayTypedValue.
         context advancePC.
     }.
@@ -1830,6 +1860,17 @@ MidFunctionBuilder
     withSelector: #makeArrayWithElements: addMethod: {
         | $(MidFunctionBuilder)self $(Array)elements :: MidMakeArray |
         $node := MidMakeArray#{
+            sourcePosition: self sourcePosition.
+            elements: elements.
+            type: getBasicIntrinsicTypes() array
+        }.
+        node connectWithUsed.
+        node
+    };
+
+    withSelector: #makeByteArrayWithElements: addMethod: {
+        | $(MidFunctionBuilder)self $(Array)elements :: MidMakeByteArray |
+        $node := MidMakeByteArray#{
             sourcePosition: self sourcePosition.
             elements: elements.
             type: getBasicIntrinsicTypes() array

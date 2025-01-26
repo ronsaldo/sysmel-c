@@ -292,10 +292,14 @@ static void sysmelb_analyzeAndCompileClosureBody(sysmelb_Environment_t *environm
         for(size_t i = 0; i < ast->array.elements.size; ++i)
             sysmelb_analyzeAndCompileClosureBody(environment, function, ast->array.elements.elements[i]);
         return sysmelb_bytecode_makeArray(&function->bytecode, ast->array.elements.size);
+    case ParseTreeByteArray:
+        for(size_t i = 0; i < ast->byteArray.elements.size; ++i)
+            sysmelb_analyzeAndCompileClosureBody(environment, function, ast->array.elements.elements[i]);
+        return sysmelb_bytecode_makeByteArray(&function->bytecode, ast->array.elements.size);
     case ParseTreeTuple:
         for(size_t i = 0; i < ast->tuple.elements.size; ++i)
             sysmelb_analyzeAndCompileClosureBody(environment, function, ast->tuple.elements.elements[i]);
-        return sysmelb_bytecode_makeArray(&function->bytecode, ast->tuple.elements.size);
+        return sysmelb_bytecode_makeTuple(&function->bytecode, ast->tuple.elements.size);
         
     // Association, dictionary
     case ParseTreeAssociation:

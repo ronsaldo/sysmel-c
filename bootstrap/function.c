@@ -210,6 +210,16 @@ void sysmelb_bytecode_makeArray(sysmelb_FunctionBytecode_t *bytecode, uint16_t s
     sysmelb_bytecode_addInstruction(bytecode, inst);
 }
 
+void sysmelb_bytecode_makeByteArray(sysmelb_FunctionBytecode_t *bytecode, uint16_t size)
+{
+    sysmelb_FunctionInstruction_t inst ={
+        .opcode = SysmelFunctionOpcodeMakeByteArray,
+        .arraySize = size,
+    };
+
+    sysmelb_bytecode_addInstruction(bytecode, inst);
+}
+
 void sysmelb_bytecode_makeImmutableDictionary(sysmelb_FunctionBytecode_t *bytecode, uint16_t size)
 {
     sysmelb_FunctionInstruction_t inst ={
@@ -742,6 +752,46 @@ sysmelb_Value_t sysmelb_interpretBytecodeFunction(sysmelb_function_t *function, 
                 .arrayReference = array
             };
             sysmelb_bytecodeActivationContext_push(&context, arrayValue);
+        }
+            ++pc;
+            break;
+        case SysmelFunctionOpcodeMakeByteArray:
+        {
+            uint16_t byteArraySize = currentInstruction->arraySize;
+            sysmelb_ByteArrayHeader_t *byteArray = sysmelb_allocate(sizeof(sysmelb_ByteArrayHeader_t) + byteArraySize);
+            byteArray->size = byteArraySize;
+            for(uint16_t i = 0; i < byteArraySize; ++i)
+            {
+                sysmelb_Value_t element = sysmelb_bytecodeActivationContext_pop(&context);
+                byteArray->elements[byteArraySize - 1 - i] = element.integer;
+            }
+
+            sysmelb_Value_t byteArrayValue = {
+                .kind = SysmelValueKindByteArrayReference,
+                .type = sysmelb_getBasicTypes()->byteArray,
+                .byteArrayReference = byteArray
+            };
+            sysmelb_bytecodeActivationContext_push(&context, byteArrayValue);
+        }
+            ++pc;
+            break;
+        case SysmelFunctionOpcodeMakeTuple:
+        {
+            uint16_t tupleSize = currentInstruction->tupleSize;
+            sysmelb_TupleHeader_t *tuple = sysmelb_allocate(sizeof(sysmelb_TupleHeader_t) + tupleSize*sizeof(sysmelb_Value_t));
+            tuple->size = tupleSize;
+            for(uint16_t i = 0; i < tupleSize; ++i)
+            {
+                sysmelb_Value_t element = sysmelb_bytecodeActivationContext_pop(&context);
+                tuple->elements[tupleSize - 1 - i] = element;
+            }
+
+            sysmelb_Value_t tupleValue = {
+                .kind = SysmelValueKindTupleReference,
+                .type = sysmelb_getBasicTypes()->tuple,
+                .tupleReference = tuple
+            };
+            sysmelb_bytecodeActivationContext_push(&context, tupleValue);
         }
             ++pc;
             break;

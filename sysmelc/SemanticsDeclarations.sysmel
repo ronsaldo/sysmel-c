@@ -96,6 +96,12 @@ public: [
             argumentTypes: Array.
             resultType: SysmelType.
         }.
+        Record: SysmelFixedArrayType withFields: #{
+            common: SysmelTypeCommon.
+            supertype: SysmelType.
+            baseType: SysmelType.
+            arraySize: UInt32
+        }.
         Record: SysmelPointerType withFields: #{
             common: SysmelTypeCommon.
             supertype: SysmelType.
@@ -119,6 +125,7 @@ public: [
                 $(SysmelClassType)clazzType : clazzType common.
                 $(SysmelEnumType)enumType : enumType common.
                 $(SysmelSimpleFunctionType)simpleFunctionType : simpleFunctionType common.
+                $(SysmelFixedArrayType)fixedArrayType : fixedArrayType common.
                 $(SysmelPointerType)pointerType : pointerType common.
                 $(SysmelReferenceType)referenceType : referenceType common.
                 _: {
@@ -138,6 +145,7 @@ public: [
                 $(SysmelClassType)clazzType : clazzType common methodDict.
                 $(SysmelEnumType)enumType : enumType common methodDict.
                 $(SysmelSimpleFunctionType)simpleFunctionType : simpleFunctionType common methodDict.
+                $(SysmelFixedArrayType)fixedArrayType : fixedArrayType common methodDict.
                 $(SysmelPointerType)pointerType : pointerType common methodDict.
                 $(SysmelReferenceType)referenceType : referenceType common methodDict.
                 _: {
@@ -157,6 +165,7 @@ public: [
                 $(SysmelSumType)sumType : sumType supertype.
                 $(SysmelEnumType)enumType : enumType supertype.
                 $(SysmelSimpleFunctionType)simpleFunctionType : simpleFunctionType supertype.
+                $(SysmelFixedArrayType)fixedArrayType : fixedArrayType supertype.
                 $(SysmelReferenceType)referenceType : referenceType supertype.
                 $(SysmelPointerType)pointerType : pointerType supertype.
                 _: {
@@ -169,6 +178,7 @@ public: [
             |$(SysmelType)self :: SysmelType|
             match: self ofType: SysmelType withPatterns: #{
                 $(SysmelEnumType)enumType : enumType supertype.
+                $(SysmelFixedArrayType)fixedArrayType : fixedArrayType baseType.
                 $(SysmelReferenceType)referenceType : referenceType baseType.
                 $(SysmelPointerType)pointerType : pointerType baseType.
                 _: {
@@ -203,6 +213,21 @@ public: [
                     methodDict: SymbolHashtable().
                 }.
                 baseType: self
+            }).
+        };
+        withSelector: #array: addMethod: {
+            |$(SysmelType)self $(Integer)size :: SysmelType|
+            SysmelType(SysmelFixedArrayType#{
+                common: SysmelTypeCommon#{
+                    isValueType: true.
+                    valueAlignment: 8u32.
+                    valueSize: 8u32.
+                    heapAlignment: 8u32.
+                    heapSize: 8u32.
+                    methodDict: SymbolHashtable().
+                }.
+                baseType: self.
+                arraySize: size
             }).
         }.
 
@@ -376,6 +401,9 @@ public: [
         }.
         Record: ArrayValue withFields: #{
             value: Array
+        }.
+        Record: ByteArrayValue withFields: #{
+            value: ByteArray
         }.
         Record: TupleValue withFields: #{
             value: Tuple
@@ -612,6 +640,15 @@ SysmelClassType
             $(ArrayValue)arrayValue : arrayValue value.
             _: {
                 printLine("Not a valid array value").
+                abort()
+            }
+        }.
+    }.
+    $extractByteArrayFromValue($(Value)value :: Array) := {
+        match: value ofType: Value withPatterns: #{
+            $(ByteArrayValue)byteArrayValue : byteArrayValue value.
+            _: {
+                printLine("Not a valid byte array value").
                 abort()
             }
         }.

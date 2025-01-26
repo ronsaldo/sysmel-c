@@ -1,3 +1,28 @@
 namespace: SysmelC definition: {
 
+Enum: X64Registers withBaseType: UInt8 values: #{
+    RAX: 0u8.
+    RCX:.
+    RDX:.
+    RBX:.
+    RSP:.
+    RBP:.
+    RSI:.
+    RDI:.
+    R8:.
+    R9:.
+    R10:.
+    R11:.
+    R12:.
+    R13:.
+    R14:.
+    R15:.
+}.
+
+LirAssembler
+    withSelector: #x64_ret addMethod: {
+        | $(LirAssembler)self |
+        self nextPutAll: #[16rC3].
+    }
+
 }.
