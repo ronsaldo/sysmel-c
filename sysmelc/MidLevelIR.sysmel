@@ -154,13 +154,11 @@ public: [
 
     Class: MidCallFunction withSuperclass: MidControlNode fields: #{
         functional: MidValue.
-        selector: MidValue.
         arguments: Array.
     }.
 
     Class: MidPureCallFunction withSuperclass: MidData fields: #{
         functional: MidValue.
-        selector: MidValue.
         arguments: Array.
     }.
 

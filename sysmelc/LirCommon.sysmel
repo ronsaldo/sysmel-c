@@ -10,8 +10,11 @@ Class: LirModule withFields: #{
 Class: LirFunction withFields: #{
     name: Symbol.
     instructions: OrderedCollection.
+    constants: OrderedCollection.
     ownerModule: LirModule.
     instructionLabelMap: IdentityDictionary.
+    instructionTranslationMap: IdentityDictionary.
+    stopLabel: Gradual.
 }.
 
 Class: LirInstruction withFields: #{
@@ -25,13 +28,30 @@ Class: LirArgumentInstruction withSuperclass: LirInstruction fields: #{
     type: SysmelType
 }.
 
+Class: LirStackFrameConstruction withSuperclass: LirInstruction fields: #{
+}.
+
+Class: LirStackFrameDestructionAndReturn withSuperclass: LirInstruction fields: #{
+}.
+
 Class: LirAluInstruction withSuperclass: LirInstruction fields: #{
     aluOperation: LirAluOperation.
     operands: Array.
 }.
 
+Class: LirReturnValueInstruction withSuperclass: LirInstruction fields: #{
+    value: LirInstruction.
+}.
+
 Class: LirLabel withSuperclass: LirInstruction fields: #{
     name: Symbol
+}.
+
+Class: LirConstant withSuperclass: LirInstruction fields: #{
+}.
+
+Class: LirConstantInteger withSuperclass: LirConstant fields: #{
+    value: Integer
 }.
 
 LirModule
@@ -46,7 +66,9 @@ LirFunction
         |$(LirFunction)self $(LirModule)module :: Void|
         self ownerModule: module.
         self instructions: OrderedCollection().
+        self constants: OrderedCollection().
         self instructionLabelMap: IdentityDictionary().
+        self instructionTranslationMap: IdentityDictionary().
     }.
 LirModule
     withSelector: #compileMidFunction: addMethod: {
@@ -69,8 +91,57 @@ LirModule
 LirFunction
     withSelector: #addInstruction: addMethod: {
         |$(LirModule)self $(LirInstruction)instruction :: Void |
-        instruction index: self instructions size.
-        self instructions add: instruction
+        if: instruction isConstant then: {
+            self constants add: instruction
+        } else: {
+            self instructions add: instruction
+        }
+    };
+    withSelector: #addInstruction:for: addMethod: {
+        |$(LirModule)self $(LirInstruction)instruction $(MidValue)midValue :: Void |
+        self addInstruction: instruction.
+        self instructionTranslationMap at: midValue put: instruction.
+
+    };
+    withSelector: #translateConstant: addMethod: {
+        |$(LirModule)self $(MidValue)constantOperand :: LirConstant |
+        if: (self instructionTranslationMap includesKey: constantOperand) not then: {
+            constantOperand compileToLirFor: self
+        }.
+
+        return: (self instructionTranslationMap at: constantOperand).
+    };   
+    withSelector: #translateOperand: addMethod: {
+        |$(LirModule)self $(MidValue)operand :: LirInstruction |
+        if: operand isConstant then: {
+            self translateConstant: operand
+        } else: {
+            self instructionTranslationMap at: operand
+        }
+    };
+    withSelector: #translateOperands: addMethod: {
+        |$(LirModule)self $(Array)operands :: Array |
+        $operandCount := operands size.
+        $translatedOperands := Array new: operandCount.
+
+        $!i := 0. while: i < operandCount do: {
+            translatedOperands at: i put: (self translateOperand: (operands at: i))
+        } continueWith: (i := i + 1).
+        
+        return: translatedOperands
+    };
+    withSelector: #makeLabel:for: addMethod: {
+        |$(LirModule)self $(Symbol)labelName $(MidValue)midValue :: LirLabel |
+        $label := LirLabel#{
+            name: labelName
+        }.
+        self instructionLabelMap at: midValue put: label.
+        
+        label
+    };
+    withSelector: #getLabelOf: addMethod: {
+        |$(LirModule)self $(MidValue)midValue :: LirLabel |
+        self instructionLabelMap at: midValue.
     };
     withSelector: #constructFromMidClosure: addMethod: {
         | $(LirModule)self $(MidClosureFunction)midClosure :: Void |
@@ -93,11 +164,25 @@ LirFunction
             midInstruction compileToLirFor: self
         } continueWith: (i := i + 1).
 
+        self enumerateInstructions.
+
 
         ##printLine(midClosure instructionSchedule)
         ##printLine(midClosure)
 
         self dumpFunction
+    };
+    withSelector: #enumerateInstructions addMethod: {
+        | $(LirModule)self :: Void |
+        $instructionCount := self instructions size.
+        $!i := 0. while: (i < instructionCount) do: {
+            (self instructions at: i) index: i
+        } continueWith: (i := i + 1).
+
+        $constantsCount := self constants size.
+        $!i := 0. while: (i < constantsCount) do: {
+            (self constants at: i) index: instructionCount + i
+        } continueWith: (i := i + 1).
     };
     withSelector: #dumpFunction addMethod: {
         | $(LirModule)self :: Void |
@@ -105,28 +190,86 @@ LirFunction
         $!i := 0. while: (i < self instructions size) do: {
             (self instructions at: i) dump.
         } continueWith: (i := i + 1).
+
+        printLine("Constant section:").
+        i := 0. while: (i < self constants size) do: {
+            (self constants at: i) dump.
+        } continueWith: (i := i + 1).
         printLine("}").
     }.
 
 LirInstruction
+    withSelector: #isConstant addMethod: {
+        | $(LirInstruction)self :: Boolean |
+        false
+    };
     withSelector: #dump addMethod: {
         | $(LirInstruction)self :: Void |
         printLine("Subclass responsibility ". self class).
     }.
+
+LirConstant
+    withSelector: #isConstant addMethod: {
+        | $(LirConstant)self :: Boolean |
+        true
+    };
+    withSelector: #dump addMethod: {
+        | $(LirInstruction)self :: Void |
+        printLine("Subclass responsibility ". self class).
+    }.
+
+LirConstantInteger
+    withSelector: #dump addMethod: {
+        | $(LirInstruction)self :: Void |
+        printLine(self index. ":  constantInteger ". self value)
+    }.
+
 LirArgumentInstruction
     withSelector: #dump addMethod: {
         | $(LirAluInstruction)self :: Void |
-        printLine(self index. ":  ". self name. " arg " . self argumentIndex asInteger)
+        printLine(self index. ":  ". self name. " arg " . self argumentIndex asInteger . " ")
+    }.
+
+LirStackFrameConstruction
+    withSelector: #dump addMethod: {
+        | $(LirAluInstruction)self :: Void |
+        printLine(self index. ":  stack frame construction")
+    }.
+
+LirStackFrameDestructionAndReturn
+    withSelector: #dump addMethod: {
+        | $(LirAluInstruction)self :: Void |
+        printLine(self index. ":  stack frame destruction")
+    }.
+LirReturnValueInstruction
+    withSelector: #dump addMethod: {
+        | $(LirAluInstruction)self :: Void |
+        if: self value isNotNull then: {
+            printLine(self index. ":  return value:". self value index)
+        } else: {
+            printLine(self index. ":  return void")
+        }
     }.
 LirAluInstruction
     withSelector: #dump addMethod: {
         | $(LirAluInstruction)self :: Void |
-        printLine(self index. ":  ". self aluOperation. " " . self operands)
+        print(self index. ":  Alu". self aluOperation. " [").
+        $operandCount := self operands size.
+        $!i := 0. while: (i < operandCount) do: {
+            $operand := self operands at: i.
+            if: operand isNotNull then: {
+                print(" ". operand index. " ").
+            } else: {
+                print(" null ")
+            }
+        } continueWith: (i := i + 1).
+        
+        printLine("]")
     }.
 LirLabel
     withSelector: #dump addMethod: {
         | $(LirLabel)self :: Void |
-        printLine(self index. ":  ". self name. ":")
+        printLine(self index. ":  label ". self name)
     }.
 
 MidValue
@@ -150,22 +293,30 @@ MidArgument
             type: self type.
         }.
 
-        lirFunction addInstruction: lirArgument
+        lirFunction addInstruction: lirArgument for: self
     }.
 
 MidStartNode
     withSelector: #compileToLirFor: addMethod: {
         | $(MidValue)self $(LirFunction)lirFunction :: Void |
-        printLine("TODO: emit stack frame construction")
-        ## Nothing is required here.
+        lirFunction addInstruction: LirStackFrameConstruction#{
+            sourcePosition: self sourcePosition
+        }.
     }.
 
 MidPureCallFunction
     withSelector: #compileToLirFor: addMethod: {
         | $(MidValue)self $(LirFunction)lirFunction :: Void |
         $aluOperation := self functional getLirAluOperation.
+        $operands := lirFunction translateOperands: self arguments.
+
         if: aluOperation ~= 0 then: {
-            printLine("TODO: Emit ALU ". aluOperation)
+            $aluInstruction := LirAluInstruction#{
+                sourcePosition: self sourcePosition.
+                aluOperation: aluOperation.
+                operands: operands.
+            }.
+            lirFunction addInstruction: aluInstruction for: self.
         } else: {
             printLine("TODO: Emit Call. ". self functional).
         }
@@ -174,14 +325,34 @@ MidPureCallFunction
 MidReturn
     withSelector: #compileToLirFor: addMethod: {
         | $(MidValue)self $(LirFunction)lirFunction :: Void |
-        printLine("TODO: Emit Return")
+        $translatedValue := lirFunction translateOperand: self resultValue.
+        lirFunction addInstruction: LirReturnValueInstruction#{
+            sourcePosition: self sourcePosition.
+            value: translatedValue.
+        } for: self
     }.
 
 MidStopNode
+    withSelector: #makeLirLabelFor: addMethod: {
+        | $(MidValue)self $(LirFunction)lirFunction :: Void |
+        $label := lirFunction makeLabel: #stop for: self.
+        lirFunction stopLabel: label
+    };
     withSelector: #compileToLirFor: addMethod: {
         | $(MidValue)self $(LirFunction)lirFunction :: Void |
-        printLine("TODO: Emit stop")
-        ## Nothing is required here.
+        lirFunction addInstruction: (lirFunction getLabelOf: self) for: self.
+        lirFunction addInstruction: LirStackFrameDestructionAndReturn#{
+            sourcePosition: self sourcePosition
+        }
+    }.
+
+MidConstantInteger
+    withSelector: #compileToLirFor: addMethod: {
+        | $(MidValue)self $(LirFunction)lirFunction :: Void |
+        lirFunction addInstruction: (LirConstantInteger#{
+            sourcePosition: self sourcePosition.
+            value: self value.
+        }) for: self.
     }.
 ].
 }.
