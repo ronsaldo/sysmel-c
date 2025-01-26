@@ -93,7 +93,7 @@ struct sysmelb_Value_s
         struct
         {
             size_t stringSize;
-            const char *string;
+            char *string;
         };
     };
 };

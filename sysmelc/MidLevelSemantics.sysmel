@@ -116,7 +116,23 @@ public: [
                     method := receiverType lookupSelector: selectorSymbolValue.
                 }.
                 
+                $!hasGradualTypeReceiver := false.
                 if: method value isInvalidErrorValue then: {
+                    if: receiverMidValue isConstantType then: {
+                        $receiverTypeValue := receiverMidValue extractConstantType.
+                        match: receiverTypeValue ofType: SysmelType withPatterns: #{
+                            $(SysmelEnumType)enumType : {
+                                if: arguments size = 0 then: {
+                                    $enumValueIndex := findIndexOfEnumValueWithName(enumType. selectorSymbolValue).
+                                    if: enumValueIndex >= 0 then: {
+                                        $constantInteger := midBuilder constantInteger: enumValueIndex.
+                                        constantInteger type: receiverTypeValue getBaseType.
+                                        return: constantInteger.
+                                    }
+                                }
+                            }.
+                        }.
+                    }.
 
                     match: receiverType ofType: SysmelType withPatterns: #{
                         $(SysmelTupleAndRecordType)tupleAndRecord : {
@@ -170,11 +186,19 @@ public: [
                                 }
                             }.
                         }.
+                        $(SysmelGradualType)gradualType : {
+                            hasGradualTypeReceiver := true.
+                        }.
                         _: {
-                            ## Nothing required here. 
+                            ## Nothing required here.
+                            sourcePosition printFormatted.
+                            printLine(" Warning: Failed to find method with selector " . selectorSymbolValue).
+                            hasGradualTypeReceiver := true.
                         }
                     }.
                 }.
+
+                ##if: receiverType isClassType || receiverType isGradual ||  
 
                 $invocationArguments := OrderedCollection().
                 $!i := 0. while:(i < arguments size) do: {
@@ -644,11 +668,11 @@ public: [
                         _: {
                             ## Turn the assignment into a message send.
                             $selectorLiteral := ParseTreeNode(ParseTreeLiteralSymbolNode#{
-                                sourcePosition: ast sourcePosition.
+                                sourcePosition: assignmentNode sourcePosition.
                                 value: #":="
                             }).
                             $messageSend := ParseTreeNode(ParseTreeMessageSendNode#{
-                                sourcePosition: ast sourcePosition.
+                                sourcePosition: assignmentNode sourcePosition.
                                 receiver: store.
                                 selector: selectorLiteral.
                                 arguments: [value]
@@ -1069,7 +1093,6 @@ public: [
                     abort()
                 }.
                 _: {
-                    ast sourcePosition printFormatted.
                     printLine("Unsupported node for compilation. "#*. ast*#).
                     abort()
                 }

@@ -1,0 +1,12 @@
+String
+    withSelector: #substringFrom:until: addMethod: {
+        |$(String)self $(Integer)startIndex $(Integer)endIndex :: String |
+        assert: startIndex <= endIndex.
+        $substringSize := endIndex - startIndex.
+        $substring := String new: substringSize.
+        $!i := 0. while: (i < substringSize) do: {
+            substring at: i put: (self at: startIndex + i)
+        } continueWith:(i := i + 1).
+
+        return: substring
+    }

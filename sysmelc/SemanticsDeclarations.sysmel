@@ -59,6 +59,9 @@ public: [
             common: SysmelTypeCommon.
             supertype: SysmelType.
         }.
+        Record: SysmelGradualType withFields: #{
+            common: SysmelTypeCommon.
+        }.
         Record: SysmelTupleAndRecordType withFields: #{
             common: SysmelTypeCommon.
             supertype: SysmelType.
@@ -110,6 +113,7 @@ public: [
             |$(SysmelType)self :: SysmelTypeCommon|
             match: self ofType: SysmelType withPatterns: #{
                 $(SysmelBasicType)basicType : basicType common.
+                $(SysmelGradualType)gradualType : gradualType common.
                 $(SysmelTupleAndRecordType)tupleAndRecord : tupleAndRecord common.
                 $(SysmelSumType)sumType : sumType common.
                 $(SysmelClassType)clazzType : clazzType common.
@@ -128,6 +132,7 @@ public: [
             |$(SysmelType)self :: SymbolHashtable|
             match: self ofType: SysmelType withPatterns: #{
                 $(SysmelBasicType)basicType : basicType common methodDict.
+                $(SysmelGradualType)gradualType : gradualType common methodDict.
                 $(SysmelTupleAndRecordType)tupleAndRecord : tupleAndRecord common methodDict.
                 $(SysmelSumType)sumType : sumType common methodDict.
                 $(SysmelClassType)clazzType : clazzType common methodDict.
@@ -146,6 +151,7 @@ public: [
             |$(SysmelType)self :: SysmelType|
             match: self ofType: SysmelType withPatterns: #{
                 $(SysmelBasicType)basicType : basicType supertype.
+                $(SysmelGradualType)gradualType : null.
                 $(SysmelTupleAndRecordType)tupleAndRecord : tupleAndRecord supertype.
                 $(SysmelClassType)clazzType : clazzType supertype.
                 $(SysmelSumType)sumType : sumType supertype.
@@ -162,7 +168,7 @@ public: [
         withSelector: #getBaseType addMethod: {
             |$(SysmelType)self :: SysmelType|
             match: self ofType: SysmelType withPatterns: #{
-                $(SysmelEnumType)enumType : enumType baseType.
+                $(SysmelEnumType)enumType : enumType supertype.
                 $(SysmelReferenceType)referenceType : referenceType baseType.
                 $(SysmelPointerType)pointerType : pointerType baseType.
                 _: {
@@ -708,6 +714,23 @@ SysmelClassType
             $(RecordValue)recordValue : recordValue value.
             _: {
                 printLine("Not a valid record value").
+                abort()
+            }
+        }
+    }.
+
+    $isGradualType($(SysmelType)type :: Boolean) := {
+        match: type ofType: SysmelType withPatterns: #{
+            $(SysmelGradualType)classType : true.
+            _: false.
+        }
+    }.
+
+    $extractGradualType($(SysmelType)type :: SysmelClassType) := {
+        match: type ofType: SysmelType withPatterns: #{
+            $(SysmelGradualType)classType : classType.
+            _: {
+                printLine("Not a valid class type.").
                 abort()
             }
         }

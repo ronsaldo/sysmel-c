@@ -114,7 +114,7 @@ typedef struct sysmelb_ParseTreeLiteralFloatNode_s {
 
 typedef struct sysmelb_ParseTreeLiteralStringNode_s {
     size_t stringSize;
-    const char *string;
+    char *string;
 } sysmelb_ParseTreeLiteralStringNode_t;
 
 typedef struct sysmelb_ParseTreeLiteralSymbolNode_s {

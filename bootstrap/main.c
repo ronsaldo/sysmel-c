@@ -111,11 +111,14 @@ int main(int argc, const char **argv)
                 array->size = remainingArguments;
                 for(size_t j = 0; j < remainingArguments; ++j)
                 {
+                    size_t stringSize = strlen(argv[i + j]);
+                    char *stringData = sysmelb_allocate(stringSize + 1);
+                    memcpy(stringData, argv[i + j], stringSize);
                     sysmelb_Value_t stringValue = {
                         .kind = SysmelValueKindStringReference,
                         .type = sysmelb_getBasicTypes()->string,
-                        .string = argv[i + j],
-                        .stringSize = strlen(argv[i + j]),
+                        .string = stringData,
+                        .stringSize = stringSize,
                     };
 
                     array->elements[j] = stringValue;

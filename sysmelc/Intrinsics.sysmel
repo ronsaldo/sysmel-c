@@ -108,7 +108,7 @@ $BasicIntrinsicTypesSingleton := BasicIntrinsicTypes#{
     universe: SysmelType(SysmelBasicType(SysmelTypeCommon#{
         name: #TypeUniverse. isValueType: false. valueAlignment: 8u8. valueSize: 8u8. heapAlignment: 8u8. heapSize: 8u8. methodDict: SymbolHashtable().
     })).
-    gradual: SysmelType(SysmelBasicType(SysmelTypeCommon#{
+    gradual: SysmelType(SysmelGradualType(SysmelTypeCommon#{
         name: #Gradual. isValueType: false. valueAlignment: 8u8. valueSize: 8u8. heapAlignment: 8u8. heapSize: 8u8. methodDict: SymbolHashtable().
     })).
 
@@ -163,6 +163,10 @@ IntrinsicsEnvironment
             $(SysmelBasicType)basicType : {
                 ##printLine("Add type ". basicType common name).
                 self localSymbols at: basicType common name put: TypedValue(Value(SysmelTypeValue(type)). BasicIntrinsicTypesSingleton universe)
+            }.
+            $(SysmelGradualType)gradualType : {
+                ##printLine("Add type ". basicType common name).
+                self localSymbols at: gradualType common name put: TypedValue(Value(SysmelTypeValue(type)). BasicIntrinsicTypesSingleton universe)
             }.
             _: {
                 printLine("Missing support for type ". type)
@@ -1195,6 +1199,16 @@ $universePrimitiveNewWithCount($(Array)arguments) := {
         $typedResult := TypedValue(Value(TupleValue(tuple)) . BasicIntrinsicTypesSingleton tuple).
         return: typedResult
     }.
+    if: typeName == #String then: {
+        $string := String new: countValue.
+        $typedResult := TypedValue(Value(TupleValue(string)) . BasicIntrinsicTypesSingleton string).
+        return: typedResult
+    }.
+    if: typeName == #ByteArray then: {
+        $byteArray := ByteArray new: countValue.
+        $typedResult := TypedValue(Value(TupleValue(byteArray)) . BasicIntrinsicTypesSingleton byteArray).
+        return: typedResult
+    }.
 
     printLine().
     printLine("TODO: ". typeName." new:").
@@ -1405,6 +1419,13 @@ $integerPrimitive_greaterOrEquals($(Array)arguments :: TypedValue) := {
     result
 }.
 
+$integerPrimitive_asInteger($(Array)arguments :: TypedValue) := {
+    assert: arguments size = 1.
+    $sourceValue := (arguments at: 0) getIntegerValue.
+    $result := TypedValue(Value(IntegerValue(sourceValue)). BasicIntrinsicTypesSingleton integer).
+    result
+}.
+
 $integerPrimitive_asInt8($(Array)arguments :: TypedValue) := {
     assert: arguments size = 1.
     $sourceValue := (arguments at: 0) getIntegerValue.
@@ -1542,6 +1563,8 @@ $addIntegerIntrinsicMethods($(SysmelType)intrinsicType :: Void) := {
     addIntegerIntrinsicMethod(methodDict. #<=. integerPrimitive_lessOrEquals. binaryComparisonFunctionType).
     addIntegerIntrinsicMethod(methodDict. #>. integerPrimitive_greaterThan. binaryComparisonFunctionType).
     addIntegerIntrinsicMethod(methodDict. #>=. integerPrimitive_greaterOrEquals. binaryComparisonFunctionType).
+
+    addIntegerIntrinsicMethod(methodDict. #asInteger. integerPrimitive_asInteger.  makeSimplePureFunctionType([intrinsicType] . BasicIntrinsicTypesSingleton integer)).
 
     addIntegerIntrinsicMethod(methodDict. #asInt8.  integerPrimitive_asInt8.  makeSimplePureFunctionType([intrinsicType] . BasicIntrinsicTypesSingleton int8)).
     addIntegerIntrinsicMethod(methodDict. #asInt16. integerPrimitive_asInt16. makeSimplePureFunctionType([intrinsicType] . BasicIntrinsicTypesSingleton int16)).
@@ -2026,7 +2049,7 @@ public: [
 
                 if: (arguments size > tupleSize) then:
                 {
-                    printLine("Excessive number of paramters to construct record.")
+                    printLine("Excessive number of paramters to construct record.").
                     abort().
                 }.
 
@@ -2069,7 +2092,7 @@ public: [
 
                 if: (arguments size > objectSize) then:
                 {
-                    printLine("Excessive number of paramters to construct object.")
+                    printLine("Excessive number of paramters to construct object.").
                     abort().
                 }.
 
@@ -2084,7 +2107,7 @@ public: [
             $(SysmelSumType) sumType : {
                 if: (arguments size ~= 1) then:
                 {
-                    printLine("Sum types can only be instantiated with a single argument.")
+                    printLine("Sum types can only be instantiated with a single argument.").
                     abort().
                 }.
 

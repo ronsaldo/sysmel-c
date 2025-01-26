@@ -983,6 +983,22 @@ static sysmelb_Value_t sysmelb_primitive_stringAt(size_t argumentCount, sysmelb_
     return result;
 }
 
+static sysmelb_Value_t sysmelb_primitive_stringAtPut(size_t argumentCount, sysmelb_Value_t *arguments)
+{
+    assert(argumentCount == 3);
+    assert(arguments[0].kind == SysmelValueKindStringReference
+        && (arguments[1].kind == SysmelValueKindInteger || arguments[1].kind == SysmelValueKindUnsignedInteger)
+        && (arguments[2].kind == SysmelValueKindInteger || arguments[2].kind == SysmelValueKindUnsignedInteger));
+
+    size_t stringSize = arguments[0].stringSize;
+    unsigned int stringIndex = arguments[1].unsignedInteger;
+    assert(stringIndex < stringSize);
+
+    arguments[0].string[stringIndex] = (char)arguments[2].integer;
+
+    return arguments[2];
+}
+
 static sysmelb_Value_t sysmelb_primitive_substringFromUntil(size_t argumentCount, sysmelb_Value_t *arguments)
 {
     assert(argumentCount == 3);
@@ -1096,6 +1112,7 @@ static void sysmelb_createBasicStringPrimitives(void)
     sysmelb_type_addPrimitiveMethod(sysmelb_BasicTypesData.string, sysmelb_internSymbolC("--"), sysmelb_primitive_concatenateString);
     sysmelb_type_addPrimitiveMethod(sysmelb_BasicTypesData.string, sysmelb_internSymbolC("size"), sysmelb_primitive_stringSize);
     sysmelb_type_addPrimitiveMethod(sysmelb_BasicTypesData.string, sysmelb_internSymbolC("at:"), sysmelb_primitive_stringAt);
+    sysmelb_type_addPrimitiveMethod(sysmelb_BasicTypesData.string, sysmelb_internSymbolC("at:put:"), sysmelb_primitive_stringAtPut);
     sysmelb_type_addPrimitiveMethod(sysmelb_BasicTypesData.string, sysmelb_internSymbolC("substringFrom:until:"), sysmelb_primitive_substringFromUntil);
     sysmelb_type_addPrimitiveMethod(sysmelb_BasicTypesData.string, sysmelb_internSymbolC("asFloat"), sysmelb_primitive_stringAsFloat);
     sysmelb_type_addPrimitiveMethod(sysmelb_BasicTypesData.string, sysmelb_internSymbolC("asSymbol"), sysmelb_primitive_stringAsSymbol);
@@ -1453,6 +1470,18 @@ static sysmelb_Value_t sysmelb_primitive_newWithSize(size_t argumentCount, sysme
         return result;
     }
 
+    if(arguments[0].typeReference->kind == SysmelTypeKindByteArray)
+    {
+        size_t byteArraySize = arguments[1].integer;
+        sysmelb_ByteArrayHeader_t *byteArray = sysmelb_allocate(sizeof(sysmelb_ByteArrayHeader_t) + byteArraySize);
+        byteArray->size = byteArraySize;
+        sysmelb_Value_t result = {
+            .kind = SysmelValueKindByteArrayReference,
+            .type = sysmelb_getBasicTypes()->byteArray,
+            .byteArrayReference = byteArray};
+        return result;
+    }
+
     if(arguments[0].typeReference->kind == SysmelTypeKindTuple)
     {
         size_t tupleSize = arguments[1].integer;
@@ -1465,9 +1494,21 @@ static sysmelb_Value_t sysmelb_primitive_newWithSize(size_t argumentCount, sysme
         };
         return result;
     }
+    if(arguments[0].typeReference->kind == SysmelTypeKindString)
+    {
+        size_t stringSize = arguments[1].integer;
+        char *stringData = sysmelb_allocate(stringSize);
+        sysmelb_Value_t result = {
+            .kind = SysmelValueKindTupleReference,
+            .type = sysmelb_getBasicTypes()->string,
+            .stringSize = stringSize,
+            .string = stringData
+        };
+        return result;
+    }
 
     sysmelb_SourcePosition_t nullPosition;
-    sysmelb_errorPrintf(nullPosition, "#new: only supports tuples and arrays.");
+    sysmelb_errorPrintf(nullPosition, "#new: only supports tuples, arrays, strings and byteArray.");
     abort();
 }
 

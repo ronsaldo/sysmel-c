@@ -276,6 +276,15 @@ MidValue
         | $(MidValue)self :: Boolean |
         false
     };
+    withSelector: #isConstantType addMethod: {
+        | $(MidValue)self :: Boolean |
+        false
+    };
+    withSelector: #extractConstantType addMethod: {
+        | $(MidValue)self :: SysmelType |
+        printLine("Constant is not a type.").
+        abort()
+    };
     withSelector: #getCurrentValueForActivationContext: addMethod: {
         | $(MidValue)self $(MidActivationContext)context :: TypedValue |
         return: (context getValueFromPC: self scheduleIndex)
@@ -295,6 +304,31 @@ MidConstantSymbol
     withSelector: #asSymbol addMethod: {
         | $(MidConstantSymbol)self :: Symbol |
         self value
+    }.
+
+MidConstantValue
+    withSelector: #isConstantType addMethod: {
+        | $(MidConstantSymbol)self :: Boolean |
+        match: self value ofType: Value withPatterns: #{
+            $(SysmelTypeValue)typeValue : {
+                return: true
+            }.
+            _: {
+                return: false
+            }
+        }
+    };
+    withSelector: #extractConstantType addMethod: {
+        | $(MidConstantSymbol)self :: SysmelType |
+        match: self value ofType: Value withPatterns: #{
+            $(SysmelTypeValue)typeValue : {
+                return: typeValue value
+            }.
+            _: {
+                printLine("Constant is not a type.").
+                abort()
+            }
+        }
     }.
 
 MidActivationContext

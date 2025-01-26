@@ -381,11 +381,11 @@ public: [
                     }.
                     _: {
                         $selectorLiteral := ParseTreeNode(ParseTreeLiteralSymbolNode#{
-                            sourcePosition: ast sourcePosition.
+                            sourcePosition: assignmentNode sourcePosition.
                             value: #":="
                         }).
                         $messageSend := ParseTreeNode(ParseTreeMessageSendNode#{
-                            sourcePosition: ast sourcePosition.
+                            sourcePosition: assignmentNode sourcePosition.
                             receiver: store.
                             selector: selectorLiteral.
                             arguments: [value]
