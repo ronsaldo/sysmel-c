@@ -8,11 +8,30 @@ Class: LirModule withFields: #{
 }.
 
 Class: LirFunction withFields: #{
+    name: Symbol.
     instructions: OrderedCollection.
     ownerModule: LirModule.
+    instructionLabelMap: IdentityDictionary.
 }.
 
 Class: LirInstruction withFields: #{
+    sourcePosition: SourcePosition.
+    index: UInt32
+}.
+
+Class: LirArgumentInstruction withSuperclass: LirInstruction fields: #{
+    argumentIndex: UInt32.
+    name: Symbol.
+    type: SysmelType
+}.
+
+Class: LirAluInstruction withSuperclass: LirInstruction fields: #{
+    aluOperation: LirAluOperation.
+    operands: Array.
+}.
+
+Class: LirLabel withSuperclass: LirInstruction fields: #{
+    name: Symbol
 }.
 
 LirModule
@@ -26,7 +45,8 @@ LirFunction
     withSelector: #initializeWithModule: addMethod: {
         |$(LirFunction)self $(LirModule)module :: Void|
         self ownerModule: module.
-        self instructions: OrderedCollection()
+        self instructions: OrderedCollection().
+        self instructionLabelMap: IdentityDictionary().
     }.
 LirModule
     withSelector: #compileMidFunction: addMethod: {
@@ -38,6 +58,7 @@ LirModule
         }.
 
         $lirFunction := LirFunction().
+        ##lirFunction name: midClosure name.
         lirFunction initializeWithModule: self.
         self midFunctionDictionary at: midClosure put: lirFunction.
         self functions add: lirFunction.
@@ -47,17 +68,120 @@ LirModule
 
 LirFunction
     withSelector: #addInstruction: addMethod: {
-        |$(LirModule)self $(LirInstruction)instruction :: Void|
+        |$(LirModule)self $(LirInstruction)instruction :: Void |
+        instruction index: self instructions size.
         self instructions add: instruction
     };
     withSelector: #constructFromMidClosure: addMethod: {
         | $(LirModule)self $(MidClosureFunction)midClosure :: Void |
 
         midClosure ensureInstructionSchedule.
+        $schedule := midClosure instructionSchedule.
+
+        ##midClosure dumpSchedule.
+        ##midClosure dumpGraph.
+
+        ## First pass: define labels and limits.
+        $!i := 0. while: (i < schedule size) do: {
+            $midInstruction := schedule at: i.
+            midInstruction makeLirLabelFor: self
+        } continueWith: (i := i + 1).
+
+        ## Second pass: LIR code generation.
+        $!i := 0. while: (i < schedule size) do: {
+            $midInstruction := schedule at: i.
+            midInstruction compileToLirFor: self
+        } continueWith: (i := i + 1).
+
+
         ##printLine(midClosure instructionSchedule)
         ##printLine(midClosure)
 
+        self dumpFunction
+    };
+    withSelector: #dumpFunction addMethod: {
+        | $(LirModule)self :: Void |
+        printLine("LirFunction ". self name. "{").
+        $!i := 0. while: (i < self instructions size) do: {
+            (self instructions at: i) dump.
+        } continueWith: (i := i + 1).
+        printLine("}").
     }.
 
+LirInstruction
+    withSelector: #dump addMethod: {
+        | $(LirInstruction)self :: Void |
+        printLine("Subclass responsibility ". self class).
+    }.
+LirArgumentInstruction
+    withSelector: #dump addMethod: {
+        | $(LirAluInstruction)self :: Void |
+        printLine(self index. ":  ". self name. " arg " . self argumentIndex asInteger)
+    }.
+LirAluInstruction
+    withSelector: #dump addMethod: {
+        | $(LirAluInstruction)self :: Void |
+        printLine(self index. ":  ". self aluOperation. " " . self operands)
+    }.
+LirLabel
+    withSelector: #dump addMethod: {
+        | $(LirLabel)self :: Void |
+        printLine(self index. ":  ". self name. ":")
+    }.
+
+MidValue
+    withSelector: #makeLirLabelFor: addMethod: {
+        | $(MidValue)self $(LirFunction)lirFunction :: Void |
+        ## By default do nothing.
+    };
+    withSelector: #compileToLirFor: addMethod: {
+        | $(MidValue)self $(LirFunction)lirFunction :: Void |
+        printLine("subclassResponsibility #compileToLirFor: ". self class).
+        abort()
+    }.
+
+MidArgument
+    withSelector: #compileToLirFor: addMethod: {
+        | $(MidValue)self $(LirFunction)lirFunction :: Void |
+        $lirArgument := LirArgumentInstruction#{
+            sourcePosition: self sourcePosition.
+            argumentIndex: self index.
+            name: self name.
+            type: self type.
+        }.
+
+        lirFunction addInstruction: lirArgument
+    }.
+
+MidStartNode
+    withSelector: #compileToLirFor: addMethod: {
+        | $(MidValue)self $(LirFunction)lirFunction :: Void |
+        printLine("TODO: emit stack frame construction")
+        ## Nothing is required here.
+    }.
+
+MidPureCallFunction
+    withSelector: #compileToLirFor: addMethod: {
+        | $(MidValue)self $(LirFunction)lirFunction :: Void |
+        $aluOperation := self functional getLirAluOperation.
+        if: aluOperation ~= 0 then: {
+            printLine("TODO: Emit ALU ". aluOperation)
+        } else: {
+            printLine("TODO: Emit Call. ". self functional).
+        }
+    }.
+
+MidReturn
+    withSelector: #compileToLirFor: addMethod: {
+        | $(MidValue)self $(LirFunction)lirFunction :: Void |
+        printLine("TODO: Emit Return")
+    }.
+
+MidStopNode
+    withSelector: #compileToLirFor: addMethod: {
+        | $(MidValue)self $(LirFunction)lirFunction :: Void |
+        printLine("TODO: Emit stop")
+        ## Nothing is required here.
+    }.
 ].
 }.

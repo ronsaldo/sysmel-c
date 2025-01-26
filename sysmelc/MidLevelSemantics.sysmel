@@ -233,6 +233,7 @@ public: [
                                 name: intrinsicPrimitive name.
                                 primitive: intrinsicPrimitive implementation.
                                 isMacro: intrinsicPrimitive isMacro.
+                                aluOperation: intrinsicPrimitive aluOperation
                             }
                         }.
                         $(SysmelCompiledFunction)compiledFunction : {
@@ -362,6 +363,7 @@ public: [
                                     name: intrinsicPrimitive name.
                                     primitive: intrinsicPrimitive implementation.
                                     isMacro: intrinsicPrimitive isMacro.
+                                    aluOperation: intrinsicPrimitive aluOperation
                                 }
                             }.
                             $(SysmelCompiledFunction)compiledFunction : {
@@ -516,6 +518,19 @@ public: [
                             midBuilder sourcePosition: functionApplication sourcePosition.
                             $recordValue := midBuilder makeRecord: typeToConstruct withElements: invocationArguments.
                             return: recordValue
+                        }.
+
+                        if: isClassType(typeToConstruct) then: {
+                            $classType := extractClassType(typeToConstruct).
+                            $classFieldCount := classType superFieldCount + classType fields size.
+                            if: (invocationArguments size ~= classFieldCount) && (invocationArguments size ~= 0) then: {
+                                printLine("Warning: Construction of object is missing arguments. Expected ". classFieldCount. " arguments instead of". invocationArguments size).
+                                printLine("typeToConstruct". typeToConstruct).
+                            }.
+
+                            midBuilder sourcePosition: functionApplication sourcePosition.
+                            $objectValue := midBuilder makeObject: typeToConstruct withElements: invocationArguments.
+                            return: objectValue
                         }.
 
                         if: isSumType(typeToConstruct) then: {

@@ -41,6 +41,7 @@ public: [
         name: Symbol.
         primitive: Function.
         isMacro: Boolean.
+        aluOperation: LirAluOperation
     }.
 
     Class: MidControlNode withSuperclass: MidValue fields: #{
@@ -1422,6 +1423,10 @@ MidValue
     withSelector: #isAlloca addMethod: {
         | $(MidValue)self :: Boolean |
         false
+    };
+    withSelector: #getLirAluOperation addMethod: {
+        | $(MidValue)self :: LirAluOperation |
+        LirAluOperation None
     }.
 
 MidIntrinsicFunction
@@ -1443,6 +1448,10 @@ MidIntrinsicFunction
     withSelector: #evaluateWithArguments: addMethod: {
         | $(MidIntrinsicFunction)self $(Array)arguments :: TypedValue |
         self primitive(arguments)
+    };
+    withSelector: #getLirAluOperation addMethod: {
+        | $(MidValue)self :: LirAluOperation |
+        self aluOperation
     }.
 
 MidClosureFunction

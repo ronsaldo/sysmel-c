@@ -272,7 +272,8 @@ $addGlobalIntrinsicMethod($(Symbol)name $(Function)primitive $(SysmelType)functi
     $primitiveValue := TypedValue(Value(SysmelFunctionValue(SysmelFunction(SysmelIntrinsicPrimitive#{
         name: name.
         implementation: primitive.
-        isMacro: false
+        isMacro: false.
+        aluOperation: LirAluOperation None.
     }))). functionType).
     DefaultIntrinsicsEnvironment localSymbols at: name put: primitiveValue
 }.
@@ -282,7 +283,8 @@ $addGlobalMacroIntrinsicMethod($(Symbol)name $(Function)primitive $(SysmelType)f
     $primitiveValue := TypedValue(Value(SysmelFunctionValue(SysmelFunction(SysmelIntrinsicPrimitive#{
         name: name.
         implementation: primitive.
-        isMacro: true
+        isMacro: true.
+        aluOperation: LirAluOperation None.
     }))). functionType).
     DefaultIntrinsicsEnvironment localSymbols at: name put: primitiveValue
 }.
@@ -1219,7 +1221,8 @@ $addUniverseIntrinsicMethod($(SymbolHashtable)methodDict $(Symbol)name $(Functio
     $primitiveValue := TypedValue(Value(SysmelFunctionValue(SysmelFunction(SysmelIntrinsicPrimitive#{
         name: name.
         implementation: primitive.
-        isMacro: false
+        isMacro: false.
+        aluOperation: LirAluOperation None.
     }))). functionType).
     methodDict at: name put: primitiveValue
 }.
@@ -1525,15 +1528,16 @@ $integerPrimitive_asChar32($(Array)arguments :: TypedValue) := {
     result
 }.
 
-$addIntegerIntrinsicMethod($(SymbolHashtable)methodDict $(Symbol)name $(Function)primitive $(SysmelType)functionType :: Void) := {
+$addIntegerIntrinsicMethod($(SymbolHashtable)methodDict $(Symbol)name $(LirAluOperation)aluOperation $(Function)primitive $(SysmelType)functionType :: Void) := {
     $primitiveValue := TypedValue(Value(SysmelFunctionValue(SysmelFunction(SysmelIntrinsicPrimitive#{
         name: name.
         implementation: primitive.
-        isMacro: false
+        isMacro: false.
+        aluOperation: aluOperation
     }))). functionType).
     methodDict at: name put: primitiveValue
 }.
-$addIntegerIntrinsicMethods($(SysmelType)intrinsicType :: Void) := {
+$addIntegerIntrinsicMethods($(SysmelType)intrinsicType $(Boolean)isSigned :: Void) := {
     $commonPart := intrinsicType getCommonSection.
     $methodDict := intrinsicType getMethodDictionary.
 
@@ -1541,83 +1545,91 @@ $addIntegerIntrinsicMethods($(SysmelType)intrinsicType :: Void) := {
     $binaryFunctionType := makeSimplePureFunctionType([intrinsicType . intrinsicType] . intrinsicType).
     $binaryComparisonFunctionType := makeSimplePureFunctionType([intrinsicType . intrinsicType] . BasicIntrinsicTypesSingleton boolean).
 
-    addIntegerIntrinsicMethod(methodDict. #bitInvert. integerPrimitive_bitInvert. unaryFunctionType).
-    addIntegerIntrinsicMethod(methodDict. #negated. integerPrimitive_negated. unaryFunctionType).
+    addIntegerIntrinsicMethod(methodDict. #bitInvert. LirAluOperation BitInvert. integerPrimitive_bitInvert. unaryFunctionType).
+    addIntegerIntrinsicMethod(methodDict. #negated. LirAluOperation Negate. integerPrimitive_negated. unaryFunctionType).
 
-    addIntegerIntrinsicMethod(methodDict. #+. integerPrimitive_add. binaryFunctionType).
-    addIntegerIntrinsicMethod(methodDict. #-. integerPrimitive_minus. binaryFunctionType).
-    addIntegerIntrinsicMethod(methodDict. #"*". integerPrimitive_times. binaryFunctionType).
-    addIntegerIntrinsicMethod(methodDict. #//. integerPrimitive_integerDivision. binaryFunctionType).
-    addIntegerIntrinsicMethod(methodDict. #%. integerPrimitive_integerModulo. binaryFunctionType).
+    addIntegerIntrinsicMethod(methodDict. #+.   LirAluOperation Add.      integerPrimitive_add. binaryFunctionType).
+    addIntegerIntrinsicMethod(methodDict. #-.   LirAluOperation Subtract. integerPrimitive_minus. binaryFunctionType).
+    addIntegerIntrinsicMethod(methodDict. #"*". LirAluOperation Multiply. integerPrimitive_times. binaryFunctionType).
+    addIntegerIntrinsicMethod(methodDict. #//.  LirAluOperation Divide.   integerPrimitive_integerDivision. binaryFunctionType).
+    addIntegerIntrinsicMethod(methodDict. #%.   LirAluOperation Modulo.   integerPrimitive_integerModulo. binaryFunctionType).
 
-    addIntegerIntrinsicMethod(methodDict. #&. integerPrimitive_integerBitAnd. binaryFunctionType).
-    addIntegerIntrinsicMethod(methodDict. #|. integerPrimitive_integerBitOr. binaryFunctionType).
-    addIntegerIntrinsicMethod(methodDict. #^. integerPrimitive_integerBitXor. binaryFunctionType).
-    addIntegerIntrinsicMethod(methodDict. #<<. integerPrimitive_integerShiftLeft. binaryFunctionType).
-    addIntegerIntrinsicMethod(methodDict. #>>. integerPrimitive_integerLogicalShiftRight. binaryFunctionType).
-    addIntegerIntrinsicMethod(methodDict. #>>>. integerPrimitive_integerArithmeticShiftRight. binaryFunctionType).
+    addIntegerIntrinsicMethod(methodDict. #&.   LirAluOperation BitAnd. integerPrimitive_integerBitAnd. binaryFunctionType).
+    addIntegerIntrinsicMethod(methodDict. #|.   LirAluOperation BitOr. integerPrimitive_integerBitOr. binaryFunctionType).
+    addIntegerIntrinsicMethod(methodDict. #^.   LirAluOperation BitXor. integerPrimitive_integerBitXor. binaryFunctionType).
+    addIntegerIntrinsicMethod(methodDict. #<<.  LirAluOperation LogicalShiftLeft. integerPrimitive_integerShiftLeft. binaryFunctionType).
+    addIntegerIntrinsicMethod(methodDict. #>>.  LirAluOperation LogicalShiftRight. integerPrimitive_integerLogicalShiftRight. binaryFunctionType).
+    addIntegerIntrinsicMethod(methodDict. #>>>. LirAluOperation ArithmeticShiftRight. integerPrimitive_integerArithmeticShiftRight. binaryFunctionType).
 
-    addIntegerIntrinsicMethod(methodDict. #=. integerPrimitive_equals. binaryComparisonFunctionType).
-    addIntegerIntrinsicMethod(methodDict. #~=. integerPrimitive_notEquals. binaryComparisonFunctionType).
-    addIntegerIntrinsicMethod(methodDict. #<. integerPrimitive_lessThan. binaryComparisonFunctionType).
-    addIntegerIntrinsicMethod(methodDict. #<=. integerPrimitive_lessOrEquals. binaryComparisonFunctionType).
-    addIntegerIntrinsicMethod(methodDict. #>. integerPrimitive_greaterThan. binaryComparisonFunctionType).
-    addIntegerIntrinsicMethod(methodDict. #>=. integerPrimitive_greaterOrEquals. binaryComparisonFunctionType).
+    addIntegerIntrinsicMethod(methodDict. #=.  LirAluOperation CompEquals. integerPrimitive_equals. binaryComparisonFunctionType).
+    addIntegerIntrinsicMethod(methodDict. #~=. LirAluOperation CompNotEquals. integerPrimitive_notEquals. binaryComparisonFunctionType).
 
-    addIntegerIntrinsicMethod(methodDict. #asInteger. integerPrimitive_asInteger.  makeSimplePureFunctionType([intrinsicType] . BasicIntrinsicTypesSingleton integer)).
+    if: isSigned then: {
+        addIntegerIntrinsicMethod(methodDict. #<.  LirAluOperation CompSignedLessThan.       integerPrimitive_lessThan. binaryComparisonFunctionType).
+        addIntegerIntrinsicMethod(methodDict. #<=. LirAluOperation CompSignedLessOrEquals.   integerPrimitive_lessOrEquals. binaryComparisonFunctionType).
+        addIntegerIntrinsicMethod(methodDict. #>.  LirAluOperation CompSignedGreaterThan.     integerPrimitive_greaterThan. binaryComparisonFunctionType).
+        addIntegerIntrinsicMethod(methodDict. #>=. LirAluOperation CompSignedGreaterOrEquals. integerPrimitive_greaterOrEquals. binaryComparisonFunctionType).
+    } else: {
+        addIntegerIntrinsicMethod(methodDict. #<.  LirAluOperation CompUnsignedLessThan.       integerPrimitive_lessThan. binaryComparisonFunctionType).
+        addIntegerIntrinsicMethod(methodDict. #<=. LirAluOperation CompUnsignedLessOrEquals.   integerPrimitive_lessOrEquals. binaryComparisonFunctionType).
+        addIntegerIntrinsicMethod(methodDict. #>.  LirAluOperation CompUnsignedGreaterThan.     integerPrimitive_greaterThan. binaryComparisonFunctionType).
+        addIntegerIntrinsicMethod(methodDict. #>=. LirAluOperation CompUnsignedGreaterOrEquals. integerPrimitive_greaterOrEquals. binaryComparisonFunctionType).
+    }.
 
-    addIntegerIntrinsicMethod(methodDict. #asInt8.  integerPrimitive_asInt8.  makeSimplePureFunctionType([intrinsicType] . BasicIntrinsicTypesSingleton int8)).
-    addIntegerIntrinsicMethod(methodDict. #asInt16. integerPrimitive_asInt16. makeSimplePureFunctionType([intrinsicType] . BasicIntrinsicTypesSingleton int16)).
-    addIntegerIntrinsicMethod(methodDict. #asInt32. integerPrimitive_asInt32. makeSimplePureFunctionType([intrinsicType] . BasicIntrinsicTypesSingleton int32)).
-    addIntegerIntrinsicMethod(methodDict. #asInt64. integerPrimitive_asInt64. makeSimplePureFunctionType([intrinsicType] . BasicIntrinsicTypesSingleton int64)).
+    addIntegerIntrinsicMethod(methodDict. #asInteger. LirAluOperation CastToInteger. integerPrimitive_asInteger.  makeSimplePureFunctionType([intrinsicType] . BasicIntrinsicTypesSingleton integer)).
 
-    addIntegerIntrinsicMethod(methodDict. #asUInt8.  integerPrimitive_asUInt8.  makeSimplePureFunctionType([intrinsicType] . BasicIntrinsicTypesSingleton uint8)).
-    addIntegerIntrinsicMethod(methodDict. #asUInt16. integerPrimitive_asUInt16. makeSimplePureFunctionType([intrinsicType] . BasicIntrinsicTypesSingleton uint16)).
-    addIntegerIntrinsicMethod(methodDict. #asUInt32. integerPrimitive_asUInt32. makeSimplePureFunctionType([intrinsicType] . BasicIntrinsicTypesSingleton uint32)).
-    addIntegerIntrinsicMethod(methodDict. #asUInt64. integerPrimitive_asUInt64. makeSimplePureFunctionType([intrinsicType] . BasicIntrinsicTypesSingleton uint64)).
+    addIntegerIntrinsicMethod(methodDict. #asInt8.  LirAluOperation CastToInt8.  integerPrimitive_asInt8.  makeSimplePureFunctionType([intrinsicType] . BasicIntrinsicTypesSingleton int8)).
+    addIntegerIntrinsicMethod(methodDict. #asInt16. LirAluOperation CastToInt16. integerPrimitive_asInt16. makeSimplePureFunctionType([intrinsicType] . BasicIntrinsicTypesSingleton int16)).
+    addIntegerIntrinsicMethod(methodDict. #asInt32. LirAluOperation CastToInt32. integerPrimitive_asInt32. makeSimplePureFunctionType([intrinsicType] . BasicIntrinsicTypesSingleton int32)).
+    addIntegerIntrinsicMethod(methodDict. #asInt64. LirAluOperation CastToInt64. integerPrimitive_asInt64. makeSimplePureFunctionType([intrinsicType] . BasicIntrinsicTypesSingleton int64)).
 
-    addIntegerIntrinsicMethod(methodDict. #asChar8.  integerPrimitive_asChar8.  makeSimplePureFunctionType([intrinsicType] . BasicIntrinsicTypesSingleton char8)).
-    addIntegerIntrinsicMethod(methodDict. #asChar16. integerPrimitive_asChar16. makeSimplePureFunctionType([intrinsicType] . BasicIntrinsicTypesSingleton char16)).
-    addIntegerIntrinsicMethod(methodDict. #asChar32. integerPrimitive_asChar32. makeSimplePureFunctionType([intrinsicType] . BasicIntrinsicTypesSingleton char32)).
+    addIntegerIntrinsicMethod(methodDict. #asUInt8.  LirAluOperation CastToUInt8.  integerPrimitive_asUInt8.  makeSimplePureFunctionType([intrinsicType] . BasicIntrinsicTypesSingleton uint8)).
+    addIntegerIntrinsicMethod(methodDict. #asUInt16. LirAluOperation CastToUInt16. integerPrimitive_asUInt16. makeSimplePureFunctionType([intrinsicType] . BasicIntrinsicTypesSingleton uint16)).
+    addIntegerIntrinsicMethod(methodDict. #asUInt32. LirAluOperation CastToUInt32. integerPrimitive_asUInt32. makeSimplePureFunctionType([intrinsicType] . BasicIntrinsicTypesSingleton uint32)).
+    addIntegerIntrinsicMethod(methodDict. #asUInt64. LirAluOperation CastToUInt64. integerPrimitive_asUInt64. makeSimplePureFunctionType([intrinsicType] . BasicIntrinsicTypesSingleton uint64)).
+
+    addIntegerIntrinsicMethod(methodDict. #asChar8.  LirAluOperation CastToUInt8.  integerPrimitive_asChar8.  makeSimplePureFunctionType([intrinsicType] . BasicIntrinsicTypesSingleton char8)).
+    addIntegerIntrinsicMethod(methodDict. #asChar16. LirAluOperation CastToUInt16. integerPrimitive_asChar16. makeSimplePureFunctionType([intrinsicType] . BasicIntrinsicTypesSingleton char16)).
+    addIntegerIntrinsicMethod(methodDict. #asChar32. LirAluOperation CastToUInt32. integerPrimitive_asChar32. makeSimplePureFunctionType([intrinsicType] . BasicIntrinsicTypesSingleton char32)).
 
     void
 }.
 
 
-addIntegerIntrinsicMethods(BasicIntrinsicTypesSingleton integer).
-addIntegerIntrinsicMethods(BasicIntrinsicTypesSingleton character).
+addIntegerIntrinsicMethods(BasicIntrinsicTypesSingleton integer. true).
+addIntegerIntrinsicMethods(BasicIntrinsicTypesSingleton character. true).
 
-addIntegerIntrinsicMethods(BasicIntrinsicTypesSingleton int8).
-addIntegerIntrinsicMethods(BasicIntrinsicTypesSingleton int16).
-addIntegerIntrinsicMethods(BasicIntrinsicTypesSingleton int32).
-addIntegerIntrinsicMethods(BasicIntrinsicTypesSingleton int64).
+addIntegerIntrinsicMethods(BasicIntrinsicTypesSingleton int8 . true).
+addIntegerIntrinsicMethods(BasicIntrinsicTypesSingleton int16. true).
+addIntegerIntrinsicMethods(BasicIntrinsicTypesSingleton int32. true).
+addIntegerIntrinsicMethods(BasicIntrinsicTypesSingleton int64. true).
 
-addIntegerIntrinsicMethods(BasicIntrinsicTypesSingleton uint8).
-addIntegerIntrinsicMethods(BasicIntrinsicTypesSingleton uint16).
-addIntegerIntrinsicMethods(BasicIntrinsicTypesSingleton uint32).
-addIntegerIntrinsicMethods(BasicIntrinsicTypesSingleton uint64).
+addIntegerIntrinsicMethods(BasicIntrinsicTypesSingleton uint8 . false).
+addIntegerIntrinsicMethods(BasicIntrinsicTypesSingleton uint16. false).
+addIntegerIntrinsicMethods(BasicIntrinsicTypesSingleton uint32. false).
+addIntegerIntrinsicMethods(BasicIntrinsicTypesSingleton uint64. false).
 
-addIntegerIntrinsicMethods(BasicIntrinsicTypesSingleton char8).
-addIntegerIntrinsicMethods(BasicIntrinsicTypesSingleton char16).
-addIntegerIntrinsicMethods(BasicIntrinsicTypesSingleton char32).
+addIntegerIntrinsicMethods(BasicIntrinsicTypesSingleton char8 . false).
+addIntegerIntrinsicMethods(BasicIntrinsicTypesSingleton char16. false).
+addIntegerIntrinsicMethods(BasicIntrinsicTypesSingleton char32. false).
 
 $addIntegerIntrinsicConversionSuffixes($(SysmelType)intrinsicType :: Void) := {
     $commonPart := intrinsicType getCommonSection.
     $methodDict := intrinsicType getMethodDictionary.
 
-    addIntegerIntrinsicMethod(methodDict. #i8.  integerPrimitive_asInt8.  makeSimplePureFunctionType([intrinsicType] . BasicIntrinsicTypesSingleton int8)).
-    addIntegerIntrinsicMethod(methodDict. #i16. integerPrimitive_asInt16. makeSimplePureFunctionType([intrinsicType] . BasicIntrinsicTypesSingleton int16)).
-    addIntegerIntrinsicMethod(methodDict. #i32. integerPrimitive_asInt32. makeSimplePureFunctionType([intrinsicType] . BasicIntrinsicTypesSingleton int32)).
-    addIntegerIntrinsicMethod(methodDict. #i64. integerPrimitive_asInt64. makeSimplePureFunctionType([intrinsicType] . BasicIntrinsicTypesSingleton int64)).
+    addIntegerIntrinsicMethod(methodDict. #i8.  LirAluOperation CastToInt8.  integerPrimitive_asInt8.  makeSimplePureFunctionType([intrinsicType] . BasicIntrinsicTypesSingleton int8)).
+    addIntegerIntrinsicMethod(methodDict. #i16. LirAluOperation CastToInt16. integerPrimitive_asInt16. makeSimplePureFunctionType([intrinsicType] . BasicIntrinsicTypesSingleton int16)).
+    addIntegerIntrinsicMethod(methodDict. #i32. LirAluOperation CastToInt32. integerPrimitive_asInt32. makeSimplePureFunctionType([intrinsicType] . BasicIntrinsicTypesSingleton int32)).
+    addIntegerIntrinsicMethod(methodDict. #i64. LirAluOperation CastToInt64. integerPrimitive_asInt64. makeSimplePureFunctionType([intrinsicType] . BasicIntrinsicTypesSingleton int64)).
 
-    addIntegerIntrinsicMethod(methodDict. #u8.  integerPrimitive_asUInt8.  makeSimplePureFunctionType([intrinsicType] . BasicIntrinsicTypesSingleton uint8)).
-    addIntegerIntrinsicMethod(methodDict. #u16. integerPrimitive_asUInt16. makeSimplePureFunctionType([intrinsicType] . BasicIntrinsicTypesSingleton uint16)).
-    addIntegerIntrinsicMethod(methodDict. #u32. integerPrimitive_asUInt32. makeSimplePureFunctionType([intrinsicType] . BasicIntrinsicTypesSingleton uint32)).
-    addIntegerIntrinsicMethod(methodDict. #u64. integerPrimitive_asUInt64. makeSimplePureFunctionType([intrinsicType] . BasicIntrinsicTypesSingleton uint64)).
+    addIntegerIntrinsicMethod(methodDict. #u8.  LirAluOperation CastToUInt8.  integerPrimitive_asUInt8.  makeSimplePureFunctionType([intrinsicType] . BasicIntrinsicTypesSingleton uint8)).
+    addIntegerIntrinsicMethod(methodDict. #u16. LirAluOperation CastToUInt16. integerPrimitive_asUInt16. makeSimplePureFunctionType([intrinsicType] . BasicIntrinsicTypesSingleton uint16)).
+    addIntegerIntrinsicMethod(methodDict. #u32. LirAluOperation CastToUInt32. integerPrimitive_asUInt32. makeSimplePureFunctionType([intrinsicType] . BasicIntrinsicTypesSingleton uint32)).
+    addIntegerIntrinsicMethod(methodDict. #u64. LirAluOperation CastToUInt64. integerPrimitive_asUInt64. makeSimplePureFunctionType([intrinsicType] . BasicIntrinsicTypesSingleton uint64)).
 
-    addIntegerIntrinsicMethod(methodDict. #c8.  integerPrimitive_asChar8.  makeSimplePureFunctionType([intrinsicType] . BasicIntrinsicTypesSingleton char8)).
-    addIntegerIntrinsicMethod(methodDict. #c16. integerPrimitive_asChar16. makeSimplePureFunctionType([intrinsicType] . BasicIntrinsicTypesSingleton char16)).
-    addIntegerIntrinsicMethod(methodDict. #c32. integerPrimitive_asChar32. makeSimplePureFunctionType([intrinsicType] . BasicIntrinsicTypesSingleton char32)).
+    addIntegerIntrinsicMethod(methodDict. #c8.  LirAluOperation CastToUInt8.  integerPrimitive_asChar8.  makeSimplePureFunctionType([intrinsicType] . BasicIntrinsicTypesSingleton char8)).
+    addIntegerIntrinsicMethod(methodDict. #c16. LirAluOperation CastToUInt16. integerPrimitive_asChar16. makeSimplePureFunctionType([intrinsicType] . BasicIntrinsicTypesSingleton char16)).
+    addIntegerIntrinsicMethod(methodDict. #c32. LirAluOperation CastToUInt32. integerPrimitive_asChar32. makeSimplePureFunctionType([intrinsicType] . BasicIntrinsicTypesSingleton char32)).
 }.
 
 addIntegerIntrinsicConversionSuffixes(BasicIntrinsicTypesSingleton integer).
@@ -1627,7 +1639,8 @@ $addIntrinsicMethod($(SymbolHashtable)methodDict $(Symbol)name $(Function)primit
     $primitiveValue := TypedValue(Value(SysmelFunctionValue(SysmelFunction(SysmelIntrinsicPrimitive#{
         name: name.
         implementation: primitive.
-        isMacro: false
+        isMacro: false.
+        aluOperation: LirAluOperation None.
     }))). functionType).
     methodDict at: name put: primitiveValue
 }.

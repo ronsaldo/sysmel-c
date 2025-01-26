@@ -213,11 +213,96 @@ public: [
         scheduleIndex: UInt32.
     }.
 
+    ## We define this here to faciliate code generation
+    Enum: LirAluOperation withBaseType: UInt16 values: #{
+        None: 0u16.
+        
+        Add:.
+        Subtract:.
+        Negate:.
+        Multiply:.
+        Divide:.
+        Modulo:.
+
+        BitAnd:.
+        BitOr:.
+        BitXor:.
+        BitInvert:.
+        ArithmeticShiftRight:.
+        LogicalShiftLeft:.
+        LogicalShiftRight:.
+
+        CompEquals:.
+        CompNotEquals:.
+        CompSignedLessThan:.
+        CompSignedLessOrEquals:.
+        CompSignedGreaterThan:.
+        CompSignedGreaterOrEquals:.
+        
+        CompUnsignedLessThan:.
+        CompUnsignedLessOrEquals:.
+        CompUnsignedGreaterThan:.
+        CompUnsignedGreaterOrEquals:.
+
+        SingleFloatAdd:.
+        SingleFloatSubtract:.
+        SingleFloatMultiply:.
+        SingleFloatDivide:.
+        SingleFloatSqrt:.
+
+        SingleFloatCompUnorderedEquals:.
+        SingleFloatCompUnorderedNotEquals:.
+        SingleFloatCompUnorderedLessThan:.
+        SingleFloatCompUnorderedLessOrEquals:.
+        SingleFloatCompUnorderedGreaterThan:.
+        SingleFloatCompUnorderedGreaterOrEquals:.
+
+        SingleFloatCompOrderedEquals:.
+        SingleFloatCompOrderedNotEquals:.
+        SingleFloatCompOrderedLessThan:.
+        SingleFloatCompOrderedLessOrEquals:.
+        SingleFloatCompOrderedGreaterThan:.
+        SingleFloatCompOrderedGreaterOrEquals:.
+
+        DoubleFloatAdd:.
+        DoubleFloatSubtract:.
+        DoubleFloatMultiply:.
+        DoubleFloatDivide:.
+        DoubleFloatSqrt:.
+
+        DoubleFloatCompUnorderedEquals:.
+        DoubleFloatCompUnorderedNotEquals:.
+        DoubleFloatCompUnorderedLessThan:.
+        DoubleFloatCompUnorderedLessOrEquals:.
+        DoubleFloatCompUnorderedGreaterThan:.
+        DoubleFloatCompUnorderedGreaterOrEquals:.
+
+        DoubleFloatCompOrderedEquals:.
+        DoubleFloatCompOrderedNotEquals:.
+        DoubleFloatCompOrderedLessThan:.
+        DoubleFloatCompOrderedLessOrEquals:.
+        DoubleFloatCompOrderedGreaterThan:.
+        DoubleFloatCompOrderedGreaterOrEquals:.
+
+        CastToInt8:.
+        CastToInt16:.
+        CastToInt32:.
+        CastToInt64:.
+        CastToUInt8:.
+        CastToUInt16:.
+        CastToUInt32:.
+        CastToUInt64:.
+        CastToInteger:.
+        CastToSingleFloat:.
+        CastToDoubleFloat:.
+    }.
+
     Inductive: SysmelFunction withAlternatives: [
         Record: SysmelIntrinsicPrimitive withFields: #{
             name: Symbol.
             implementation: Function.
             isMacro: Boolean.
+            aluOperation: LirAluOperation
         }.
         Record: SysmelCompiledFunction withFields: #{
             name: Symbol.

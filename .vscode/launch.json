@@ -12,8 +12,8 @@
             //"args": ["${workspaceFolder}/sysmelc/package.sysmel"],
             //"args": ["${workspaceFolder}/samples/20-Classes.sysmel"],
             "args": ["${workspaceFolder}/sysmelc/package.sysmel",
-            "--", "${workspaceFolder}/runtime/package.sysmel",
-            "${workspaceFolder}/sysmelc/bootstrapPackage.sysmel"],
+            "${workspaceFolder}/samples/22-Compilation.sysmel"
+            ],
             //"--", "${workspaceFolder}/runtime/package.sysmel"],
             "stopAtEntry": false,
             "cwd": "${workspaceFolder}",
