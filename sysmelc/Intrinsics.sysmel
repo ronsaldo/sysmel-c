@@ -1930,6 +1930,22 @@ $addSymbolPrimitives() := {
 }.
 addSymbolPrimitives().
 
+$booleanPrimitive_not($(Array)arguments :: TypedValue) := {
+    assert: arguments size = 1.
+    $typedBoolean := extractBooleanFromValue((arguments at: 0) value).
+    $negatedBoolean := if: typedBoolean then: false else: true.
+    return: TypedValue(Value(BooleanValue(negatedBoolean)). BasicIntrinsicTypesSingleton boolean)
+}.
+
+$addBooleanPrimitives() := {
+    $booleanType := BasicIntrinsicTypesSingleton boolean.
+    $commonPart := booleanType getCommonSection.
+    $methodDict := booleanType getMethodDictionary.
+    
+    addIntrinsicMethod(methodDict. #not. booleanPrimitive_not . makeSimplePureFunctionType([booleanType]. booleanType)).
+}.
+addBooleanPrimitives().
+
 $gradualPrimitive_identityEquals($(Array)arguments :: TypedValue) := {
     assert: arguments size = 2.
     if: (arguments at: 1) isNull then: {

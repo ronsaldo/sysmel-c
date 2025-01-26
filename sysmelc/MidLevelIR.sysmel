@@ -128,6 +128,14 @@ public: [
         sumValue: MidValue
     }.
 
+    Class: MidIsNullValue withSuperclass: MidData fields: #{
+        value: MidValue
+    }.
+
+    Class: MidIsNotNullValue withSuperclass: MidData fields: #{
+        value: MidValue
+    }.
+
     Class: MidArgument withSuperclass: MidFunctionLocalValue fields: #{
         index: UInt32.
         name: Symbol.
@@ -873,6 +881,55 @@ MidGetSumValueProjection
         context advancePC.
     }.
 
+MidIsNullValue
+    withSelector: #usedValues addMethod: {
+        | $(MidIsNullValue)self :: Array |
+        [self value]
+    };
+    withSelector: #connectWithUsed addMethod: {
+        | $(MidIsNullValue)self :: Array |
+        self value addUser: self
+    };
+    withSelector: #evaluateInActivationContext: addMethod: {
+        | $(MidIsNullValue)self $(MidActivationContext)context :: Void |
+        $value := self value getCurrentValueForActivationContext: context.
+        if: value isNull then: {
+            context setValueInCurrentPC: TypedValue(Value(BooleanValue(true)). self type).
+            context advancePC.
+            return: void.
+        }.
+
+        ##printLine("isNullValue ". value value).
+
+        context setValueInCurrentPC: TypedValue(Value(BooleanValue(false)). self type).
+        context advancePC.
+        return: void.
+    }.
+MidIsNotNullValue
+    withSelector: #usedValues addMethod: {
+        | $(MidIsNotNullValue)self :: Array |
+        [self value]
+    };
+    withSelector: #connectWithUsed addMethod: {
+        | $(MidIsNotNullValue)self :: Array |
+        self value addUser: self
+    };
+    withSelector: #evaluateInActivationContext: addMethod: {
+        | $(MidIsNotNullValue)self $(MidActivationContext)context :: Void |
+        $value := self value getCurrentValueForActivationContext: context.
+        if: value isNull then: {
+            context setValueInCurrentPC: TypedValue(Value(BooleanValue(false)). self type).
+            context advancePC.
+            return: void.
+        }.
+
+        ##printLine("isNotNull ". value value).
+        
+        context setValueInCurrentPC: TypedValue(Value(BooleanValue(true)). self type).
+        context advancePC.
+        return: void.
+    }.
+
 MidExtractCompositeElement
     withSelector: #usedValues addMethod: {
         | $(MidExtractCompositeElement)self :: Array |
@@ -1179,7 +1236,8 @@ MidSendMessage
         ##printLine("receiverType ". receiverType).
         $method := receiverType lookupSelector: selector.
         if: method value isInvalidErrorValue then: {
-            if: selector == #isNull then: {
+            ## TODO: Attempt to remove these here.
+            #*if: selector == #isNull then: {
                 context setValueInCurrentPC: TypedValue(Value(BooleanValue(receiverTypedValue isNull)). getBasicIntrinsicTypes() boolean).
                 context advancePC.
                 return: void
@@ -1188,7 +1246,7 @@ MidSendMessage
                 context setValueInCurrentPC: TypedValue(Value(BooleanValue(receiverTypedValue isNull not)). getBasicIntrinsicTypes() boolean).
                 context advancePC.
                 return: void
-            }.
+            }.*#
             self sourcePosition printFormatted.
             printLine(method value getInvalidErrorValueMessage. " " . selector).
             abort()
@@ -1874,6 +1932,22 @@ MidFunctionBuilder
         MidMergePhiNode#{
             sourcePosition: self sourcePosition.
             type: getBasicIntrinsicTypes() gradual
+        }.
+    };
+    withSelector: #isNullValue: addMethod: {
+        | $(MidFunctionBuilder)self $(MidValue) value :: MidIsNullValue |
+        MidIsNullValue#{
+            sourcePosition: self sourcePosition.
+            value: value.
+            type: getBasicIntrinsicTypes() boolean
+        }.
+    };
+    withSelector: #isNotNullValue: addMethod: {
+        | $(MidFunctionBuilder)self $(MidValue) value :: MidIsNullValue |
+        MidIsNotNullValue#{
+            sourcePosition: self sourcePosition.
+            value: value.
+            type: getBasicIntrinsicTypes() boolean
         }.
     };
     withSelector: #beginWithControlNode: addMethod: {

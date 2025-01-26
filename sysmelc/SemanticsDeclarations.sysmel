@@ -709,7 +709,7 @@ SysmelClassType
         }
     }.
 
-    $extractRecordFromValue($(Value)value :: SysmelFunction) := {
+    $extractRecordFromValue($(Value)value :: Record) := {
         match: value ofType: Value withPatterns: #{
             $(RecordValue)recordValue : recordValue value.
             _: {

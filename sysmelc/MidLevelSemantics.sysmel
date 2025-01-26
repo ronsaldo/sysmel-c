@@ -11,10 +11,10 @@ public: [
             $!i := 0. while: (i < argumentNodes size) do: {
                 $argumentBindable := (argumentNodes at: i) extractBindableNameNode.
                 
-                $!argumentName := null.
+                $!(Symbol)argumentName := null.
                 if: argumentBindable isAnonymous not then: {
-                    argumentName := self analyzeAndEvaluateWithEnvironment: Environment(environment) script: argumentBindable nameExpression.
-                    argumentName := extractSymbolFromValue(argumentName value)
+                    $argumentTypedName := self analyzeAndEvaluateWithEnvironment: Environment(environment) script: argumentBindable nameExpression.
+                    argumentName := extractSymbolFromValue(argumentTypedName value)
                 }.
                 $argumentTypeNode := self analyzeAndEvaluateWithEnvironment: Environment(environment) script: argumentBindable typeExpression.
                 $argumentType := extractTypeFromValue(argumentTypeNode value).
@@ -132,6 +132,19 @@ public: [
                                 }
                             }.
                         }.
+                    }.
+
+                    ## Special selectors
+                    if: (arguments size = 0) then: {
+                        if: selectorSymbolValue == #isNull then: {
+                            midBuilder sourcePosition: sourcePosition.
+                            return: (midBuilder isNullValue: receiverMidValue)
+                        }.
+                        if: selectorSymbolValue == #isNotNull then: {
+                            midBuilder sourcePosition: sourcePosition.
+                            return: (midBuilder isNotNullValue: receiverMidValue)
+                        }.
+
                     }.
 
                     match: receiverType ofType: SysmelType withPatterns: #{
