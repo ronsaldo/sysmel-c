@@ -13,4 +13,13 @@ String
         } continueWith:(i := i + 1).
 
         return: substring
+    };
+    withSelector: #hash addMethod: {
+        | $(String)self :: Integer|
+        $!hashResult := 0.
+        $!i := 0. while: (i < self size) do: {
+            hashResult := hashResult*1664525 + (self at: i) asInteger
+        } continueWith: (i := i + 1).
+        
+        hashResult
     }

@@ -639,7 +639,7 @@ SysmelClassType
             _: false.
         }.
     }.
-    $extractBoxFromValue($(Value)value :: SysmelType) := {
+    $extractBoxFromValue($(Value)value :: SysmelValueBox) := {
         match: value ofType: Value withPatterns: #{
             $(SysmelValueBox)valueBox : valueBox.
             _: {
@@ -795,7 +795,7 @@ SysmelClassType
         }
     }.
 
-    $extractObjectFromValue($(Value)value :: SysmelFunction) := {
+    $extractObjectFromValue($(Value)value :: Object) := {
         match: value ofType: Value withPatterns: #{
             $(ObjectValue)objectValue : objectValue value.
             _: {

@@ -23,7 +23,7 @@ public: [
         withSelector: #peekKind addMethod: {|$(ParserState)self :: UInt8 |
             self peekKind: 0u32
         };
-        withSelector: #peek: addMethod: {|$(ParserState)self $(UInt32)offset :: UInt8 |
+        withSelector: #peek: addMethod: {|$(ParserState)self $(UInt32)offset :: ScannedToken |
             $peekPosition := self position + offset.
             if: peekPosition < self tokenCount then: {
                 self tokens at: peekPosition
@@ -32,7 +32,7 @@ public: [
                 TokenKind EndOfSource
             }
         };
-        withSelector: #peek addMethod: {|$(ParserState)self :: UInt8 |
+        withSelector: #peek addMethod: {|$(ParserState)self :: ScannedToken |
             self peek: 0u32
         };
         withSelector: #advance addMethod: {|$(ParserState)self :: Void |

@@ -2148,20 +2148,22 @@ public: [
         abort()
     }.
 
-    SysmelType
-        withSelector: #lookupSelector: addMethod: {
-            | $(SysmelType)self $(Symbol)selector :: TypedValue |
-            $commonSection := self getCommonSection.
-            if: (commonSection methodDict includesKey: selector) then: {
-                return: (commonSection methodDict at: selector)
-            }.
-
-            $supertype := self getSupertype.
-            if: null ~~ supertype then: {
-                return: (supertype lookupSelector: selector)
-            }.
-
-            TypedValue(Value(InvalidErrorValue("Failed to find selector.")). getBasicIntrinsicTypes() null).
-        }.
 ].
+
+$sysmelTypeLookupSelector($(SysmelType)self $(Symbol)selector :: TypedValue) := {
+    $commonSection := self getCommonSection.
+    if: (commonSection methodDict includesKey: selector) then: {
+        return: (commonSection methodDict at: selector)
+    }.
+
+    $supertype := self getSupertype.
+    if: null ~~ supertype then: {
+        return: sysmelTypeLookupSelector(supertype. selector)
+    }.
+
+    TypedValue(Value(InvalidErrorValue("Failed to find selector.")). getBasicIntrinsicTypes() null).
+}.
+
+SysmelType
+    withSelector: #lookupSelector: addMethod: sysmelTypeLookupSelector.
 }
