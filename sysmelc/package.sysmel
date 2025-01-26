@@ -19,9 +19,9 @@ loadFileOnce: "MidLevelIR.sysmel".
 loadFileOnce: "TopLevelSemantics.sysmel".
 loadFileOnce: "MidLevelSemantics.sysmel".
 
-## Backend. Code generation
-loadFileOnce: "BackendIR.sysmel".
-loadFileOnce: "BackendX64.sysmel".
+## Low-end. Backend and Code generation
+loadFileOnce: "LirCommon.sysmel".
+loadFileOnce: "LirTargetX64.sysmel".
 
 ## Main frontend
 loadFileOnce: "MainFrontend.sysmel".

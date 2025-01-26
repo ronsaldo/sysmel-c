@@ -32,6 +32,7 @@ typedef enum sysmelb_ValueKind_e
     SysmelValueKindOrderedCollectionReference,
     SysmelValueKindSumValueReference,
     SysmelValueKindIdentityHashsetReference,
+    SysmelValueKindIdentityDictionaryReference,
 } sysmelb_ValueKind_t;
 
 typedef struct sysmelb_Value_s sysmelb_Value_t;

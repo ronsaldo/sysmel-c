@@ -13,5 +13,9 @@ $evalResult := SysmelC evaluateSourceCode(module. sourceCode).
 module findExportedObjectSet.
 ##printLine(module exportedCompiledFunctionList).
 $functionMidIR := (module exportedCompiledFunctionList at: 0) midIR.
-functionMidIR dumpSchedule.
-functionMidIR dumpGraph.
+##functionMidIR dumpSchedule.
+##functionMidIR dumpGraph.
+
+$lirModule := SysmelC LirModule().
+lirModule initialize.
+lirModule compileMidFunction: functionMidIR.

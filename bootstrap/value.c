@@ -232,7 +232,11 @@ void sysmelb_printValueWithMaxDepth(sysmelb_Value_t value, int depth)
         // TODO: print the elements
         printf("]");
         break;
-
+    case SysmelValueKindIdentityDictionaryReference:
+        printf("IdentityDictionary with: [");
+        // TODO: print the elements
+        printf("]");
+        break;
     default: abort();
     }
 }

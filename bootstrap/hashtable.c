@@ -1,6 +1,7 @@
 #include "hashtable.h"
 #include "memory.h"
 #include "value.h"
+#include <assert.h>
 
 int sysmelb_SymbolHashtable_scanFor(sysmelb_SymbolHashtable_t *table, sysmelb_symbol_t *key)
 {
@@ -149,4 +150,88 @@ bool sysmelb_IdentityHashset_includes(sysmelb_IdentityHashset_t *set, void *valu
     if(valueSlot < 0)
         return false;
     return set->data[valueSlot] == valuePointer; 
+}
+
+int sysmelb_IdentityDictionary_scanFor(sysmelb_IdentityDictionary_t *table, void *key)
+{
+    if(!table->data)
+        return -1;
+    uintptr_t identityHash = (uintptr_t)key*1664525;
+
+    size_t index = identityHash % table->capacity;
+    for(size_t i = index; i < table->capacity; ++i)
+    {
+        if(!table->data[i*2] || table->data[i*2] == key)
+            return i;
+    }
+
+    for(size_t i = 0; i < index; ++i)
+    {
+        if(!table->data[i*2] || table->data[i*2] == key)
+            return i;
+    }
+
+    return -1;
+}
+
+void sysmelb_IdentityDictionary_incrementCapacity(sysmelb_IdentityDictionary_t *dictionary)
+{
+    size_t newCapacity = dictionary->capacity*2;
+    if(newCapacity < 32)
+        newCapacity = 32;
+
+    void **oldData = dictionary->data;
+    size_t oldCapacity = dictionary->capacity;
+
+    dictionary->capacity = newCapacity;
+    dictionary->targetCapacity = newCapacity * 80 / 100;
+    dictionary->size = 0;
+    dictionary->data = sysmelb_allocate(sizeof(void*)*newCapacity*2);
+
+    // Reinsert the old elements.
+    for(size_t i = 0; i < oldCapacity; ++i)
+    {
+        if(oldData[i*2])
+            sysmelb_IdentityDictionary_atPut(dictionary, oldData[i*2], oldData[i*2 + 1]);
+    }
+
+    sysmelb_freeAllocation(oldData);
+}
+
+bool sysmelb_IdentityDictionary_includesKey(sysmelb_IdentityDictionary_s *dictionary, void *key)
+{
+    int index = sysmelb_IdentityDictionary_scanFor(dictionary, key);
+    return index >= 0 && dictionary->data[index*2] == key;
+}
+
+void sysmelb_IdentityDictionary_atPut(sysmelb_IdentityDictionary_s *dictionary, void *key, void *value)
+{
+    if(!dictionary->data)
+        sysmelb_IdentityDictionary_incrementCapacity(dictionary);
+    int index = sysmelb_IdentityDictionary_scanFor(dictionary, key);
+    assert(index >= 0);
+
+    if(!dictionary->data[index*2])
+    {
+        dictionary->data[index*2] = key;
+        dictionary->data[index*2 + 1] = value;
+        ++dictionary->size;
+        if(dictionary->size >= dictionary->targetCapacity)
+        sysmelb_IdentityDictionary_incrementCapacity(dictionary);
+    }
+    else
+    {
+        dictionary->data[index*2] = key;
+        dictionary->data[index*2 + 1] = value;
+    }
+}
+
+void* sysmelb_IdentityDictionary_at(sysmelb_IdentityDictionary_s *dictionary, void *key)
+{
+    if(!dictionary->data) return NULL;
+
+    int index = sysmelb_IdentityDictionary_scanFor(dictionary, key);
+    assert(index >= 0);
+
+    return dictionary->data[index*2 + 1];
 }

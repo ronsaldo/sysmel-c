@@ -1,0 +1,63 @@
+namespace: SysmelC definition: {
+public: [
+
+Class: LirModule withFields: #{
+    globals: OrderedCollection.
+    functions: OrderedCollection.
+    midFunctionDictionary: IdentityDictionary.
+}.
+
+Class: LirFunction withFields: #{
+    instructions: OrderedCollection.
+    ownerModule: LirModule.
+}.
+
+Class: LirInstruction withFields: #{
+}.
+
+LirModule
+    withSelector: #initialize addMethod: {
+        |$(LirModule)self :: Void|
+        self globals: OrderedCollection().
+        self functions: OrderedCollection().
+        self midFunctionDictionary: IdentityDictionary().
+    }.
+LirFunction
+    withSelector: #initializeWithModule: addMethod: {
+        |$(LirFunction)self $(LirModule)module :: Void|
+        self ownerModule: module.
+        self instructions: OrderedCollection()
+    }.
+LirModule
+    withSelector: #compileMidFunction: addMethod: {
+        |$(LirModule)self $(MidClosureFunction)midClosure :: Void |
+
+        ## Make sure that a mid function is compiled only once
+        if: (self midFunctionDictionary includesKey: midClosure) then: {
+            return: (self midFunctionDictionary at: midClosure)
+        }.
+
+        $lirFunction := LirFunction().
+        lirFunction initializeWithModule: self.
+        self midFunctionDictionary at: midClosure put: lirFunction.
+        self functions add: lirFunction.
+
+        lirFunction constructFromMidClosure: midClosure
+    }.
+
+LirFunction
+    withSelector: #addInstruction: addMethod: {
+        |$(LirModule)self $(LirInstruction)instruction :: Void|
+        self instructions add: instruction
+    };
+    withSelector: #constructFromMidClosure: addMethod: {
+        | $(LirModule)self $(MidClosureFunction)midClosure :: Void |
+
+        midClosure ensureInstructionSchedule.
+        ##printLine(midClosure instructionSchedule)
+        ##printLine(midClosure)
+
+    }.
+
+].
+}.

@@ -336,6 +336,15 @@ sysmelb_Value_t sysmelb_instantiateTypeWithArguments(sysmelb_Type_t *type, size_
             .identityHashsetReference = set};
         return result;
     }
+    if (type->kind == SysmelTypeKindIdentityDictionary)
+    {
+        sysmelb_IdentityDictionary_t *dict = sysmelb_allocate(sizeof(sysmelb_IdentityDictionary_t));
+        sysmelb_Value_t result = {
+            .kind = SysmelValueKindIdentityDictionaryReference,
+            .type = sysmelb_getBasicTypes()->identityDictionary,
+            .identityDictionaryReference = dict};
+        return result;
+    }
     if (type->kind == SysmelTypeKindSum)
     {
         if (argumentCount != 1)
@@ -401,6 +410,7 @@ static void sysmelb_createBasicTypes(void)
 
     sysmelb_BasicTypesData.orderedCollection = sysmelb_allocateValueType(SysmelTypeKindOrderedCollection, sysmelb_internSymbolC("OrderedCollection"), pointerSize, pointerAlignment);
     sysmelb_BasicTypesData.identityHashset = sysmelb_allocateValueType(SysmelTypeKindIdentityHashset, sysmelb_internSymbolC("IdentityHashset"), pointerSize, pointerAlignment);
+    sysmelb_BasicTypesData.identityDictionary = sysmelb_allocateValueType(SysmelTypeKindIdentityDictionary, sysmelb_internSymbolC("IdentityDictionary"), pointerSize, pointerAlignment);
 
     sysmelb_BasicTypesData.char8 = sysmelb_allocateValueType(SysmelTypeKindPrimitiveCharacter, sysmelb_internSymbolC("Int8"), 1, 1);
     sysmelb_BasicTypesData.char16 = sysmelb_allocateValueType(SysmelTypeKindPrimitiveCharacter, sysmelb_internSymbolC("Int16"), 2, 2);
@@ -1693,6 +1703,54 @@ static void sysmelb_createBasicIdentityHashsetPrimitives(void)
     sysmelb_type_addPrimitiveMethod(sysmelb_BasicTypesData.identityHashset, sysmelb_internSymbolC("includes:"), sysmelb_primitive_IdentityHashset_includes);
 }
 
+static sysmelb_Value_t sysmelb_primitive_IdentityDictionary_includesKey(size_t argumentCount, sysmelb_Value_t *arguments)
+{
+    assert(argumentCount == 2);
+    assert(arguments[0].kind == SysmelValueKindIdentityDictionaryReference);
+
+    bool includesResult = sysmelb_IdentityDictionary_includesKey(arguments[0].identityDictionaryReference, sysmelb_getValuePointer(arguments[1]));
+    sysmelb_Value_t result = {
+        .kind = SysmelValueKindBoolean,
+        .type = sysmelb_getBasicTypes()->boolean,
+        .boolean = includesResult};
+
+    return result;
+}
+
+static sysmelb_Value_t sysmelb_primitive_IdentityDictionary_atPut(size_t argumentCount, sysmelb_Value_t *arguments)
+{
+    assert(argumentCount == 3);
+    assert(arguments[0].kind == SysmelValueKindIdentityDictionaryReference);
+    assert(arguments[1].kind == SysmelValueKindObjectReference);
+
+    sysmelb_IdentityDictionary_atPut(arguments[0].identityDictionaryReference, sysmelb_getValuePointer(arguments[1]), sysmelb_getValuePointer(arguments[2]));
+    return arguments[2];
+}
+
+static sysmelb_Value_t sysmelb_primitive_IdentityDictionary_at(size_t argumentCount, sysmelb_Value_t *arguments)
+{
+    assert(argumentCount == 2);
+    assert(arguments[0].kind == SysmelValueKindIdentityDictionaryReference);
+
+    void *objectRawPointer = sysmelb_IdentityDictionary_at(arguments[0].identityDictionaryReference, sysmelb_getValuePointer(arguments[1]));
+    sysmelb_ObjectHeader_t *objectPointer = objectRawPointer;
+    
+    sysmelb_Value_t resultValue = {
+        .kind = SysmelValueKindObjectReference,
+        .objectReference = objectPointer,
+        .type = objectPointer->clazz
+    };
+    return resultValue;
+}
+
+static void sysmelb_createBasicIdentityDictionaryPrimitives(void)
+{
+    sysmelb_type_addPrimitiveMethod(sysmelb_BasicTypesData.identityDictionary, sysmelb_internSymbolC("includesKey:"), sysmelb_primitive_IdentityDictionary_includesKey);
+    sysmelb_type_addPrimitiveMethod(sysmelb_BasicTypesData.identityDictionary, sysmelb_internSymbolC("at:put:"), sysmelb_primitive_IdentityDictionary_atPut);
+    sysmelb_type_addPrimitiveMethod(sysmelb_BasicTypesData.identityDictionary, sysmelb_internSymbolC("at:"), sysmelb_primitive_IdentityDictionary_at);
+}
+
+
 static sysmelb_Value_t sysmelb_primitive_Boolean_Not(size_t argumentCount, sysmelb_Value_t *arguments)
 {
     assert(argumentCount == 1);
@@ -1875,6 +1933,7 @@ static void sysmelb_createBasicTypesPrimitives(void)
     sysmelb_createBasicOrderedCollectionPrimitives();
     sysmelb_createBasicSymbolHashtablePrimitives();
     sysmelb_createBasicIdentityHashsetPrimitives();
+    sysmelb_createBasicIdentityDictionaryPrimitives();
     sysmelb_createObjectPrimitives();
     sysmelb_createBasicTypeUniversePrimitives();
 }
