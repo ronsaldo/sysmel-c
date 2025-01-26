@@ -80,8 +80,6 @@ addGlobalMacroIntrinsicMethod(#loadFileOnce:. primitive_loadFileOnce.
             isValueType: true.
             valueAlignment: 8u32.
             valueSize: 8u32.
-            heapAlignment: 8u32.
-            heapSize: 8u32.
             methodDict: SymbolHashtable().
         }.
         isCompileTimePure: false.

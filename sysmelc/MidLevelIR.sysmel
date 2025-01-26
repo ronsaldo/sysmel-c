@@ -38,7 +38,6 @@ public: [
     }.
 
     Class: MidIntrinsicFunction withSuperclass: MidGlobalValue fields: #{
-        name: Symbol.
         primitive: Function.
         isMacro: Boolean.
         aluOperation: LirAluOperation
@@ -263,6 +262,7 @@ public: [
     }.
 
     Record: MidActivationContext withFields: #{
+        functionName: Symbol.
         arguments: Array.
         scheduledInstructions: Array.
         scheduledInstructionValues: Array.
@@ -984,7 +984,13 @@ MidExtractCompositeElement
         match: composite ofType: Value withPatterns: #{
             $(RecordValue)recordValue : {
                 $extractedRecord := recordValue value.
-                $extractedValue := extractedRecord tuple at: self index.
+                printLine("extractedRecord ". context functionName).
+                $extractedValue := if: (extractedRecord tuple size > self index) then: {
+                    extractedRecord tuple at: self index.
+                } else: {
+                    null
+                }.
+                    
                 if: extractedValue isNull then: {
                     context setValueInCurrentPC: TypedValue(Value(NullValue()). self type)
                 }
@@ -1531,8 +1537,8 @@ MidClosureFunction
         }.
         
         self instructionSchedule: enumeratedInstructions asArray.
-        ##self dumpSchedule.
-        ##self dumpGraph.
+        self dumpSchedule.
+        self dumpGraph.
 
     };
     withSelector: #dumpSchedule addMethod: {
@@ -1602,6 +1608,7 @@ MidClosureFunction
         ##} continueWith: (i := i +1).
         
         $activationContext := MidActivationContext#{
+            functionName: self name.
             arguments: arguments.
             scheduledInstructions: self instructionSchedule.
             scheduledInstructionValues: (Array new: self instructionSchedule size).

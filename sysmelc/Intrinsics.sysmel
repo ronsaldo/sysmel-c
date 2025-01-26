@@ -44,116 +44,96 @@ public: [
 
         float32: SysmelType.
         float64: SysmelType.
-    }
+    }.
+
 ].
 
+$PointerSize := 8.
+$PointerAlignment := 8.
+
+$MakeBasicValueTypeNamed($(Symbol)name $(Integer)alignment $(Integer)size :: SysmelType) := {
+    SysmelType(SysmelBasicType#{
+        common: SysmelTypeCommon#{
+            name: name. 
+            printingSuffix: "".
+            isValueType: true.
+            valueAlignment: alignment.
+            valueSize: size.
+            methodDict: SymbolHashtable().
+        }.
+        supertype: null.
+    })
+}.
+
+$MakeBasicValueTypeNamedAndSuffix($(Symbol)name $(String)printingSuffix $(Integer)alignment $(Integer)size :: SysmelType) := {
+    SysmelType(SysmelBasicType#{
+        common: SysmelTypeCommon#{
+            name: name.
+            printingSuffix: printingSuffix.
+            isValueType: true.
+            valueAlignment: alignment.
+            valueSize: size.
+            methodDict: SymbolHashtable().
+        }.
+        supertype: null.
+    }).
+}.
+
+$MakeBasicHeapTypeNamed($(Symbol)name :: SysmelTupleAndRecordType) := {
+    SysmelType(SysmelBasicType#{
+        common: SysmelTypeCommon#{
+            name: name.
+            printingSuffix: "".
+            isValueType: false.
+            valueAlignment: PointerAlignment.
+            valueSize: PointerSize.
+            methodDict: SymbolHashtable().
+        }.
+        supertype: null.
+    }).
+}.
+
 $BasicIntrinsicTypesSingleton := BasicIntrinsicTypes#{
-    null: SysmelType(SysmelBasicType(SysmelTypeCommon#{
-        name: #Null.  isValueType: true. valueAlignment: 0u8. valueSize: 0u8. heapAlignment: 0u8. heapSize: 0u8. methodDict: SymbolHashtable().
-    })).
-    voidType: SysmelType(SysmelBasicType(SysmelTypeCommon#{
-        name: #Void.  isValueType: true. valueAlignment: 0u8. valueSize: 0u8. heapAlignment: 0u8. heapSize: 0u8. methodDict: SymbolHashtable().
-    })).
-    boolean: SysmelType(SysmelBasicType(SysmelTypeCommon#{
-        name: #Boolean. isValueType: true. valueAlignment: 1u8. valueSize: 1u8. heapAlignment: 1u8. heapSize: 1u8. methodDict: SymbolHashtable().
-    })).
-    integer: SysmelType(SysmelBasicType(SysmelTypeCommon#{
-        name: #Integer. isValueType: true. valueAlignment: 8u8. valueSize: 8u8. heapAlignment: 8u8. heapSize: 8u8. methodDict: SymbolHashtable().
-    })).
-    float: SysmelType(SysmelBasicType(SysmelTypeCommon#{
-        name: #Float. isValueType: true. valueAlignment: 8u8. valueSize: 8u8. heapAlignment: 8u8. heapSize: 8u8. methodDict: SymbolHashtable().
-    })).
-    character: SysmelType(SysmelBasicType(SysmelTypeCommon#{
-        name: #Character. isValueType: true. valueAlignment: 8u8. valueSize: 8u8. heapAlignment: 8u8. heapSize: 8u8. methodDict: SymbolHashtable().
-    })).
-    string: SysmelType(SysmelBasicType(SysmelTypeCommon#{
-        name: #String. isValueType: false. valueAlignment: 8u8. valueSize: 8u8. heapAlignment: 8u8. heapSize: 8u8. methodDict: SymbolHashtable().
-    })).
-    symbol: SysmelType(SysmelBasicType(SysmelTypeCommon#{
-        name: #Symbol. isValueType: false. valueAlignment: 8u8. valueSize: 8u8. heapAlignment: 8u8. heapSize: 8u8. methodDict: SymbolHashtable().
-    })).
-    array: SysmelType(SysmelBasicType(SysmelTypeCommon#{
-        name: #Array. isValueType: false. valueAlignment: 8u8. valueSize: 8u8. heapAlignment: 8u8. heapSize: 8u8. methodDict: SymbolHashtable().
-    })).
-    tuple: SysmelType(SysmelBasicType(SysmelTypeCommon#{
-        name: #Tuple. isValueType: false. valueAlignment: 8u8. valueSize: 8u8. heapAlignment: 8u8. heapSize: 8u8. methodDict: SymbolHashtable().
-    })).
-    record: SysmelType(SysmelBasicType(SysmelTypeCommon#{
-        name: #Record. isValueType: false. valueAlignment: 8u8. valueSize: 8u8. heapAlignment: 8u8. heapSize: 8u8. methodDict: SymbolHashtable().
-    })).
-    class: SysmelType(SysmelBasicType(SysmelTypeCommon#{
-        name: #Class. isValueType: false. valueAlignment: 8u8. valueSize: 8u8. heapAlignment: 8u8. heapSize: 8u8. methodDict: SymbolHashtable().
-    })).
-    sum: SysmelType(SysmelBasicType(SysmelTypeCommon#{
-        name: #Sum. isValueType: false. valueAlignment: 8u8. valueSize: 8u8. heapAlignment: 8u8. heapSize: 8u8. methodDict: SymbolHashtable().
-    })).
-    parseTreeNode: SysmelType(SysmelBasicType(SysmelTypeCommon#{
-        name: #ParseTreeNode. isValueType: false. valueAlignment: 8u8. valueSize: 8u8. heapAlignment: 8u8. heapSize: 8u8. methodDict: SymbolHashtable().
-    })).
-    byteArray: SysmelType(SysmelBasicType(SysmelTypeCommon#{
-        name: #ByteArray. isValueType: false. valueAlignment: 8u8. valueSize: 8u8. heapAlignment: 8u8. heapSize: 8u8. methodDict: SymbolHashtable().
-    })).
-    association: SysmelType(SysmelBasicType(SysmelTypeCommon#{
-        name: #Association. isValueType: false. valueAlignment: 8u8. valueSize: 8u8. heapAlignment: 8u8. heapSize: 8u8. methodDict: SymbolHashtable().
-    })).
-    immutableDictionary: SysmelType(SysmelBasicType(SysmelTypeCommon#{
-        name: #ImmutableDictionary. isValueType: false. valueAlignment: 8u8. valueSize: 8u8. heapAlignment: 8u8. heapSize: 8u8. methodDict: SymbolHashtable().
-    })).
-    function: SysmelType(SysmelBasicType(SysmelTypeCommon#{
-        name: #Function. isValueType: false. valueAlignment: 8u8. valueSize: 8u8. heapAlignment: 8u8. heapSize: 8u8. methodDict: SymbolHashtable().
-    })).
-    namespace: SysmelType(SysmelBasicType(SysmelTypeCommon#{
-        name: #NamespaceType. isValueType: false. valueAlignment: 8u8. valueSize: 8u8. heapAlignment: 8u8. heapSize: 8u8. methodDict: SymbolHashtable().
-    })).
-    universe: SysmelType(SysmelBasicType(SysmelTypeCommon#{
-        name: #TypeUniverse. isValueType: false. valueAlignment: 8u8. valueSize: 8u8. heapAlignment: 8u8. heapSize: 8u8. methodDict: SymbolHashtable().
-    })).
+    null:      MakeBasicValueTypeNamed(#Null. 1. 0).
+    voidType:  MakeBasicValueTypeNamed(#Void. 1. 0).
+    boolean:   MakeBasicValueTypeNamed(#Boolean. 1. 1).
+    integer:   MakeBasicValueTypeNamed(#Integer. 8. 8).
+    float:     MakeBasicValueTypeNamed(#Float. 8. 8).
+    character: MakeBasicValueTypeNamed(#Character. 4. 4).
+    string:    MakeBasicHeapTypeNamed(#String).
+    symbol:    MakeBasicHeapTypeNamed(#Symbol).
+    array:     MakeBasicHeapTypeNamed(#Array).
+    tuple:     MakeBasicHeapTypeNamed(#Tuple).
+    record:    MakeBasicHeapTypeNamed(#Record).
+    class:     MakeBasicHeapTypeNamed(#Class).
+    sum:       MakeBasicHeapTypeNamed(#Sum).
+    parseTreeNode: MakeBasicHeapTypeNamed(#ParseTreeNode).
+    byteArray: MakeBasicHeapTypeNamed(#ByteArray).
+    association: MakeBasicHeapTypeNamed(#Association).
+    immutableDictionary: MakeBasicHeapTypeNamed(#ImmutableDictionary).
+    function: MakeBasicHeapTypeNamed(#Function).
+    namespace: MakeBasicHeapTypeNamed(#NamespaceType).
+    universe: MakeBasicHeapTypeNamed(#TypeUniverse).
     gradual: SysmelType(SysmelGradualType(SysmelTypeCommon#{
-        name: #Gradual. isValueType: false. valueAlignment: 8u8. valueSize: 8u8. heapAlignment: 8u8. heapSize: 8u8. methodDict: SymbolHashtable().
+        name: #Gradual. isValueType: false. valueAlignment: PointerAlignment. valueSize: PointerSize. methodDict: SymbolHashtable().
     })).
 
-    uint8: SysmelType(SysmelBasicType(SysmelTypeCommon#{
-        name: #UInt8.  printingSuffix: #u8.  isValueType: true. valueAlignment: 1u8. valueSize: 1u8. heapAlignment: 1u8. heapSize: 1u8. methodDict: SymbolHashtable().
-    })).
-    uint16: SysmelType(SysmelBasicType(SysmelTypeCommon#{
-        name: #UInt16. printingSuffix: #u16. isValueType: true. valueAlignment: 2u8. valueSize: 2u8. heapAlignment: 2u8. heapSize: 2u8. methodDict: SymbolHashtable().
-    })).
-    uint32: SysmelType(SysmelBasicType(SysmelTypeCommon#{
-        name: #UInt32. printingSuffix: #u32. isValueType: true. valueAlignment: 4u8. valueSize: 4u8. heapAlignment: 4u8. heapSize: 4u8. methodDict: SymbolHashtable().
-    })).
-    uint64: SysmelType(SysmelBasicType(SysmelTypeCommon#{
-        name: #UInt64. printingSuffix: #u64. isValueType: true. valueAlignment: 8u8. valueSize: 8u8. heapAlignment: 8u8. heapSize: 8u8. methodDict: SymbolHashtable().
-    })).
+    uint8:  MakeBasicValueTypeNamedAndSuffix(#UInt8.  "u8". 1. 1).
+    uint16: MakeBasicValueTypeNamedAndSuffix(#UInt16. "u16". 2. 2).
+    uint32: MakeBasicValueTypeNamedAndSuffix(#UInt32. "u32". 4. 4).
+    uint64: MakeBasicValueTypeNamedAndSuffix(#UInt64. "u64". 8. 8).
 
-    int8: SysmelType(SysmelBasicType(SysmelTypeCommon#{
-        name: #Int8.  printingSuffix: #i8.  isValueType: true. valueAlignment: 1u8. valueSize: 1u8. heapAlignment: 1u8. heapSize: 1u8. methodDict: SymbolHashtable().
-    })).
-    int16: SysmelType(SysmelBasicType(SysmelTypeCommon#{
-        name: #Int16. printingSuffix: #i16. isValueType: true. valueAlignment: 2u8. valueSize: 2u8. heapAlignment: 2u8. heapSize: 2u8. methodDict: SymbolHashtable().
-    })).
-    int32: SysmelType(SysmelBasicType(SysmelTypeCommon#{
-        name: #Int32. printingSuffix: #i32. isValueType: true. valueAlignment: 4u8. valueSize: 4u8. heapAlignment: 4u8. heapSize: 4u8. methodDict: SymbolHashtable().
-    })).
-    int64: SysmelType(SysmelBasicType(SysmelTypeCommon#{
-        name: #Int64. printingSuffix: #i64. isValueType: true. valueAlignment: 8u8. valueSize: 8u8. heapAlignment: 8u8. heapSize: 8u8. methodDict: SymbolHashtable().
-    })).
+    int8:  MakeBasicValueTypeNamedAndSuffix(#Int8.  "i8". 1. 1).
+    int16: MakeBasicValueTypeNamedAndSuffix(#Int16. "i16". 2. 2).
+    int32: MakeBasicValueTypeNamedAndSuffix(#Int32. "i32". 4. 4).
+    int64: MakeBasicValueTypeNamedAndSuffix(#Int64. "i64". 8. 8).
 
-    char8: SysmelType(SysmelBasicType(SysmelTypeCommon#{
-        name: #Char8.  printingSuffix: #c8.  isValueType: true. valueAlignment: 1u8. valueSize: 1u8. heapAlignment: 1u8. heapSize: 1u8. methodDict: SymbolHashtable().
-    })).
-    char16: SysmelType(SysmelBasicType(SysmelTypeCommon#{
-        name: #Char16. printingSuffix: #c16. isValueType: true. valueAlignment: 2u8. valueSize: 2u8. heapAlignment: 2u8. heapSize: 2u8. methodDict: SymbolHashtable().
-    })).
-    char32: SysmelType(SysmelBasicType(SysmelTypeCommon#{
-        name: #Char32. printingSuffix: #c32. isValueType: true. valueAlignment: 4u8. valueSize: 4u8. heapAlignment: 4u8. heapSize: 4u8. methodDict: SymbolHashtable().
-    })).
+    char8:  MakeBasicValueTypeNamedAndSuffix(#Char8.  "c8". 1. 1).
+    char16: MakeBasicValueTypeNamedAndSuffix(#Char16. "c16". 2. 2).
+    char32: MakeBasicValueTypeNamedAndSuffix(#Char32. "c32". 4. 4).
 
-    float32: SysmelType(SysmelBasicType(SysmelTypeCommon#{
-        name: #Float32. printingSuffix: #f32. isValueType: true. valueAlignment: 4u8. valueSize: 4u8. heapAlignment: 4u8. heapSize: 4u8. methodDict: SymbolHashtable().
-    })).
-    float64: SysmelType(SysmelBasicType(SysmelTypeCommon#{
-        name: #Float64. printingSuffix: #f64. isValueType: true. valueAlignment: 8u8. valueSize: 8u8. heapAlignment: 8u8. heapSize: 8u8. methodDict: SymbolHashtable().
-    })).
+    float32: MakeBasicValueTypeNamedAndSuffix(#Float32. "f32". 4. 4).
+    float64: MakeBasicValueTypeNamedAndSuffix(#Float64. "f64". 8. 8).
 }.
 
 IntrinsicsEnvironment
@@ -236,8 +216,6 @@ $makeSimplePureFunctionType($(Array)arguments $(SysmelType)resultType :: SysmelT
             isValueType: true.
             valueAlignment: 8u32.
             valueSize: 8u32.
-            heapAlignment: 8u32.
-            heapSize: 8u32.
             methodDict: SymbolHashtable().
         }.
         supertype: BasicIntrinsicTypesSingleton function.
@@ -256,8 +234,6 @@ $makeSimpleFunctionType($(Array)arguments $(SysmelType)resultType :: SysmelType)
             isValueType: true.
             valueAlignment: 8u32.
             valueSize: 8u32.
-            heapAlignment: 8u32.
-            heapSize: 8u32.
             methodDict: SymbolHashtable().
         }.
         supertype: BasicIntrinsicTypesSingleton function.
@@ -314,8 +290,6 @@ addGlobalIntrinsicMethod(#print. primitive_print.
             isValueType: false.
             valueAlignment: 8u32.
             valueSize: 8u32.
-            heapAlignment: 8u32.
-            heapSize: 8u32.
             methodDict: SymbolHashtable().
         }.
         isCompileTimePure: false.
@@ -331,8 +305,6 @@ addGlobalIntrinsicMethod(#printLine. primitive_printLine.
             isValueType: true.
             valueAlignment: 8u32.
             valueSize: 8u32.
-            heapAlignment: 8u32.
-            heapSize: 8u32.
             methodDict: SymbolHashtable().
         }.
         isCompileTimePure: false.
@@ -348,8 +320,6 @@ addGlobalIntrinsicMethod(#abort. primitive_abort.
             isValueType: true.
             valueAlignment: 8u32.
             valueSize: 8u32.
-            heapAlignment: 8u32.
-            heapSize: 8u32.
             methodDict: SymbolHashtable().
         }.
         isCompileTimePure: false.
@@ -374,8 +344,6 @@ addGlobalMacroIntrinsicMethod(#if:then:else:. primitive_ifThenElse_Macro.
             isValueType: true.
             valueAlignment: 8u32.
             valueSize: 8u32.
-            heapAlignment: 8u32.
-            heapSize: 8u32.
             methodDict: SymbolHashtable().
         }.
         isCompileTimePure: false.
@@ -400,8 +368,6 @@ addGlobalMacroIntrinsicMethod(#if:then:. primitive_ifThen_Macro.
             isValueType: true.
             valueAlignment: 8u32.
             valueSize: 8u32.
-            heapAlignment: 8u32.
-            heapSize: 8u32.
             methodDict: SymbolHashtable().
         }.
         isCompileTimePure: false.
@@ -426,8 +392,6 @@ addGlobalMacroIntrinsicMethod(#while:do:. primitive_whileDo_Macro.
             isValueType: true.
             valueAlignment: 8u32.
             valueSize: 8u32.
-            heapAlignment: 8u32.
-            heapSize: 8u32.
             methodDict: SymbolHashtable().
         }.
         isCompileTimePure: false.
@@ -453,8 +417,6 @@ addGlobalMacroIntrinsicMethod(#while:do:continueWith:. primitive_whileDoContinue
             isValueType: true.
             valueAlignment: 8u32.
             valueSize: 8u32.
-            heapAlignment: 8u32.
-            heapSize: 8u32.
             methodDict: SymbolHashtable().
         }.
         isCompileTimePure: false.
@@ -479,8 +441,6 @@ addGlobalMacroIntrinsicMethod(#do:while:. primitive_doWhile_Macro.
             isValueType: true.
             valueAlignment: 8u32.
             valueSize: 8u32.
-            heapAlignment: 8u32.
-            heapSize: 8u32.
             methodDict: SymbolHashtable().
         }.
         isCompileTimePure: false.
@@ -506,8 +466,6 @@ addGlobalMacroIntrinsicMethod(#do:continueWith:while:. primitive_doContinueWithW
             isValueType: true.
             valueAlignment: 8u32.
             valueSize: 8u32.
-            heapAlignment: 8u32.
-            heapSize: 8u32.
             methodDict: SymbolHashtable().
         }.
         isCompileTimePure: false.
@@ -532,8 +490,6 @@ addGlobalMacroIntrinsicMethod(#return:. primitive_Return_Macro.
             isValueType: true.
             valueAlignment: 8u32.
             valueSize: 8u32.
-            heapAlignment: 8u32.
-            heapSize: 8u32.
             methodDict: SymbolHashtable().
         }.
         isCompileTimePure: false.
@@ -558,8 +514,6 @@ addGlobalMacroIntrinsicMethod(#switch:withCases:. primitive_SwitchWithCases.
             isValueType: true.
             valueAlignment: 8u32.
             valueSize: 8u32.
-            heapAlignment: 8u32.
-            heapSize: 8u32.
             methodDict: SymbolHashtable().
         }.
         isCompileTimePure: false.
@@ -585,8 +539,6 @@ addGlobalMacroIntrinsicMethod(#match:ofType:withPatterns:. primitive_MatchOfType
             isValueType: true.
             valueAlignment: 8u32.
             valueSize: 8u32.
-            heapAlignment: 8u32.
-            heapSize: 8u32.
             methodDict: SymbolHashtable().
         }.
         isCompileTimePure: false.
@@ -612,8 +564,6 @@ addGlobalMacroIntrinsicMethod(#match:withPatterns:. primitive_MatchWithPatterns.
             isValueType: true.
             valueAlignment: 8u32.
             valueSize: 8u32.
-            heapAlignment: 8u32.
-            heapSize: 8u32.
             methodDict: SymbolHashtable().
         }.
         isCompileTimePure: false.
@@ -655,8 +605,6 @@ $primitive_RecordWithFields($(MacroContext)context $(Array)arguments :: TypedVal
                 isValueType: false.
                 valueAlignment: 8u32.
                 valueSize: 8u32.
-                heapAlignment: 8u32.
-                heapSize: 8u32.
                 methodDict: SymbolHashtable().
             }.
             supertype: BasicIntrinsicTypesSingleton record.
@@ -678,8 +626,6 @@ addGlobalMacroIntrinsicMethod(#Record:withFields:. primitive_RecordWithFields.
             isValueType: true.
             valueAlignment: 8u32.
             valueSize: 8u32.
-            heapAlignment: 8u32.
-            heapSize: 8u32.
             methodDict: SymbolHashtable().
         }.
         isCompileTimePure: false.
@@ -721,8 +667,6 @@ $primitive_ClassWithFields($(MacroContext)context $(Array)arguments :: TypedValu
                 isValueType: false.
                 valueAlignment: 8u32.
                 valueSize: 8u32.
-                heapAlignment: 8u32.
-                heapSize: 8u32.
                 methodDict: SymbolHashtable().
             }.
             supertype: BasicIntrinsicTypesSingleton class.
@@ -745,8 +689,6 @@ addGlobalMacroIntrinsicMethod(#Class:withFields:. primitive_ClassWithFields.
             isValueType: true.
             valueAlignment: 8u32.
             valueSize: 8u32.
-            heapAlignment: 8u32.
-            heapSize: 8u32.
             methodDict: SymbolHashtable().
         }.
         isCompileTimePure: false.
@@ -803,8 +745,6 @@ $primitive_ClassWithSuperclassAndFields($(MacroContext)context $(Array)arguments
                 isValueType: false.
                 valueAlignment: 8u32.
                 valueSize: 8u32.
-                heapAlignment: 8u32.
-                heapSize: 8u32.
                 methodDict: SymbolHashtable().
             }.
             supertype: supertypeValue.
@@ -827,8 +767,6 @@ addGlobalMacroIntrinsicMethod(#Class:withSuperclass:fields:. primitive_ClassWith
             isValueType: true.
             valueAlignment: 8u32.
             valueSize: 8u32.
-            heapAlignment: 8u32.
-            heapSize: 8u32.
             methodDict: SymbolHashtable().
         }.
         isCompileTimePure: false.
@@ -890,8 +828,6 @@ $primitive_EnumWithBaseTypeAndValues($(MacroContext)context $(Array)arguments ::
                 isValueType: true.
                 valueAlignment: 8u32.
                 valueSize: 8u32.
-                heapAlignment: 8u32.
-                heapSize: 8u32.
                 methodDict: SymbolHashtable().
             }.
             supertype: baseType.
@@ -914,8 +850,6 @@ addGlobalMacroIntrinsicMethod(#Enum:withBaseType:values:. primitive_EnumWithBase
             isValueType: true.
             valueAlignment: 8u32.
             valueSize: 8u32.
-            heapAlignment: 8u32.
-            heapSize: 8u32.
             methodDict: SymbolHashtable().
         }.
         isCompileTimePure: false.
@@ -953,8 +887,6 @@ $primitive_InductiveWithAlternativesMacro($(MacroContext)context $(Array)argumen
                 isValueType: true.
                 valueAlignment: 16u32.
                 valueSize: 16u32.
-                heapAlignment: 16u32.
-                heapSize: 16u32.
                 methodDict: SymbolHashtable().
             }.
             supertype: BasicIntrinsicTypesSingleton sum.
@@ -982,8 +914,6 @@ addGlobalMacroIntrinsicMethod(#Inductive:withAlternatives: . primitive_Inductive
             isValueType: true.
             valueAlignment: 8u32.
             valueSize: 8u32.
-            heapAlignment: 8u32.
-            heapSize: 8u32.
             methodDict: SymbolHashtable().
         }.
         isCompileTimePure: false.
@@ -1023,8 +953,6 @@ addGlobalMacroIntrinsicMethod(#namespace:definition:. primitive_NamespaceDefinit
             isValueType: true.
             valueAlignment: 8u32.
             valueSize: 8u32.
-            heapAlignment: 8u32.
-            heapSize: 8u32.
             methodDict: SymbolHashtable().
         }.
         isCompileTimePure: false.
@@ -1102,8 +1030,6 @@ addGlobalMacroIntrinsicMethod(#public:. primitive_Public.
             isValueType: true.
             valueAlignment: 8u32.
             valueSize: 8u32.
-            heapAlignment: 8u32.
-            heapSize: 8u32.
             methodDict: SymbolHashtable().
         }.
         isCompileTimePure: false.
@@ -1129,8 +1055,6 @@ addGlobalMacroIntrinsicMethod(#setMainEntryPoint:. primitive_SetMainEntryPoint.
             isValueType: true.
             valueAlignment: 8u32.
             valueSize: 8u32.
-            heapAlignment: 8u32.
-            heapSize: 8u32.
             methodDict: SymbolHashtable().
         }.
         isCompileTimePure: false.
@@ -1156,8 +1080,6 @@ addGlobalMacroIntrinsicMethod(#assert:. primitive_Assert.
             isValueType: true.
             valueAlignment: 8u32.
             valueSize: 8u32.
-            heapAlignment: 8u32.
-            heapSize: 8u32.
             methodDict: SymbolHashtable().
         }.
         isCompileTimePure: false.

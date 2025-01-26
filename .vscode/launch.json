@@ -12,9 +12,9 @@
             //"args": ["${workspaceFolder}/sysmelc/package.sysmel"],
             //"args": ["${workspaceFolder}/samples/20-Classes.sysmel"],
             "args": ["${workspaceFolder}/sysmelc/package.sysmel",
-            "${workspaceFolder}/samples/22-Compilation.sysmel"
-            ],
-            //"--", "${workspaceFolder}/runtime/package.sysmel"],
+            //"${workspaceFolder}/samples/22-Compilation.sysmel"
+            //],
+            "--", "${workspaceFolder}/runtime/package.sysmel", "${workspaceFolder}/sysmelc/package.sysmel"],
             "stopAtEntry": false,
             "cwd": "${workspaceFolder}",
             "environment": [],

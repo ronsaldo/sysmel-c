@@ -1471,6 +1471,8 @@ static sysmelb_Value_t sysmelb_primitive_withSelectorAddMethod(size_t argumentCo
     sysmelb_Type_t *type = arguments[0].typeReference;
     sysmelb_symbol_t *selector = arguments[1].symbolReference;
     sysmelb_function_t *function = arguments[2].functionReference;
+    if(!function->name)
+        function->name = selector;
 
     sysmelb_SymbolHashtable_addSymbolWithValue(&type->methodDict, selector, function);
     return arguments[0];
