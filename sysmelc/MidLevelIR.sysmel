@@ -157,6 +157,12 @@ public: [
         arguments: Array.
     }.
 
+    Class: MidPureCallFunction withSuperclass: MidData fields: #{
+        functional: MidValue.
+        selector: MidValue.
+        arguments: Array.
+    }.
+
     Class: MidSendMessage withSuperclass: MidControlNode fields: #{
         receiver: MidValue.
         selector: MidValue.
@@ -1198,6 +1204,38 @@ MidCallFunction
         context advancePC.
     }.
 
+MidPureCallFunction
+    withSelector: #usedValues addMethod: {
+        | $(MidPureCallFunction)self :: Array |
+        [self functional] -- self arguments 
+    };
+    withSelector: #connectWithUsed addMethod: {
+        | $(MidPureCallFunction)self :: Void |
+        self functional addUser: self.
+        {
+            $!i := 0.
+            $argumentCount := self arguments size.
+            while: (i < argumentCount) do:
+            {
+                (self arguments at: i) addUser: self
+            } continueWith: (i := i + 1).
+        }.
+    };
+    withSelector: #evaluateInActivationContext: addMethod: {
+        | $(MidPureCallFunction)self $(MidActivationContext)context :: Void |
+        $functionToCall := (self functional getCurrentValueForActivationContext: context) value getMidValue.
+
+        $invocationArguments := Array new: self arguments size.
+        $!i := 0. while:(i < self arguments size) do: {
+            $argument := (self arguments at: i) getCurrentValueForActivationContext: context.
+            invocationArguments at: i put: argument
+        } continueWith:(i := i + 1).
+
+        $result := functionToCall evaluateWithArguments: invocationArguments.
+        context setValueInCurrentPC: result.
+        context advancePC.
+    }.
+
 MidSendMessage
     withSelector: #usedValues addMethod: {
         | $(MidSendMessage)self :: Array |
@@ -1656,22 +1694,34 @@ MidFunctionBuilder
     };
 
     withSelector: #call:withArguments: addMethod: {
-        | $(MidFunctionBuilder)self $(MidValue)functional $(Array)arguments :: MidCallFunction |
+        | $(MidFunctionBuilder)self $(MidValue)functional $(Array)arguments :: MidValue |
         $resultType := match: functional type ofType: SysmelType withPatterns: #{
             $(SysmelSimpleFunctionType)functionType : functionType resultType.
             _: getBasicIntrinsicTypes() gradual
         }.
 
-        $node := MidCallFunction#{
-            previousControl: self currentControlNode.
-            sourcePosition: self sourcePosition.
-            functional: functional.
-            arguments: arguments.
-            type: resultType.
+        $isPureFunction := isCompileTimePure(functional type).
+        if: isPureFunction then: {
+            $node := MidPureCallFunction#{
+                sourcePosition: self sourcePosition.
+                functional: functional.
+                arguments: arguments.
+                type: resultType.
+            }.
+            node connectWithUsed.
+            return: node
+        } else: {
+            $node := MidCallFunction#{
+                previousControl: self currentControlNode.
+                sourcePosition: self sourcePosition.
+                functional: functional.
+                arguments: arguments.
+                type: resultType.
+            }.
+            node connectWithUsed.
+            self currentControlNode: node.
+            return: node
         }.
-        node connectWithUsed.
-        self currentControlNode: node.
-        node
     };
     withSelector: #send:to:withArguments: addMethod: {
         | $(MidFunctionBuilder)self $(MidValue)selector $(MidValue)receiver $(Array)arguments  :: MidSendMessage |

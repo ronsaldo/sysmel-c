@@ -1,4 +1,8 @@
 String
+    withSelector: #parseCEscapeSequences addMethod: {
+        |$(String)self :: String |
+        self
+    };
     withSelector: #substringFrom:until: addMethod: {
         |$(String)self $(Integer)startIndex $(Integer)endIndex :: String |
         assert: startIndex <= endIndex.

@@ -144,7 +144,6 @@ public: [
                             midBuilder sourcePosition: sourcePosition.
                             return: (midBuilder isNotNullValue: receiverMidValue)
                         }.
-
                     }.
 
                     match: receiverType ofType: SysmelType withPatterns: #{
@@ -211,17 +210,85 @@ public: [
                     }.
                 }.
 
-                ##if: receiverType isClassType || receiverType isGradual ||  
+                ##printLine("receiverType ". receiverType).
+                if: isClassType(receiverType) || isGradualType(receiverType) || method value isInvalidErrorValue then: {
+                    ## Generate message send.
+                    $invocationArguments := OrderedCollection().
+                    $!i := 0. while:(i < arguments size) do: {
+                        $argument := arguments at: i.
+                        $analyzedArgument := self analyzeWithEnvironment: environment andCompileClosure: midBuilder withBody: argument.
+                        invocationArguments add: analyzedArgument.
+                    } continueWith:(i := i + 1).
 
-                $invocationArguments := OrderedCollection().
-                $!i := 0. while:(i < arguments size) do: {
-                    $argument := arguments at: i.
-                    $analyzedArgument := self analyzeWithEnvironment: environment andCompileClosure: midBuilder withBody: argument.
-                    invocationArguments add: analyzedArgument.
-                } continueWith:(i := i + 1).
+                    midBuilder sourcePosition: sourcePosition.
+                    return: (midBuilder send: selectorValue to: receiverValue withArguments: invocationArguments asArray)
+                } else: {
+                    ## Generate direct function call.
 
-                midBuilder sourcePosition: sourcePosition.
-                return: (midBuilder send: selectorValue to: receiverValue withArguments: invocationArguments asArray)
+                    $methodFunctionValue := extractFunctionFromValue(method value).
+                    $midFunction := match: methodFunctionValue ofType: SysmelFunction withPatterns: #{
+                        $(SysmelIntrinsicPrimitive)intrinsicPrimitive : {
+                            MidIntrinsicFunction#{
+                                type: method type.
+                                name: intrinsicPrimitive name.
+                                primitive: intrinsicPrimitive implementation.
+                                isMacro: intrinsicPrimitive isMacro.
+                            }
+                        }.
+                        $(SysmelCompiledFunction)compiledFunction : {
+                            if: compiledFunction midIR isNull then: {
+                                printLine("TODO. Compile requested method").
+                                abort()
+                            }.
+                            compiledFunction midIR
+                        }.
+                    }.
+
+                    if: isSimpleFunctionType(midFunction type) then: {
+                        $functionType := extractSimpleFunctionType(midFunction type).
+                        ##printLine("SimpleFunctionType ". functionType).
+
+                        if: functionType isVariadic not && (functionType argumentTypes size ~= (1 + arguments size)) then: {
+                            sourcePosition printFormatted.
+                            printLine("Message send argument count mismatch.").
+                            abort()
+                        }.
+
+                        $invocationArguments := OrderedCollection().
+                        invocationArguments add: (self coerceValue: receiverValue intoType: (functionType argumentTypes at: 0)).
+                        $!i := 0. while:(i < arguments size) do: {
+                            $argument := arguments at: i.
+                            $analyzedArgument := self analyzeWithEnvironment: environment andCompileClosure: midBuilder withBody: argument andExpectedType: (functionType argumentTypes at: i + 1).
+                            invocationArguments add: analyzedArgument.
+                        } continueWith:(i := i + 1).
+
+                        midBuilder sourcePosition: sourcePosition.
+                        return: (midBuilder call: midFunction withArguments: invocationArguments asArray)
+
+                    }.
+
+                    ## No function type. Treat everything as gradual
+                    $invocationArguments := OrderedCollection().
+                    invocationArguments add: receiverValue.
+                    $!i := 0. while:(i < arguments size) do: {
+                        $argument := arguments at: i.
+                        $analyzedArgument := self analyzeWithEnvironment: environment andCompileClosure: midBuilder withBody: argument.
+                        invocationArguments add: analyzedArgument.
+                    } continueWith:(i := i + 1).
+
+                    midBuilder sourcePosition: sourcePosition.
+                    return: (midBuilder call: midFunction withArguments: invocationArguments asArray)
+
+                }.
+        };
+        withSelector: #coerceValue:intoType: addMethod: {
+            | $(SemanticsState)self $(MidValue)valueToCoerce $(SysmelType)targetType :: MidValue |
+            return: valueToCoerce
+        };
+        withSelector: #analyzeWithEnvironment:andCompileClosure:withBody:andExpectedType: addMethod: {
+            | $(SemanticsState)self $(Environment)environment $(MidFunctionBuilder)midBuilder $(ParseTreeNode)ast $(SysmelType)expectedType :: MidValue |
+            $valueWithoutCoercion := self analyzeWithEnvironment: environment andCompileClosure: midBuilder withBody: ast.
+            return: (self coerceValue: valueWithoutCoercion intoType: expectedType)
         };
         withSelector: #analyzeWithEnvironment:andCompileClosure:withBody: addMethod: {
             | $(SemanticsState)self $(Environment)environment $(MidFunctionBuilder)midBuilder $(ParseTreeNode)ast :: MidValue |

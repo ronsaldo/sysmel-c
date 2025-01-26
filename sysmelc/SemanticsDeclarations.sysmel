@@ -736,6 +736,31 @@ SysmelClassType
         }
     }.
 
+    $isSimpleFunctionType($(SysmelType)type :: Boolean) := {
+        match: type ofType: SysmelType withPatterns: #{
+            $(SysmelSimpleFunctionType)classType : true.
+            _: false.
+        }
+    }.
+
+    $extractSimpleFunctionType($(SysmelType)type :: SysmelSimpleFunctionType) := {
+        match: type ofType: SysmelType withPatterns: #{
+            $(SysmelSimpleFunctionType)functionType : functionType.
+            _: {
+                printLine("Not a valid class type.").
+                abort()
+            }
+        }
+    }.
+
+    $isCompileTimePure($(SysmelType)type :: Boolean) := {
+        match: type ofType: SysmelType withPatterns: #{
+            $(SysmelSimpleFunctionType)functionType : functionType isCompileTimePure.
+            _: { false }
+        }
+    }.
+    
+
     $isClassType($(SysmelType)type :: Boolean) := {
         match: type ofType: SysmelType withPatterns: #{
             $(SysmelClassType)classType : true.
