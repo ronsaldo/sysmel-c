@@ -25,4 +25,4 @@ asm initialize.
 asm beginTextSection;
     x64_ret
 
-asm writeBinaryToFileNamed: "test.bin"
+asm writeElf64ToFileNamed: "test.elf"

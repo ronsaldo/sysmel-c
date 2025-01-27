@@ -1,5 +1,4 @@
 namespace: SysmelC definition: {
-public: [
 $Elf64_Addr := UInt64.
 $Elf64_Off  := UInt64.
 $Elf64_Half := UInt16.
@@ -8,8 +7,41 @@ $Elf64_Sword := Int32.
 $Elf64_Xword := UInt64.
 $Elf64_Sxword := Int64.
 
+$ElfIdentMag0 := 0.
+$ElfIdentMag1 := 1.
+$ElfIdentMag2 := 2.
+$ElfIdentMag3 := 3.
+$ElfIdentClass := 4.
+$ElfIdentData := 5.
+$ElfIdentVersion := 6.
+$ElfIdentOSAbi := 7.
+$ElfIdentAbiVersion := 8.
+$ElfNIdent := 16.
+
+$ElfClass64 := 2.
+$ElfDataLSB := 1.
+
+$ElfTypeRel := 1.
+$ElfMachineX64 := 62.
+
+$Elf64HeaderSize := 64.
+$Elf64SectionHeaderSize := 64.
+
+$ElfSectionHeaderType_Null := 0.
+$ElfSectionHeaderType_Progbits := 1.
+$ElfSectionHeaderType_Symtab := 2.
+$ElfSectionHeaderType_Strtab := 3.
+$ElfSectionHeaderType_Rela := 4.
+$ElfSectionHeaderType_Nobits := 8.
+
+$ElfSectionHeaderFlagWrite := 1.
+$ElfSectionHeaderFlagAlloc := 2.
+$ElfSectionHeaderFlagExecInstr := 4.
+
+public: [
+
 Record: Elf64_Ehdr withFields: #{
-    e_ident: (Char8 array: 16).
+    e_ident:     ByteArray.
     e_type:      Elf64_Half.
     e_machine:   Elf64_Half.
     e_version:   Elf64_Word.
@@ -25,5 +57,160 @@ Record: Elf64_Ehdr withFields: #{
     e_shstrndx:  Elf64_Half
 }.
 
+Record: Elf64_Shdr withFields: #{
+    sh_name: Elf64_Word.
+    sh_type: Elf64_Word.
+    sh_flags: Elf64_Xword.
+    sh_addr: Elf64_Addr.
+    sh_offset: Elf64_Off.
+    sh_size: Elf64_Xword.
+    sh_link: Elf64_Word.
+    sh_info: Elf64_Word.
+    sh_addralign: Elf64_Xword.
+    sh_entsize: Elf64_Xword.
+}.
+
+Elf64_Ehdr
+    withSelector: #setupForX64 addMethod: {
+        | $(Elf64_Ehdr)self |
+        $ident := ByteArray new: 16.
+        ident at: ElfIdentMag0 put: 16r7f.
+        ident at: ElfIdentMag1 put: 'E'u8.
+        ident at: ElfIdentMag2 put: 'L'u8.
+        ident at: ElfIdentMag3 put: 'F'u8.
+
+        ident at: ElfIdentClass put: ElfClass64 asUInt8.
+        ident at: ElfIdentData put: ElfDataLSB asUInt8.
+        ident at: ElfIdentVersion put: 1u8.
+
+        self e_ident: ident.
+        self e_type: ElfTypeRel.
+        self e_machine: ElfMachineX64.
+        self e_version: 1.
+        self e_entry: 0.
+        self e_phoff: 0.
+        self e_shoff: 0.
+        self e_flags: 0.
+        self e_ehsize: Elf64HeaderSize.
+        self e_phentsize: 0.
+        self e_phnum: 0.
+        self e_shentsize: Elf64SectionHeaderSize.
+        self e_shnum: 0.
+        self e_shstrndx: 0
+    };
+    withSelector: #writeBinaryInto: addMethod: {
+        | $(Elf64_Ehdr)self $(ByteOrderedCollection)out |
+        out addAll: self e_ident.
+        out nextPutUInt16: self e_type.
+        out nextPutUInt16: self e_machine.
+        out nextPutUInt32: self e_version.
+        out nextPutUInt64: self e_entry.
+        out nextPutUInt64: self e_phoff.
+        out nextPutUInt64: self e_shoff.
+        out nextPutUInt32: self e_flags.
+        out nextPutUInt16: self e_ehsize.
+        out nextPutUInt16: self e_phentsize.
+        out nextPutUInt16: self e_phnum.
+        out nextPutUInt16: self e_shentsize.
+        out nextPutUInt16: self e_shnum.
+        out nextPutUInt16: self e_shstrndx.
+    }.
+
+Elf64_Shdr
+    withSelector: #initialize addMethod: {
+        | $(Elf64_Shdr)self :: Void |
+        self sh_name:      0.
+        self sh_type:      0.
+        self sh_flags:     0.
+        self sh_addr:      0.
+        self sh_offset:    0.
+        self sh_size:      0.
+        self sh_link:      0.
+        self sh_info:      0.
+        self sh_addralign: 0.
+        self sh_entsize:   0.
+    };
+    withSelector: #writeBinaryInto: addMethod: {
+        | $(Elf64_Ehdr)self $(ByteOrderedCollection)out |
+        out nextPutUInt32: self sh_name.
+        out nextPutUInt32: self sh_type.
+        out nextPutUInt64: self sh_flags.
+        out nextPutUInt64: self sh_addr.
+        out nextPutUInt64: self sh_offset.
+        out nextPutUInt64: self sh_size.
+        out nextPutUInt32: self sh_link.
+        out nextPutUInt32: self sh_info.
+        out nextPutUInt64: self sh_addralign.
+        out nextPutUInt64: self sh_entsize.
+    }.
+
+LirAssembler
+    withSelector: #writeElf64ToFileNamed: addMethod: {
+        | $(LirAssembler)self $(String)fileName :: Void |
+        ## Compute the layout.
+        $!offset := Elf64HeaderSize.
+
+        $elfHeader := Elf64_Ehdr().
+        elfHeader setupForX64.
+
+        $sectionHeaders := OrderedCollection().
+        $nullSection := Elf64_Shdr().
+        nullSection initialize.
+
+        sectionHeaders add: nullSection.
+        $!i := 0. while: (i < self sections size) do: {
+            $(LirAssemblerSection)section := self sections at: i.
+            section outputIndex: sectionHeaders size.
+
+            $elfSectionHeader := Elf64_Shdr().
+            elfSectionHeader initialize.
+
+            elfSectionHeader sh_name: (self sectionHeaderStringSection getStringIndex: section name).
+            elfSectionHeader sh_offset: offset.
+            elfSectionHeader sh_size: section contents size.
+
+            if: section isExecutable then: {
+                elfSectionHeader sh_flags: elfSectionHeader sh_flags | ElfSectionHeaderFlagExecInstr
+            }.
+            if: section isAllocated then: {
+                elfSectionHeader sh_flags: elfSectionHeader sh_flags | ElfSectionHeaderFlagAlloc
+            }.
+            if: section isWriteable then: {
+                elfSectionHeader sh_flags: elfSectionHeader sh_flags | ElfSectionHeaderFlagWrite
+            }.
+
+            if: section isStringSection then: {
+                elfSectionHeader sh_type: ElfSectionHeaderType_Strtab
+            } else: {
+                elfSectionHeader sh_type: ElfSectionHeaderType_Progbits
+            }.
+
+            sectionHeaders add: elfSectionHeader.
+            offset := offset + elfSectionHeader sh_size.
+        } continueWith: (i := i + 1).
+
+        elfHeader e_shoff: offset.
+        elfHeader e_shnum: sectionHeaders size.
+        elfHeader e_shentsize: Elf64SectionHeaderSize.
+        elfHeader e_shstrndx: self sectionHeaderStringSection outputIndex.
+
+        ## Write the elf file.
+        $out := ByteOrderedCollection().
+        elfHeader writeBinaryInto: out.
+
+        ## Write the section contents
+        $!i := 0. while: i < self sections size do: {
+            $(LirAssemblerSection)section := self sections at: i.
+            out addAll: section contents asByteArray.
+        } continueWith: (i := i + 1).
+
+        ## Write the section headers.
+        $!i := 0. while: (i < sectionHeaders size) do: {
+            $(Elf64_Shdr)sectionHeader := sectionHeaders at: i.
+            sectionHeader writeBinaryInto: out.
+        } continueWith: (i := i + 1).
+
+        writeWholeFileWithBinaryData(fileName . out asByteArray).
+    }.
 ]
 }

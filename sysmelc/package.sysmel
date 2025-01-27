@@ -20,6 +20,7 @@ loadFileOnce: "TopLevelSemantics.sysmel".
 loadFileOnce: "MidLevelSemantics.sysmel".
 
 ## Low-end. Backend and Code generation
+loadFileOnce: "OrderedByteArrayUtils.sysmel".
 loadFileOnce: "LirAssembler.sysmel".
 loadFileOnce: "LirElf64.sysmel".
 loadFileOnce: "LirCommon.sysmel".

@@ -1317,6 +1317,57 @@ static void sysmelb_createBasicArrayPrimitives(void)
     sysmelb_type_addPrimitiveMethod(sysmelb_BasicTypesData.array, sysmelb_internSymbolC("asImmutableDictionary"), sysmelb_primitive_arrayAsImmutableDictionary);
 }
 
+static sysmelb_Value_t sysmelb_primitive_byteArraySize(size_t argumentCount, sysmelb_Value_t *arguments)
+{
+    assert(argumentCount == 1);
+    assert(arguments[0].kind == SysmelValueKindByteArrayReference);
+
+    size_t arraySize = arguments[0].byteArrayReference->size;
+    sysmelb_Value_t result = {
+        .kind = SysmelValueKindUnsignedInteger,
+        .type = sysmelb_BasicTypesData.integer,
+        .unsignedInteger = arraySize,
+    };
+    return result;
+}
+
+static sysmelb_Value_t sysmelb_primitive_byteArrayAt(size_t argumentCount, sysmelb_Value_t *arguments)
+{
+    assert(argumentCount == 2);
+    assert(arguments[0].kind == SysmelValueKindByteArrayReference && (arguments[1].kind == SysmelValueKindInteger || arguments[1].kind == SysmelValueKindUnsignedInteger));
+
+    size_t arraySize = arguments[0].byteArrayReference->size;
+    unsigned int arrayIndex = arguments[1].unsignedInteger;
+    assert(arrayIndex < arraySize);
+
+    sysmelb_Value_t result = {
+        .kind = SysmelValueKindInteger,
+        .type = sysmelb_getBasicTypes()->uint8,
+        .integer = arguments[0].byteArrayReference->elements[arrayIndex],
+    };
+    return result;
+}
+
+static sysmelb_Value_t sysmelb_primitive_byteArrayAtPut(size_t argumentCount, sysmelb_Value_t *arguments)
+{
+    assert(argumentCount == 3);
+    assert(arguments[0].kind == SysmelValueKindByteArrayReference && (arguments[1].kind == SysmelValueKindInteger || arguments[1].kind == SysmelValueKindUnsignedInteger));
+
+    size_t arraySize = arguments[0].byteArrayReference->size;
+    unsigned int arrayIndex = arguments[1].unsignedInteger;
+    assert(arrayIndex < arraySize);
+
+    arguments[0].byteArrayReference->elements[arrayIndex] = arguments[2].integer;
+    return arguments[2];
+}
+
+static void sysmelb_createBasicByteArrayPrimitives(void)
+{
+    sysmelb_type_addPrimitiveMethod(sysmelb_BasicTypesData.byteArray, sysmelb_internSymbolC("size"), sysmelb_primitive_byteArraySize);
+    sysmelb_type_addPrimitiveMethod(sysmelb_BasicTypesData.byteArray, sysmelb_internSymbolC("at:"), sysmelb_primitive_byteArrayAt);
+    sysmelb_type_addPrimitiveMethod(sysmelb_BasicTypesData.byteArray, sysmelb_internSymbolC("at:put:"), sysmelb_primitive_byteArrayAtPut);
+}
+
 static sysmelb_Value_t sysmelb_primitive_tupleSize(size_t argumentCount, sysmelb_Value_t *arguments)
 {
     assert(argumentCount == 1);
@@ -2071,6 +2122,7 @@ static void sysmelb_createBasicTypesPrimitives(void)
     sysmelb_createBasicNullPrimitives();
     sysmelb_createBasicIntegersPrimitives();
     sysmelb_createBasicArrayPrimitives();
+    sysmelb_createBasicByteArrayPrimitives();
     sysmelb_createBasicStringPrimitives();
     sysmelb_createBasicSymbolPrimitives();
     sysmelb_createBasicTuplePrimitives();

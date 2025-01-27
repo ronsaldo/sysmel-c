@@ -1,0 +1,49 @@
+ByteOrderedCollection
+    withSelector: #nextPutUInt8: addMethod: {
+        | $(ByteOrderedCollection)self $(UInt8)value :: Void |
+        self add: value.
+        void
+    };
+    withSelector: #nextPutUInt16: addMethod: {
+        | $(ByteOrderedCollection)self $(UInt16)value :: Void  |
+        self add: value & 16rFF.
+        self add: (value >> 8) & 16rFF.
+        void
+    };
+    withSelector: #nextPutUInt32: addMethod: {
+        | $(ByteOrderedCollection)self $(UInt32)value :: Void  |
+        self add: value & 16rFF.
+        self add: (value >> 8) & 16rFF.
+        self add: (value >> 16) & 16rFF.
+        self add: (value >> 24) & 16rFF.
+        void
+    };
+    withSelector: #nextPutUInt64: addMethod: {
+        | $(ByteOrderedCollection)self $(UInt64)value :: Void  |
+        self add: value & 16rFF.
+        self add: (value >> 8) & 16rFF.
+        self add: (value >> 16) & 16rFF.
+        self add: (value >> 24) & 16rFF.
+        self add: (value >> 32) & 16rFF.
+        self add: (value >> 40) & 16rFF.
+        self add: (value >> 48) & 16rFF.
+        self add: (value >> 56) & 16rFF.
+        void
+    };
+    withSelector: #nextPutInt8: addMethod: {
+        | $(ByteOrderedCollection)self $(Int8)value :: Void  |
+        self nextPutUInt8: value asUInt8.
+        void
+    };
+    withSelector: #nextPutInt16: addMethod: {
+        | $(ByteOrderedCollection)self $(Int16)value :: Void  |
+        self nextPutUInt16: value asUInt16
+    };
+    withSelector: #nextPutInt32: addMethod: {
+        | $(ByteOrderedCollection)self $(Int32)value :: Void  |
+        self nextPutUInt32: value asUInt32
+    };
+    withSelector: #nextPutInt64: addMethod: {
+        | $(ByteOrderedCollection)self $(Int64)value :: Void  |
+        self nextPutUInt64: value asUInt64
+    }

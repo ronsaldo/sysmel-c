@@ -24,16 +24,27 @@ Record: LirRelocationEntry withFields: #{
 }.
 
 Class: LirAssemblerSection withFields: #{
-    name: Symbol.
+    name: String.
     contents: ByteOrderedCollection.
     relocations: OrderedCollection.
+    outputIndex: Integer.
+    isWriteable: Boolean.
+    isAllocated: Boolean.
+    isExecutable: Boolean.
+}.
+
+Class: LirAssemblerStringSection withSuperclass: LirAssemblerSection fields: #{
 }.
 
 Class: LirAssembler withFields: #{
+    sections: OrderedCollection.
     textSection: LirAssemblerSection.
     rodataSection: LirAssemblerSection.
     dataSection: LirAssemblerSection.
     activeSection: LirAssemblerSection.
+
+    stringSection: LirAssemblerStringSection.
+    sectionHeaderStringSection: LirAssemblerStringSection.
 }.
 
 ].
@@ -43,16 +54,76 @@ LirAssemblerSection
         self name: name.
         self contents: ByteOrderedCollection().
         self relocations: OrderedCollection().
+        self outputIndex: 0.
+        self isExecutable: false.
+        self isAllocated: false.
+        self isWriteable: false.
         self
+    };
+    withSelector: #isStringSection addMethod: {
+        | $(LirAssemblerSection)self :: Boolean |
+        false
+    }.
+LirAssemblerStringSection
+    withSelector: #initializeWithName: addMethod: {
+        | $(LirAssemblerStringSection)self $(Symbol)name :: LirAssemblerStringSection |
+        self name: name.
+        self contents: ByteOrderedCollection().
+        self relocations: OrderedCollection().
+        self outputIndex: 0.
+        self isExecutable: false.
+        self isAllocated: false.
+        self isWriteable: false.
+        ## Start with an empty string.
+        self contents add: 0u8.
+        self
+    };
+    withSelector: #isStringSection addMethod: {
+        | $(LirAssemblerStringSection)self :: Boolean |
+        true
+    };
+    withSelector: #getStringIndex: addMethod: {
+        | $(LirAssemblerStringSection)self $(String)string :: Integer|
+        $result := self contents size.
+        $stringSize := string size.
+        $!i := 0. while: (i < stringSize) do: {
+            $character := string at: i.
+            self contents add: character asUInt8.
+        } continueWith: (i := i + 1).
+        self contents add: 0u8.
+
+        result
     }.
 
 LirAssembler
     withSelector: #initialize addMethod: {
         | $(LirAssembler)self :: Void |
-        self textSection: (LirAssemblerSection() initializeWithName: #".text").
-        self rodataSection: (LirAssemblerSection() initializeWithName: #".rodata").
-        self dataSection: (LirAssemblerSection() initializeWithName: #".data").
+        self sections: OrderedCollection().
+
+        self textSection: (LirAssemblerSection() initializeWithName: ".text").
+        self rodataSection: (LirAssemblerSection() initializeWithName: ".rodata").
+        self dataSection: (LirAssemblerSection() initializeWithName: ".data").
+        self stringSection: (LirAssemblerStringSection() initializeWithName: ".strtab").
+        self sectionHeaderStringSection: (LirAssemblerStringSection() initializeWithName: ".shstrtab").
         self activeSection: self textSection.
+
+        self textSection isExecutable: true.
+        self textSection isAllocated: true.
+        self textSection isWriteable: false.
+
+        self rodataSection isExecutable: false.
+        self rodataSection isAllocated: true.
+        self rodataSection isWriteable: false.
+
+        self dataSection isExecutable: false.
+        self dataSection isAllocated: true.
+        self dataSection isWriteable: true.
+
+        self sections add: self textSection.
+        self sections add: self rodataSection.
+        self sections add: self dataSection.
+        self sections add: self stringSection.
+        self sections add: self sectionHeaderStringSection.
     };
     withSelector: #beginTextSection addMethod: {
         | $(LirAssembler)self :: Void |
