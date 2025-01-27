@@ -1591,7 +1591,7 @@ static sysmelb_Value_t sysmelb_primitive_newWithSize(size_t argumentCount, sysme
         return result;
     }
 
-    sysmelb_SourcePosition_t nullPosition;
+    sysmelb_SourcePosition_t nullPosition = {};
     sysmelb_errorPrintf(nullPosition, "#new: only supports tuples, arrays, strings and byteArray.");
     abort();
 }
