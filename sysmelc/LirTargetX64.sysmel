@@ -23,6 +23,6 @@ LirAssembler
     withSelector: #x64_ret addMethod: {
         | $(LirAssembler)self |
         self nextPutAll: #[16rC3].
-    }
+    }.
 
 }.

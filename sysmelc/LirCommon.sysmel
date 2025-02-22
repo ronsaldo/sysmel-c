@@ -72,7 +72,7 @@ LirFunction
     }.
 LirModule
     withSelector: #compileMidFunction: addMethod: {
-        |$(LirModule)self $(MidClosureFunction)midClosure :: Void |
+        |$(LirModule)self $(MidClosureFunction)midClosure :: LirFunction |
 
         ## Make sure that a mid function is compiled only once
         if: (self midFunctionDictionary includesKey: midClosure) then: {
@@ -85,12 +85,13 @@ LirModule
         self midFunctionDictionary at: midClosure put: lirFunction.
         self functions add: lirFunction.
 
-        lirFunction constructFromMidClosure: midClosure
+        lirFunction constructFromMidClosure: midClosure.
+        lirFunction
     }.
 
 LirFunction
     withSelector: #addInstruction: addMethod: {
-        |$(LirModule)self $(LirInstruction)instruction :: Void |
+        |$(LirFunction)self $(LirInstruction)instruction :: Void |
         if: instruction isConstant then: {
             self constants add: instruction
         } else: {
@@ -98,13 +99,13 @@ LirFunction
         }
     };
     withSelector: #addInstruction:for: addMethod: {
-        |$(LirModule)self $(LirInstruction)instruction $(MidValue)midValue :: Void |
+        |$(LirFunction)self $(LirInstruction)instruction $(MidValue)midValue :: Void |
         self addInstruction: instruction.
         self instructionTranslationMap at: midValue put: instruction.
 
     };
     withSelector: #translateConstant: addMethod: {
-        |$(LirModule)self $(MidValue)constantOperand :: LirConstant |
+        |$(LirFunction)self $(MidValue)constantOperand :: LirConstant |
         if: (self instructionTranslationMap includesKey: constantOperand) not then: {
             constantOperand compileToLirFor: self
         }.
@@ -112,7 +113,7 @@ LirFunction
         return: (self instructionTranslationMap at: constantOperand).
     };   
     withSelector: #translateOperand: addMethod: {
-        |$(LirModule)self $(MidValue)operand :: LirInstruction |
+        |$(LirFunction)self $(MidValue)operand :: LirInstruction |
         if: operand isConstant then: {
             self translateConstant: operand
         } else: {
@@ -120,7 +121,7 @@ LirFunction
         }
     };
     withSelector: #translateOperands: addMethod: {
-        |$(LirModule)self $(Array)operands :: Array |
+        |$(LirFunction)self $(Array)operands :: Array |
         $operandCount := operands size.
         $translatedOperands := Array new: operandCount.
 
@@ -131,7 +132,7 @@ LirFunction
         return: translatedOperands
     };
     withSelector: #makeLabel:for: addMethod: {
-        |$(LirModule)self $(Symbol)labelName $(MidValue)midValue :: LirLabel |
+        |$(LirFunction)self $(Symbol)labelName $(MidValue)midValue :: LirLabel |
         $label := LirLabel#{
             name: labelName
         }.
@@ -140,11 +141,11 @@ LirFunction
         label
     };
     withSelector: #getLabelOf: addMethod: {
-        |$(LirModule)self $(MidValue)midValue :: LirLabel |
+        |$(LirFunction)self $(MidValue)midValue :: LirLabel |
         self instructionLabelMap at: midValue.
     };
     withSelector: #constructFromMidClosure: addMethod: {
-        | $(LirModule)self $(MidClosureFunction)midClosure :: Void |
+        | $(LirFunction)self $(MidClosureFunction)midClosure :: Void |
 
         midClosure ensureInstructionSchedule.
         $schedule := midClosure instructionSchedule.
@@ -170,10 +171,10 @@ LirFunction
         ##printLine(midClosure instructionSchedule)
         ##printLine(midClosure)
 
-        self dumpFunction
+        ##self dumpFunction
     };
     withSelector: #enumerateInstructions addMethod: {
-        | $(LirModule)self :: Void |
+        | $(LirFunction)self :: Void |
         $instructionCount := self instructions size.
         $!i := 0. while: (i < instructionCount) do: {
             (self instructions at: i) index: i
@@ -185,7 +186,7 @@ LirFunction
         } continueWith: (i := i + 1).
     };
     withSelector: #dumpFunction addMethod: {
-        | $(LirModule)self :: Void |
+        | $(LirFunction)self :: Void |
         printLine("LirFunction ". self name. "{").
         $!i := 0. while: (i < self instructions size) do: {
             (self instructions at: i) dump.
@@ -196,6 +197,10 @@ LirFunction
             (self constants at: i) dump.
         } continueWith: (i := i + 1).
         printLine("}").
+    };
+    withSelector: #compileToAssembly: addMethod: {
+        | $(LirFunction)self $(LirAssembler)assembler :: Void |
+
     }.
 
 LirInstruction

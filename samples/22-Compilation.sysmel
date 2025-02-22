@@ -18,11 +18,11 @@ $functionMidIR := (module exportedCompiledFunctionList at: 0) midIR.
 
 $lirModule := SysmelC LirModule().
 lirModule initialize.
-lirModule compileMidFunction: functionMidIR.
+$lirFunction := lirModule compileMidFunction: functionMidIR.
+lirFunction dumpFunction.
 
 $asm := SysmelC LirAssembler().
 asm initialize.
-asm beginTextSection;
-    x64_ret
+lirFunction compileToAssembly: asm.
 
 asm writeElf64ToFileNamed: "test.elf"
